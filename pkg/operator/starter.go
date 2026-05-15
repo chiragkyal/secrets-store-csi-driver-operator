@@ -1,7 +1,6 @@
 package operator
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"time"
@@ -18,14 +17,15 @@ import (
 	configclient "github.com/openshift/client-go/config/clientset/versioned"
 	configinformers "github.com/openshift/client-go/config/informers/externalversions"
 	applyoperatorv1 "github.com/openshift/client-go/operator/applyconfigurations/operator/v1"
+	operatorclient "github.com/openshift/client-go/operator/clientset/versioned"
+	operatorinformers "github.com/openshift/client-go/operator/informers/externalversions"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
+	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/csi/csicontrollerset"
 	"github.com/openshift/library-go/pkg/operator/csi/csidrivernodeservicecontroller"
 	goc "github.com/openshift/library-go/pkg/operator/genericoperatorclient"
 	"github.com/openshift/library-go/pkg/operator/management"
-	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
-	"github.com/openshift/secrets-store-csi-driver-operator/assets"
 )
 
 const (
@@ -49,6 +49,14 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 	configClient := configclient.NewForConfigOrDie(rest.AddUserAgent(controllerConfig.KubeConfig, operatorName))
 	configInformers := configinformers.NewSharedInformerFactory(configClient, resync)
 
+	// Create operator clientset and informer for typed ClusterCSIDriver access.
+	// This provides the lister used by the dynamic AssetFunc and DaemonSet hook
+	// to read driverConfig.secretsStore configuration.
+	operatorClientset := operatorclient.NewForConfigOrDie(rest.AddUserAgent(controllerConfig.KubeConfig, operatorName))
+	operatorInformers := operatorinformers.NewSharedInformerFactory(operatorClientset, resync)
+	clusterCSIDriverLister := operatorInformers.Operator().V1().ClusterCSIDrivers().Lister()
+	clusterCSIDriverInformer := operatorInformers.Operator().V1().ClusterCSIDrivers().Informer()
+
 	// Create GenericOperatorclient. This is used by the library-go controllers created down below
 	gvr := opv1.SchemeGroupVersion.WithResource("clustercsidrivers")
 	gvk := opv1.SchemeGroupVersion.WithKind("ClusterCSIDriver")
@@ -70,6 +78,10 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		return err
 	}
 
+	// Dynamic AssetFunc that enriches csidriver.yaml with requiresRepublish and tokenRequests
+	// based on ClusterCSIDriver config, and replaces ${NAMESPACE} in all files.
+	assetFunc := dynamicAssetFunc(operatorNamespace, clusterCSIDriverLister)
+
 	csiControllerSet := csicontrollerset.NewCSIControllerSet(
 		operatorClient,
 		controllerConfig.EventRecorder,
@@ -81,7 +93,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		kubeClient,
 		dynamicClient,
 		kubeInformersForNamespaces,
-		replaceNamespaceFunc(operatorNamespace),
+		assetFunc,
 		[]string{
 			"node_sa.yaml",
 			"csidriver.yaml",
@@ -103,22 +115,24 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		configInformers,
 	).WithCSIDriverNodeService(
 		"SecretsStoreDriverNodeServiceController",
-		replaceNamespaceFunc(operatorNamespace),
+		assetFunc,
 		"node.yaml",
 		kubeClient,
 		kubeInformersForNamespaces.InformersFor(operatorNamespace),
-		nil,
+		[]factory.Informer{clusterCSIDriverInformer},
 		csidrivernodeservicecontroller.WithCABundleDaemonSetHook(
 			operatorNamespace,
 			trustedCAConfigMap,
 			configMapInformer,
 		),
+		WithSecretRotationDaemonSetHook(clusterCSIDriverLister),
 	)
 
 	klog.Info("Starting the informers")
 	go kubeInformersForNamespaces.Start(ctx.Done())
 	go dynamicInformers.Start(ctx.Done())
 	go configInformers.Start(ctx.Done())
+	go operatorInformers.Start(ctx.Done())
 
 	klog.Info("Starting controllerset")
 	go csiControllerSet.Run(ctx, 1)
@@ -126,16 +140,6 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 	<-ctx.Done()
 
 	return nil
-}
-
-func replaceNamespaceFunc(namespace string) resourceapply.AssetFunc {
-	return func(name string) ([]byte, error) {
-		content, err := assets.ReadFile(name)
-		if err != nil {
-			panic(err)
-		}
-		return bytes.ReplaceAll(content, []byte(namespaceKey), []byte(namespace)), nil
-	}
 }
 
 // getOperatorSyncState returns the management state of the operator to determine
