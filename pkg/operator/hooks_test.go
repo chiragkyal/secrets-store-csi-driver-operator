@@ -2,7 +2,6 @@ package operator
 
 import (
 	"testing"
-	"time"
 
 	opv1 "github.com/openshift/api/operator/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -10,16 +9,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func boolPtr(b bool) *bool {
-	return &b
+func strPtr(s string) *string {
+	return &s
+}
+
+func int32Ptr(i int32) *int32 {
+	return &i
 }
 
 func int64Ptr(i int64) *int64 {
 	return &i
-}
-
-func durationPtr(d time.Duration) *metav1.Duration {
-	return &metav1.Duration{Duration: d}
 }
 
 func newTestDaemonSet() *appsv1.DaemonSet {
@@ -95,7 +94,7 @@ func TestGetRotationConfig(t *testing.T) {
 						DriverType: opv1.SecretsStoreDriverType,
 						SecretsStore: &opv1.SecretsStoreCSIDriverConfigSpec{
 							SecretRotation: &opv1.SecretsStoreSecretRotation{
-								Enabled: boolPtr(false),
+								Policy: opv1.SecretRotationDisabled,
 							},
 						},
 					},
@@ -112,7 +111,7 @@ func TestGetRotationConfig(t *testing.T) {
 						DriverType: opv1.SecretsStoreDriverType,
 						SecretsStore: &opv1.SecretsStoreCSIDriverConfigSpec{
 							SecretRotation: &opv1.SecretsStoreSecretRotation{
-								Enabled: boolPtr(true),
+								Policy: opv1.SecretRotationEnabled,
 							},
 						},
 					},
@@ -129,7 +128,7 @@ func TestGetRotationConfig(t *testing.T) {
 						DriverType: opv1.SecretsStoreDriverType,
 						SecretsStore: &opv1.SecretsStoreCSIDriverConfigSpec{
 							SecretRotation: &opv1.SecretsStoreSecretRotation{
-								RotationPollInterval: durationPtr(5 * time.Minute),
+								RotationPollIntervalSeconds: int32Ptr(300),
 							},
 						},
 					},
@@ -146,8 +145,8 @@ func TestGetRotationConfig(t *testing.T) {
 						DriverType: opv1.SecretsStoreDriverType,
 						SecretsStore: &opv1.SecretsStoreCSIDriverConfigSpec{
 							SecretRotation: &opv1.SecretsStoreSecretRotation{
-								Enabled:              boolPtr(false),
-								RotationPollInterval: durationPtr(10 * time.Minute),
+								Policy:                      opv1.SecretRotationDisabled,
+								RotationPollIntervalSeconds: int32Ptr(600),
 							},
 						},
 					},
@@ -173,9 +172,9 @@ func TestGetRotationConfig(t *testing.T) {
 
 func TestWithSecretRotationDaemonSetHook_ReplacesPlaceholders(t *testing.T) {
 	tests := []struct {
-		name             string
-		ccd              *opv1.ClusterCSIDriver
-		expectedArgs     []string
+		name         string
+		ccd          *opv1.ClusterCSIDriver
+		expectedArgs []string
 	}{
 		{
 			name: "defaults when no config",
@@ -194,7 +193,7 @@ func TestWithSecretRotationDaemonSetHook_ReplacesPlaceholders(t *testing.T) {
 			},
 		},
 		{
-			name: "rotation disabled",
+			name: "rotation disabled with custom interval",
 			ccd: &opv1.ClusterCSIDriver{
 				ObjectMeta: metav1.ObjectMeta{Name: providerName},
 				Spec: opv1.ClusterCSIDriverSpec{
@@ -202,8 +201,8 @@ func TestWithSecretRotationDaemonSetHook_ReplacesPlaceholders(t *testing.T) {
 						DriverType: opv1.SecretsStoreDriverType,
 						SecretsStore: &opv1.SecretsStoreCSIDriverConfigSpec{
 							SecretRotation: &opv1.SecretsStoreSecretRotation{
-								Enabled:              boolPtr(false),
-								RotationPollInterval: durationPtr(5 * time.Minute),
+								Policy:                      opv1.SecretRotationDisabled,
+								RotationPollIntervalSeconds: int32Ptr(300),
 							},
 						},
 					},

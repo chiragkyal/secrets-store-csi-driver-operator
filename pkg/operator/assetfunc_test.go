@@ -74,7 +74,7 @@ func TestEnrichCSIDriverYAML_RotationDisabled(t *testing.T) {
 				DriverType: opv1.SecretsStoreDriverType,
 				SecretsStore: &opv1.SecretsStoreCSIDriverConfigSpec{
 					SecretRotation: &opv1.SecretsStoreSecretRotation{
-						Enabled: boolPtr(false),
+						Policy: opv1.SecretRotationDisabled,
 					},
 				},
 			},
@@ -107,11 +107,11 @@ func TestEnrichCSIDriverYAML_WithTokenRequests(t *testing.T) {
 				SecretsStore: &opv1.SecretsStoreCSIDriverConfigSpec{
 					TokenRequests: []opv1.SecretsStoreTokenRequest{
 						{
-							Audience:          "sts.amazonaws.com",
+							Audience:          strPtr("sts.amazonaws.com"),
 							ExpirationSeconds: int64Ptr(3600),
 						},
 						{
-							Audience: "api://AzureADTokenExchange",
+							Audience: strPtr("api://AzureADTokenExchange"),
 						},
 					},
 				},
@@ -189,10 +189,10 @@ func TestGetCSIDriverConfig(t *testing.T) {
 						DriverType: opv1.SecretsStoreDriverType,
 						SecretsStore: &opv1.SecretsStoreCSIDriverConfigSpec{
 							SecretRotation: &opv1.SecretsStoreSecretRotation{
-								Enabled: boolPtr(true),
+								Policy: opv1.SecretRotationEnabled,
 							},
 							TokenRequests: []opv1.SecretsStoreTokenRequest{
-								{Audience: "sts.amazonaws.com"},
+								{Audience: strPtr("sts.amazonaws.com")},
 							},
 						},
 					},
@@ -209,7 +209,7 @@ func TestGetCSIDriverConfig(t *testing.T) {
 						DriverType: opv1.SecretsStoreDriverType,
 						SecretsStore: &opv1.SecretsStoreCSIDriverConfigSpec{
 							SecretRotation: &opv1.SecretsStoreSecretRotation{
-								Enabled: boolPtr(false),
+								Policy: opv1.SecretRotationDisabled,
 							},
 						},
 					},

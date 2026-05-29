@@ -405,34 +405,41 @@ type SecretsStoreCSIDriverConfigSpec struct {
 	// tokenRequests specifies service account token audiences that kubelet will provide
 	// to the CSI driver during NodePublishVolume calls. These tokens enable workload
 	// identity federation (WIF) with cloud providers such as AWS, Azure, and GCP.
-	// Each entry specifies an audience for which kubelet requests a bound service account token.
-	// An empty audience string means the token uses the kube-apiserver's default APIAudiences.
+	// When omitted or empty, no service account tokens are provided to the CSI driver
+	// and workload identity federation is not available.
 	// +optional
 	// +listType=atomic
 	TokenRequests []SecretsStoreTokenRequest `json:"tokenRequests,omitempty"`
 }
 
+// SecretRotationPolicy determines whether automatic secret rotation is active
+// for the Secrets Store CSI driver.
+// +kubebuilder:validation:Enum=Enabled;Disabled
+type SecretRotationPolicy string
+
+const (
+	SecretRotationEnabled  SecretRotationPolicy = "Enabled"
+	SecretRotationDisabled SecretRotationPolicy = "Disabled"
+)
+
 // SecretsStoreSecretRotation configures the automatic secret rotation behavior
 // for the Secrets Store CSI driver.
 type SecretsStoreSecretRotation struct {
-	// enabled controls whether automatic secret rotation is active.
-	// When true, the CSIDriver object sets requiresRepublish and the driver
-	// re-fetches secrets from providers during kubelet-triggered republish calls.
-	// When false, secrets are only fetched at initial pod mount time.
-	// Default is true.
-	// +kubebuilder:default=true
+	// policy controls whether automatic secret rotation is active.
+	// When "Enabled", the CSIDriver object sets requiresRepublish and the driver
+	// re-fetches secrets from providers.
+	// When "Disabled", secrets are only fetched at initial pod mount time.
+	// +default="Enabled"
 	// +optional
-	Enabled *bool `json:"enabled,omitempty"`
+	Policy SecretRotationPolicy `json:"policy,omitempty"`
 
-	// rotationPollInterval is the minimum duration between secret rotation attempts.
-	// The driver skips provider calls if less than this interval has elapsed since
-	// the last successful rotation. Format is a Go duration string (e.g. "2m", "1h30m").
-	// Must be at least 30 seconds.
-	// Default is "2m".
-	// +kubebuilder:default="2m"
-	// +kubebuilder:validation:Pattern=`^([0-9]+(\.[0-9]+)?(s|m|h))+$`
+	// rotationPollIntervalSeconds is the minimum time in seconds between secret
+	// rotation attempts. The driver skips provider calls if less than this interval
+	// has elapsed since the last successful rotation.
+	// Default is 120 (2 minutes).
+	// +default=120
 	// +optional
-	RotationPollInterval *metav1.Duration `json:"rotationPollInterval,omitempty"`
+	RotationPollIntervalSeconds *int32 `json:"rotationPollIntervalSeconds,omitempty"`
 }
 
 // SecretsStoreTokenRequest specifies a service account token audience configuration
@@ -440,17 +447,15 @@ type SecretsStoreSecretRotation struct {
 type SecretsStoreTokenRequest struct {
 	// audience is the intended audience of the service account token.
 	// An empty string means the issued token will use the kube-apiserver's default APIAudiences.
-	// Common values include "sts.amazonaws.com" for AWS, "api://AzureADTokenExchange" for Azure,
-	// and an empty string for GCP or Vault with default audiences.
+	// +kubebuilder:validation:MaxLength=253
 	// +required
-	Audience string `json:"audience"`
+	Audience *string `json:"audience,omitempty"`
 
 	// expirationSeconds is the requested duration of validity of the service account token.
 	// The token issuer may return a token with a different validity duration.
-	// Must be at least 600 seconds (10 minutes) and at most 2^32 seconds.
-	// When omitted, a default expiration is used.
+	// When omitted, the token expiration is determined by the kube-apiserver
+	// (defaults to 1 hour). Must be at least 600 seconds (10 minutes).
 	// +optional
-	// +kubebuilder:validation:Minimum=600
 	ExpirationSeconds *int64 `json:"expirationSeconds,omitempty"`
 }
 

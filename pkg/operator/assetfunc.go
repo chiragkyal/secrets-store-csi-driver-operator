@@ -75,13 +75,17 @@ func getCSIDriverConfig(ccd *opv1.ClusterCSIDriver) (bool, []storagev1.TokenRequ
 		return requiresRepublish, tokenRequests
 	}
 
-	if ss.SecretRotation != nil && ss.SecretRotation.Enabled != nil {
-		requiresRepublish = *ss.SecretRotation.Enabled
+	if ss.SecretRotation != nil && ss.SecretRotation.Policy == opv1.SecretRotationDisabled {
+		requiresRepublish = false
 	}
 
 	for _, tr := range ss.TokenRequests {
+		audience := ""
+		if tr.Audience != nil {
+			audience = *tr.Audience
+		}
 		tokenReq := storagev1.TokenRequest{
-			Audience: tr.Audience,
+			Audience: audience,
 		}
 		if tr.ExpirationSeconds != nil {
 			tokenReq.ExpirationSeconds = tr.ExpirationSeconds

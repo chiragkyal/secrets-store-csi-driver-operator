@@ -2,8 +2,8 @@ package operator
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
+	"time"
 
 	opv1 "github.com/openshift/api/operator/v1"
 	operatorlister "github.com/openshift/client-go/operator/listers/operator/v1"
@@ -93,12 +93,13 @@ func getRotationConfig(ccd *opv1.ClusterCSIDriver) (string, string) {
 		return enableRotation, pollInterval
 	}
 
-	if ss.SecretRotation.Enabled != nil {
-		enableRotation = strconv.FormatBool(*ss.SecretRotation.Enabled)
+	if ss.SecretRotation.Policy == opv1.SecretRotationDisabled {
+		enableRotation = "false"
 	}
 
-	if ss.SecretRotation.RotationPollInterval != nil {
-		pollInterval = ss.SecretRotation.RotationPollInterval.Duration.String()
+	if ss.SecretRotation.RotationPollIntervalSeconds != nil {
+		d := time.Duration(*ss.SecretRotation.RotationPollIntervalSeconds) * time.Second
+		pollInterval = d.String()
 	}
 
 	return enableRotation, pollInterval
