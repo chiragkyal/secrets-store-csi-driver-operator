@@ -402,14 +402,49 @@ type SecretsStoreCSIDriverConfigSpec struct {
 	// +optional
 	SecretRotation *SecretsStoreSecretRotation `json:"secretRotation,omitempty"`
 
-	// tokenRequests specifies service account token audiences that kubelet will provide
-	// to the CSI driver during NodePublishVolume calls. These tokens enable workload
-	// identity federation (WIF) with cloud providers such as AWS, Azure, and GCP.
-	// When omitted or empty, no service account tokens are provided to the CSI driver
-	// and workload identity federation is not available.
+	// tokenRequests controls service account token configuration for
+	// workload identity federation (WIF) with cloud providers.
+	// +optional
+	TokenRequests *SecretsStoreTokenRequests `json:"tokenRequests,omitempty"`
+}
+
+// TokenRequestsPolicy determines how the operator manages the tokenRequests
+// field on the storage.k8s.io CSIDriver object.
+// +kubebuilder:validation:Enum=Managed;Unmanaged
+type TokenRequestsPolicy string
+
+const (
+	// TokenRequestsManaged means the operator uses the audiences list
+	// as the sole source of truth for the CSIDriver.spec.tokenRequests field.
+	TokenRequestsManaged TokenRequestsPolicy = "Managed"
+
+	// TokenRequestsUnmanaged means the operator preserves any existing
+	// tokenRequests already configured on the CSIDriver object and does not
+	// overwrite them.
+	TokenRequestsUnmanaged TokenRequestsPolicy = "Unmanaged"
+)
+
+// SecretsStoreTokenRequests configures how service account tokens are
+// provided to the Secrets Store CSI driver for workload identity federation.
+type SecretsStoreTokenRequests struct {
+	// policy controls whether the operator manages tokenRequests on the
+	// CSIDriver object.
+	// When "Unmanaged" (default), existing tokenRequests on the CSIDriver
+	// are preserved and the audiences list below is ignored.
+	// When "Managed", the operator sets tokenRequests from the audiences
+	// list, replacing any previously configured values.
+	// +default="Unmanaged"
+	// +optional
+	Policy TokenRequestsPolicy `json:"policy,omitempty"`
+
+	// audiences specifies service account token audiences that kubelet will
+	// provide to the CSI driver during NodePublishVolume calls. These tokens
+	// enable workload identity federation (WIF) with cloud providers such as
+	// AWS, Azure, and GCP.
+	// Only honored when policy is "Managed".
 	// +optional
 	// +listType=atomic
-	TokenRequests []SecretsStoreTokenRequest `json:"tokenRequests,omitempty"`
+	Audiences []SecretsStoreTokenRequest `json:"audiences,omitempty"`
 }
 
 // SecretRotationPolicy determines whether automatic secret rotation is active

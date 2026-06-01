@@ -18,8 +18,9 @@ func TestDynamicAssetFunc_NamespaceReplacement(t *testing.T) {
 			},
 		},
 	}
-	lister := newFakeClusterCSIDriverLister(ccd)
-	af := dynamicAssetFunc("openshift-cluster-csi-drivers", lister)
+	ccdLister := newFakeClusterCSIDriverLister(ccd)
+	csiLister := newFakeCSIDriverLister(nil)
+	af := dynamicAssetFunc("openshift-cluster-csi-drivers", ccdLister, csiLister)
 
 	content, err := af("node_sa.yaml")
 	if err != nil {
@@ -45,8 +46,9 @@ func TestEnrichCSIDriverYAML_Defaults(t *testing.T) {
 			},
 		},
 	}
-	lister := newFakeClusterCSIDriverLister(ccd)
-	af := dynamicAssetFunc("test-ns", lister)
+	ccdLister := newFakeClusterCSIDriverLister(ccd)
+	csiLister := newFakeCSIDriverLister(nil)
+	af := dynamicAssetFunc("test-ns", ccdLister, csiLister)
 
 	content, err := af(csiDriverAssetFile)
 	if err != nil {
@@ -80,8 +82,9 @@ func TestEnrichCSIDriverYAML_RotationDisabled(t *testing.T) {
 			},
 		},
 	}
-	lister := newFakeClusterCSIDriverLister(ccd)
-	af := dynamicAssetFunc("test-ns", lister)
+	ccdLister := newFakeClusterCSIDriverLister(ccd)
+	csiLister := newFakeCSIDriverLister(nil)
+	af := dynamicAssetFunc("test-ns", ccdLister, csiLister)
 
 	content, err := af(csiDriverAssetFile)
 	if err != nil {
@@ -98,28 +101,32 @@ func TestEnrichCSIDriverYAML_RotationDisabled(t *testing.T) {
 	}
 }
 
-func TestEnrichCSIDriverYAML_WithTokenRequests(t *testing.T) {
+func TestEnrichCSIDriverYAML_ManagedWithAudiences(t *testing.T) {
 	ccd := &opv1.ClusterCSIDriver{
 		ObjectMeta: metav1.ObjectMeta{Name: providerName},
 		Spec: opv1.ClusterCSIDriverSpec{
 			DriverConfig: opv1.CSIDriverConfigSpec{
 				DriverType: opv1.SecretsStoreDriverType,
 				SecretsStore: &opv1.SecretsStoreCSIDriverConfigSpec{
-					TokenRequests: []opv1.SecretsStoreTokenRequest{
-						{
-							Audience:          strPtr("sts.amazonaws.com"),
-							ExpirationSeconds: int64Ptr(3600),
-						},
-						{
-							Audience: strPtr("api://AzureADTokenExchange"),
+					TokenRequests: &opv1.SecretsStoreTokenRequests{
+						Policy: opv1.TokenRequestsManaged,
+						Audiences: []opv1.SecretsStoreTokenRequest{
+							{
+								Audience:          strPtr("sts.amazonaws.com"),
+								ExpirationSeconds: int64Ptr(3600),
+							},
+							{
+								Audience: strPtr("api://AzureADTokenExchange"),
+							},
 						},
 					},
 				},
 			},
 		},
 	}
-	lister := newFakeClusterCSIDriverLister(ccd)
-	af := dynamicAssetFunc("test-ns", lister)
+	ccdLister := newFakeClusterCSIDriverLister(ccd)
+	csiLister := newFakeCSIDriverLister(nil)
+	af := dynamicAssetFunc("test-ns", ccdLister, csiLister)
 
 	content, err := af(csiDriverAssetFile)
 	if err != nil {
@@ -145,8 +152,133 @@ func TestEnrichCSIDriverYAML_WithTokenRequests(t *testing.T) {
 	if csiDriver.Spec.TokenRequests[1].Audience != "api://AzureADTokenExchange" {
 		t.Errorf("expected audience %q, got %q", "api://AzureADTokenExchange", csiDriver.Spec.TokenRequests[1].Audience)
 	}
-	if csiDriver.Spec.TokenRequests[1].ExpirationSeconds != nil {
-		t.Errorf("expected nil expirationSeconds, got %v", *csiDriver.Spec.TokenRequests[1].ExpirationSeconds)
+}
+
+func TestEnrichCSIDriverYAML_UnmanagedPreservesExisting(t *testing.T) {
+	existingCSIDriver := &storagev1.CSIDriver{
+		ObjectMeta: metav1.ObjectMeta{Name: providerName},
+		Spec: storagev1.CSIDriverSpec{
+			TokenRequests: []storagev1.TokenRequest{
+				{Audience: "api://AzureADTokenExchange"},
+			},
+		},
+	}
+
+	ccd := &opv1.ClusterCSIDriver{
+		ObjectMeta: metav1.ObjectMeta{Name: providerName},
+		Spec: opv1.ClusterCSIDriverSpec{
+			DriverConfig: opv1.CSIDriverConfigSpec{
+				DriverType: opv1.SecretsStoreDriverType,
+				SecretsStore: &opv1.SecretsStoreCSIDriverConfigSpec{
+					TokenRequests: &opv1.SecretsStoreTokenRequests{
+						Policy: opv1.TokenRequestsUnmanaged,
+					},
+				},
+			},
+		},
+	}
+	ccdLister := newFakeClusterCSIDriverLister(ccd)
+	csiLister := newFakeCSIDriverLister(existingCSIDriver)
+	af := dynamicAssetFunc("test-ns", ccdLister, csiLister)
+
+	content, err := af(csiDriverAssetFile)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	csiDriver := &storagev1.CSIDriver{}
+	if err := json.Unmarshal(content, csiDriver); err != nil {
+		t.Fatalf("failed to unmarshal CSIDriver: %v", err)
+	}
+
+	if len(csiDriver.Spec.TokenRequests) != 1 {
+		t.Fatalf("expected 1 tokenRequest preserved, got %d", len(csiDriver.Spec.TokenRequests))
+	}
+	if csiDriver.Spec.TokenRequests[0].Audience != "api://AzureADTokenExchange" {
+		t.Errorf("expected preserved audience %q, got %q", "api://AzureADTokenExchange", csiDriver.Spec.TokenRequests[0].Audience)
+	}
+}
+
+func TestEnrichCSIDriverYAML_NilTokenRequestsPreservesExisting(t *testing.T) {
+	existingCSIDriver := &storagev1.CSIDriver{
+		ObjectMeta: metav1.ObjectMeta{Name: providerName},
+		Spec: storagev1.CSIDriverSpec{
+			TokenRequests: []storagev1.TokenRequest{
+				{Audience: "api://AzureADTokenExchange"},
+			},
+		},
+	}
+
+	ccd := &opv1.ClusterCSIDriver{
+		ObjectMeta: metav1.ObjectMeta{Name: providerName},
+		Spec: opv1.ClusterCSIDriverSpec{
+			DriverConfig: opv1.CSIDriverConfigSpec{
+				DriverType:   opv1.SecretsStoreDriverType,
+				SecretsStore: &opv1.SecretsStoreCSIDriverConfigSpec{},
+			},
+		},
+	}
+	ccdLister := newFakeClusterCSIDriverLister(ccd)
+	csiLister := newFakeCSIDriverLister(existingCSIDriver)
+	af := dynamicAssetFunc("test-ns", ccdLister, csiLister)
+
+	content, err := af(csiDriverAssetFile)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	csiDriver := &storagev1.CSIDriver{}
+	if err := json.Unmarshal(content, csiDriver); err != nil {
+		t.Fatalf("failed to unmarshal CSIDriver: %v", err)
+	}
+
+	if len(csiDriver.Spec.TokenRequests) != 1 {
+		t.Fatalf("expected 1 tokenRequest preserved when tokenRequests is nil, got %d", len(csiDriver.Spec.TokenRequests))
+	}
+	if csiDriver.Spec.TokenRequests[0].Audience != "api://AzureADTokenExchange" {
+		t.Errorf("expected preserved audience %q, got %q", "api://AzureADTokenExchange", csiDriver.Spec.TokenRequests[0].Audience)
+	}
+}
+
+func TestEnrichCSIDriverYAML_ManagedEmptyAudiencesClearsTokenRequests(t *testing.T) {
+	existingCSIDriver := &storagev1.CSIDriver{
+		ObjectMeta: metav1.ObjectMeta{Name: providerName},
+		Spec: storagev1.CSIDriverSpec{
+			TokenRequests: []storagev1.TokenRequest{
+				{Audience: "api://AzureADTokenExchange"},
+			},
+		},
+	}
+
+	ccd := &opv1.ClusterCSIDriver{
+		ObjectMeta: metav1.ObjectMeta{Name: providerName},
+		Spec: opv1.ClusterCSIDriverSpec{
+			DriverConfig: opv1.CSIDriverConfigSpec{
+				DriverType: opv1.SecretsStoreDriverType,
+				SecretsStore: &opv1.SecretsStoreCSIDriverConfigSpec{
+					TokenRequests: &opv1.SecretsStoreTokenRequests{
+						Policy: opv1.TokenRequestsManaged,
+					},
+				},
+			},
+		},
+	}
+	ccdLister := newFakeClusterCSIDriverLister(ccd)
+	csiLister := newFakeCSIDriverLister(existingCSIDriver)
+	af := dynamicAssetFunc("test-ns", ccdLister, csiLister)
+
+	content, err := af(csiDriverAssetFile)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	csiDriver := &storagev1.CSIDriver{}
+	if err := json.Unmarshal(content, csiDriver); err != nil {
+		t.Fatalf("failed to unmarshal CSIDriver: %v", err)
+	}
+
+	if len(csiDriver.Spec.TokenRequests) != 0 {
+		t.Errorf("expected tokenRequests to be cleared when Managed with empty audiences, got %d", len(csiDriver.Spec.TokenRequests))
 	}
 }
 
@@ -154,6 +286,7 @@ func TestGetCSIDriverConfig(t *testing.T) {
 	tests := []struct {
 		name                   string
 		ccd                    *opv1.ClusterCSIDriver
+		existingCSIDriver      *storagev1.CSIDriver
 		expectedRepublish      bool
 		expectedTokenRequestsN int
 	}{
@@ -182,7 +315,7 @@ func TestGetCSIDriverConfig(t *testing.T) {
 			expectedTokenRequestsN: 0,
 		},
 		{
-			name: "rotation enabled with token requests",
+			name: "rotation enabled with managed token requests",
 			ccd: &opv1.ClusterCSIDriver{
 				Spec: opv1.ClusterCSIDriverSpec{
 					DriverConfig: opv1.CSIDriverConfigSpec{
@@ -191,8 +324,11 @@ func TestGetCSIDriverConfig(t *testing.T) {
 							SecretRotation: &opv1.SecretsStoreSecretRotation{
 								Policy: opv1.SecretRotationEnabled,
 							},
-							TokenRequests: []opv1.SecretsStoreTokenRequest{
-								{Audience: strPtr("sts.amazonaws.com")},
+							TokenRequests: &opv1.SecretsStoreTokenRequests{
+								Policy: opv1.TokenRequestsManaged,
+								Audiences: []opv1.SecretsStoreTokenRequest{
+									{Audience: strPtr("sts.amazonaws.com")},
+								},
 							},
 						},
 					},
@@ -218,11 +354,37 @@ func TestGetCSIDriverConfig(t *testing.T) {
 			expectedRepublish:      false,
 			expectedTokenRequestsN: 0,
 		},
+		{
+			name: "unmanaged preserves existing",
+			ccd: &opv1.ClusterCSIDriver{
+				Spec: opv1.ClusterCSIDriverSpec{
+					DriverConfig: opv1.CSIDriverConfigSpec{
+						DriverType: opv1.SecretsStoreDriverType,
+						SecretsStore: &opv1.SecretsStoreCSIDriverConfigSpec{
+							TokenRequests: &opv1.SecretsStoreTokenRequests{
+								Policy: opv1.TokenRequestsUnmanaged,
+							},
+						},
+					},
+				},
+			},
+			existingCSIDriver: &storagev1.CSIDriver{
+				ObjectMeta: metav1.ObjectMeta{Name: providerName},
+				Spec: storagev1.CSIDriverSpec{
+					TokenRequests: []storagev1.TokenRequest{
+						{Audience: "api://AzureADTokenExchange"},
+					},
+				},
+			},
+			expectedRepublish:      true,
+			expectedTokenRequestsN: 1,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			republish, tokenRequests := getCSIDriverConfig(tt.ccd)
+			csiLister := newFakeCSIDriverLister(tt.existingCSIDriver)
+			republish, tokenRequests := getCSIDriverConfig(tt.ccd, csiLister)
 			if republish != tt.expectedRepublish {
 				t.Errorf("expected requiresRepublish=%v, got %v", tt.expectedRepublish, republish)
 			}

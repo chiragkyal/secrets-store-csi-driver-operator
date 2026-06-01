@@ -8,6 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic"
+	kubeinformers "k8s.io/client-go/informers"
 	kubeclient "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
@@ -57,6 +58,12 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 	clusterCSIDriverLister := operatorInformers.Operator().V1().ClusterCSIDrivers().Lister()
 	clusterCSIDriverInformer := operatorInformers.Operator().V1().ClusterCSIDrivers().Informer()
 
+	// Create cluster-scoped kube informer for CSIDriver objects.
+	// The CSIDriver lister is used by the dynamic AssetFunc to read existing
+	// tokenRequests when tokenRequestsPolicy is "Unmanaged".
+	kubeInformers := kubeinformers.NewSharedInformerFactory(kubeClient, resync)
+	csiDriverLister := kubeInformers.Storage().V1().CSIDrivers().Lister()
+
 	// Create GenericOperatorclient. This is used by the library-go controllers created down below
 	gvr := opv1.SchemeGroupVersion.WithResource("clustercsidrivers")
 	gvk := opv1.SchemeGroupVersion.WithKind("ClusterCSIDriver")
@@ -80,7 +87,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 
 	// Dynamic AssetFunc that enriches csidriver.yaml with requiresRepublish and tokenRequests
 	// based on ClusterCSIDriver config, and replaces ${NAMESPACE} in all files.
-	assetFunc := dynamicAssetFunc(operatorNamespace, clusterCSIDriverLister)
+	assetFunc := dynamicAssetFunc(operatorNamespace, clusterCSIDriverLister, csiDriverLister)
 
 	csiControllerSet := csicontrollerset.NewCSIControllerSet(
 		operatorClient,
@@ -130,6 +137,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 
 	klog.Info("Starting the informers")
 	go kubeInformersForNamespaces.Start(ctx.Done())
+	go kubeInformers.Start(ctx.Done())
 	go dynamicInformers.Start(ctx.Done())
 	go configInformers.Start(ctx.Done())
 	go operatorInformers.Start(ctx.Done())
