@@ -160,6 +160,7 @@ type CSIDriverConfigSpec struct {
 	VSphere *VSphereCSIDriverConfigSpec `json:"vSphere,omitempty"`
 
 	// secretsStore is used to configure the Secrets Store CSI driver.
+	// +kubebuilder:validation:MinProperties=1
 	// +optional
 	SecretsStore *SecretsStoreCSIDriverConfigSpec `json:"secretsStore,omitempty"`
 }
@@ -399,11 +400,13 @@ type VSphereCSIDriverConfigSpec struct {
 type SecretsStoreCSIDriverConfigSpec struct {
 	// secretRotation controls automatic secret rotation behavior.
 	// When omitted, secret rotation is enabled with a default poll interval of 2 minutes.
+	// +kubebuilder:validation:MinProperties=1
 	// +optional
 	SecretRotation *SecretsStoreSecretRotation `json:"secretRotation,omitempty"`
 
 	// tokenRequests controls service account token configuration for
 	// workload identity federation (WIF) with cloud providers.
+	// +kubebuilder:validation:MinProperties=1
 	// +optional
 	TokenRequests *SecretsStoreTokenRequests `json:"tokenRequests,omitempty"`
 }
@@ -444,6 +447,7 @@ type SecretsStoreTokenRequests struct {
 	// Only honored when policy is "Managed".
 	// +optional
 	// +listType=atomic
+	// +kubebuilder:validation:MaxItems=10
 	Audiences []SecretsStoreTokenRequest `json:"audiences,omitempty"`
 }
 
@@ -482,6 +486,7 @@ type SecretsStoreSecretRotation struct {
 type SecretsStoreTokenRequest struct {
 	// audience is the intended audience of the service account token.
 	// An empty string means the issued token will use the kube-apiserver's default APIAudiences.
+	// +kubebuilder:validation:MinLength=0
 	// +kubebuilder:validation:MaxLength=253
 	// +required
 	Audience *string `json:"audience,omitempty"`
