@@ -73,22 +73,21 @@ func enrichCSIDriverYAML(
 // requiresRepublish value and tokenRequests list for the storage.k8s.io CSIDriver object.
 func getCSIDriverConfig(ccd *opv1.ClusterCSIDriver, csiDriverLister storagev1listers.CSIDriverLister) (bool, []storagev1.TokenRequest) {
 	requiresRepublish := true
-	var tokenRequests []storagev1.TokenRequest
 
 	if ccd.Spec.DriverConfig.DriverType != opv1.SecretsStoreDriverType {
-		return requiresRepublish, tokenRequests
+		return requiresRepublish, getExistingTokenRequests(csiDriverLister)
 	}
 
 	ss := ccd.Spec.DriverConfig.SecretsStore
 	if ss == nil {
-		return requiresRepublish, tokenRequests
+		return requiresRepublish, getExistingTokenRequests(csiDriverLister)
 	}
 
 	if ss.SecretRotation != nil && ss.SecretRotation.Policy == opv1.SecretRotationDisabled {
 		requiresRepublish = false
 	}
 
-	tokenRequests = resolveTokenRequests(ss.TokenRequests, csiDriverLister)
+	tokenRequests := resolveTokenRequests(ss.TokenRequests, csiDriverLister)
 
 	return requiresRepublish, tokenRequests
 }

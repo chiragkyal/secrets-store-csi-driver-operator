@@ -291,7 +291,27 @@ func TestGetCSIDriverConfig(t *testing.T) {
 		expectedTokenRequestsN int
 	}{
 		{
-			name: "non-SecretsStore driver type",
+			name: "non-SecretsStore driver type preserves existing tokenRequests",
+			ccd: &opv1.ClusterCSIDriver{
+				Spec: opv1.ClusterCSIDriverSpec{
+					DriverConfig: opv1.CSIDriverConfigSpec{
+						DriverType: opv1.AWSDriverType,
+					},
+				},
+			},
+			existingCSIDriver: &storagev1.CSIDriver{
+				ObjectMeta: metav1.ObjectMeta{Name: providerName},
+				Spec: storagev1.CSIDriverSpec{
+					TokenRequests: []storagev1.TokenRequest{
+						{Audience: "api://AzureADTokenExchange"},
+					},
+				},
+			},
+			expectedRepublish:      true,
+			expectedTokenRequestsN: 1,
+		},
+		{
+			name: "non-SecretsStore driver type with no existing CSIDriver",
 			ccd: &opv1.ClusterCSIDriver{
 				Spec: opv1.ClusterCSIDriverSpec{
 					DriverConfig: opv1.CSIDriverConfigSpec{
@@ -303,7 +323,27 @@ func TestGetCSIDriverConfig(t *testing.T) {
 			expectedTokenRequestsN: 0,
 		},
 		{
-			name: "nil secretsStore config",
+			name: "nil secretsStore config preserves existing tokenRequests",
+			ccd: &opv1.ClusterCSIDriver{
+				Spec: opv1.ClusterCSIDriverSpec{
+					DriverConfig: opv1.CSIDriverConfigSpec{
+						DriverType: opv1.SecretsStoreDriverType,
+					},
+				},
+			},
+			existingCSIDriver: &storagev1.CSIDriver{
+				ObjectMeta: metav1.ObjectMeta{Name: providerName},
+				Spec: storagev1.CSIDriverSpec{
+					TokenRequests: []storagev1.TokenRequest{
+						{Audience: "api://AzureADTokenExchange"},
+					},
+				},
+			},
+			expectedRepublish:      true,
+			expectedTokenRequestsN: 1,
+		},
+		{
+			name: "nil secretsStore config with no existing CSIDriver",
 			ccd: &opv1.ClusterCSIDriver{
 				Spec: opv1.ClusterCSIDriverSpec{
 					DriverConfig: opv1.CSIDriverConfigSpec{

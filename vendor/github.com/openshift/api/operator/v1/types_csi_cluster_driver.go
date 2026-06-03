@@ -160,7 +160,6 @@ type CSIDriverConfigSpec struct {
 	VSphere *VSphereCSIDriverConfigSpec `json:"vSphere,omitempty"`
 
 	// secretsStore is used to configure the Secrets Store CSI driver.
-	// +kubebuilder:validation:MinProperties=1
 	// +optional
 	SecretsStore *SecretsStoreCSIDriverConfigSpec `json:"secretsStore,omitempty"`
 }
@@ -397,16 +396,16 @@ type VSphereCSIDriverConfigSpec struct {
 }
 
 // SecretsStoreCSIDriverConfigSpec defines properties that can be configured for the Secrets Store CSI driver.
+// +kubebuilder:validation:MinProperties=1
+// +kubebuilder:validation:XValidation:rule="!has(oldSelf.tokenRequests) || oldSelf.tokenRequests.policy != 'Managed' || (has(self.tokenRequests) && self.tokenRequests.policy == 'Managed')",message="tokenRequests cannot be removed when policy is Managed"
 type SecretsStoreCSIDriverConfigSpec struct {
 	// secretRotation controls automatic secret rotation behavior.
 	// When omitted, secret rotation is enabled with a default poll interval of 2 minutes.
-	// +kubebuilder:validation:MinProperties=1
 	// +optional
 	SecretRotation *SecretsStoreSecretRotation `json:"secretRotation,omitempty"`
 
 	// tokenRequests controls service account token configuration for
 	// workload identity federation (WIF) with cloud providers.
-	// +kubebuilder:validation:MinProperties=1
 	// +optional
 	TokenRequests *SecretsStoreTokenRequests `json:"tokenRequests,omitempty"`
 }
@@ -429,6 +428,7 @@ const (
 
 // SecretsStoreTokenRequests configures how service account tokens are
 // provided to the Secrets Store CSI driver for workload identity federation.
+// +kubebuilder:validation:MinProperties=1
 type SecretsStoreTokenRequests struct {
 	// policy controls whether the operator manages tokenRequests on the
 	// CSIDriver object.
@@ -436,7 +436,9 @@ type SecretsStoreTokenRequests struct {
 	// are preserved and the audiences list below is ignored.
 	// When "Managed", the operator sets tokenRequests from the audiences
 	// list, replacing any previously configured values.
+	// Once set to "Managed", policy cannot be reverted back to "Unmanaged".
 	// +default="Unmanaged"
+	// +kubebuilder:validation:XValidation:rule="oldSelf != 'Managed' || self == 'Managed'",message="policy cannot be changed from Managed back to Unmanaged"
 	// +optional
 	Policy TokenRequestsPolicy `json:"policy,omitempty"`
 
@@ -463,6 +465,7 @@ const (
 
 // SecretsStoreSecretRotation configures the automatic secret rotation behavior
 // for the Secrets Store CSI driver.
+// +kubebuilder:validation:MinProperties=1
 type SecretsStoreSecretRotation struct {
 	// policy controls whether automatic secret rotation is active.
 	// When "Enabled", the CSIDriver object sets requiresRepublish and the driver
