@@ -87,14 +87,14 @@ func TestGetRotationConfig(t *testing.T) {
 			expectedPollInterval: "2m",
 		},
 		{
-			name: "rotation disabled",
+			name: "rotation disabled (type None)",
 			ccd: &opv1.ClusterCSIDriver{
 				Spec: opv1.ClusterCSIDriverSpec{
 					DriverConfig: opv1.CSIDriverConfigSpec{
 						DriverType: opv1.SecretsStoreDriverType,
 						SecretsStore: &opv1.SecretsStoreCSIDriverConfigSpec{
 							SecretRotation: &opv1.SecretsStoreSecretRotation{
-								Policy: opv1.SecretRotationDisabled,
+								Type: opv1.SecretRotationNone,
 							},
 						},
 					},
@@ -104,14 +104,15 @@ func TestGetRotationConfig(t *testing.T) {
 			expectedPollInterval: "2m",
 		},
 		{
-			name: "rotation explicitly enabled",
+			name: "rotation Custom with default interval",
 			ccd: &opv1.ClusterCSIDriver{
 				Spec: opv1.ClusterCSIDriverSpec{
 					DriverConfig: opv1.CSIDriverConfigSpec{
 						DriverType: opv1.SecretsStoreDriverType,
 						SecretsStore: &opv1.SecretsStoreCSIDriverConfigSpec{
 							SecretRotation: &opv1.SecretsStoreSecretRotation{
-								Policy: opv1.SecretRotationEnabled,
+								Type:   opv1.SecretRotationCustom,
+								Custom: &opv1.CustomSecretRotation{},
 							},
 						},
 					},
@@ -128,7 +129,10 @@ func TestGetRotationConfig(t *testing.T) {
 						DriverType: opv1.SecretsStoreDriverType,
 						SecretsStore: &opv1.SecretsStoreCSIDriverConfigSpec{
 							SecretRotation: &opv1.SecretsStoreSecretRotation{
-								RotationPollIntervalSeconds: int32Ptr(300),
+								Type: opv1.SecretRotationCustom,
+								Custom: &opv1.CustomSecretRotation{
+									RotationPollIntervalSeconds: int32Ptr(300),
+								},
 							},
 						},
 					},
@@ -136,24 +140,6 @@ func TestGetRotationConfig(t *testing.T) {
 			},
 			expectedEnable:       "true",
 			expectedPollInterval: "5m0s",
-		},
-		{
-			name: "rotation disabled with custom interval",
-			ccd: &opv1.ClusterCSIDriver{
-				Spec: opv1.ClusterCSIDriverSpec{
-					DriverConfig: opv1.CSIDriverConfigSpec{
-						DriverType: opv1.SecretsStoreDriverType,
-						SecretsStore: &opv1.SecretsStoreCSIDriverConfigSpec{
-							SecretRotation: &opv1.SecretsStoreSecretRotation{
-								Policy:                      opv1.SecretRotationDisabled,
-								RotationPollIntervalSeconds: int32Ptr(600),
-							},
-						},
-					},
-				},
-			},
-			expectedEnable:       "false",
-			expectedPollInterval: "10m0s",
 		},
 	}
 
@@ -193,7 +179,7 @@ func TestWithSecretRotationDaemonSetHook_ReplacesPlaceholders(t *testing.T) {
 			},
 		},
 		{
-			name: "rotation disabled with custom interval",
+			name: "rotation None (disabled)",
 			ccd: &opv1.ClusterCSIDriver{
 				ObjectMeta: metav1.ObjectMeta{Name: providerName},
 				Spec: opv1.ClusterCSIDriverSpec{
@@ -201,8 +187,7 @@ func TestWithSecretRotationDaemonSetHook_ReplacesPlaceholders(t *testing.T) {
 						DriverType: opv1.SecretsStoreDriverType,
 						SecretsStore: &opv1.SecretsStoreCSIDriverConfigSpec{
 							SecretRotation: &opv1.SecretsStoreSecretRotation{
-								Policy:                      opv1.SecretRotationDisabled,
-								RotationPollIntervalSeconds: int32Ptr(300),
+								Type: opv1.SecretRotationNone,
 							},
 						},
 					},
@@ -211,6 +196,30 @@ func TestWithSecretRotationDaemonSetHook_ReplacesPlaceholders(t *testing.T) {
 			expectedArgs: []string{
 				"--endpoint=$(CSI_ENDPOINT)",
 				"--enable-secret-rotation=false",
+				"--rotation-poll-interval=2m",
+			},
+		},
+		{
+			name: "rotation Custom with custom interval",
+			ccd: &opv1.ClusterCSIDriver{
+				ObjectMeta: metav1.ObjectMeta{Name: providerName},
+				Spec: opv1.ClusterCSIDriverSpec{
+					DriverConfig: opv1.CSIDriverConfigSpec{
+						DriverType: opv1.SecretsStoreDriverType,
+						SecretsStore: &opv1.SecretsStoreCSIDriverConfigSpec{
+							SecretRotation: &opv1.SecretsStoreSecretRotation{
+								Type: opv1.SecretRotationCustom,
+								Custom: &opv1.CustomSecretRotation{
+									RotationPollIntervalSeconds: int32Ptr(300),
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedArgs: []string{
+				"--endpoint=$(CSI_ENDPOINT)",
+				"--enable-secret-rotation=true",
 				"--rotation-poll-interval=5m0s",
 			},
 		},
