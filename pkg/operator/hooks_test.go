@@ -62,7 +62,7 @@ func TestGetRotationConfig(t *testing.T) {
 			expectedPollInterval: "2m",
 		},
 		{
-			name: "defaults when driverConfig.secretsStore is nil",
+			name: "defaults when secretsStore is zero value",
 			ccd: &opv1.ClusterCSIDriver{
 				Spec: opv1.ClusterCSIDriverSpec{
 					DriverConfig: opv1.CSIDriverConfigSpec{
@@ -74,12 +74,12 @@ func TestGetRotationConfig(t *testing.T) {
 			expectedPollInterval: "2m",
 		},
 		{
-			name: "defaults when secretRotation is nil",
+			name: "defaults when secretRotation is zero value",
 			ccd: &opv1.ClusterCSIDriver{
 				Spec: opv1.ClusterCSIDriverSpec{
 					DriverConfig: opv1.CSIDriverConfigSpec{
 						DriverType:   opv1.SecretsStoreDriverType,
-						SecretsStore: &opv1.SecretsStoreCSIDriverConfigSpec{},
+						SecretsStore: opv1.SecretsStoreCSIDriverConfigSpec{},
 					},
 				},
 			},
@@ -92,8 +92,8 @@ func TestGetRotationConfig(t *testing.T) {
 				Spec: opv1.ClusterCSIDriverSpec{
 					DriverConfig: opv1.CSIDriverConfigSpec{
 						DriverType: opv1.SecretsStoreDriverType,
-						SecretsStore: &opv1.SecretsStoreCSIDriverConfigSpec{
-							SecretRotation: &opv1.SecretsStoreSecretRotation{
+						SecretsStore: opv1.SecretsStoreCSIDriverConfigSpec{
+							SecretRotation: opv1.SecretsStoreSecretRotation{
 								Type: opv1.SecretRotationNone,
 							},
 						},
@@ -109,10 +109,10 @@ func TestGetRotationConfig(t *testing.T) {
 				Spec: opv1.ClusterCSIDriverSpec{
 					DriverConfig: opv1.CSIDriverConfigSpec{
 						DriverType: opv1.SecretsStoreDriverType,
-						SecretsStore: &opv1.SecretsStoreCSIDriverConfigSpec{
-							SecretRotation: &opv1.SecretsStoreSecretRotation{
+						SecretsStore: opv1.SecretsStoreCSIDriverConfigSpec{
+							SecretRotation: opv1.SecretsStoreSecretRotation{
 								Type:   opv1.SecretRotationCustom,
-								Custom: &opv1.CustomSecretRotation{},
+								Custom: opv1.CustomSecretRotation{},
 							},
 						},
 					},
@@ -127,10 +127,10 @@ func TestGetRotationConfig(t *testing.T) {
 				Spec: opv1.ClusterCSIDriverSpec{
 					DriverConfig: opv1.CSIDriverConfigSpec{
 						DriverType: opv1.SecretsStoreDriverType,
-						SecretsStore: &opv1.SecretsStoreCSIDriverConfigSpec{
-							SecretRotation: &opv1.SecretsStoreSecretRotation{
+						SecretsStore: opv1.SecretsStoreCSIDriverConfigSpec{
+							SecretRotation: opv1.SecretsStoreSecretRotation{
 								Type: opv1.SecretRotationCustom,
-								Custom: &opv1.CustomSecretRotation{
+								Custom: opv1.CustomSecretRotation{
 									RotationPollIntervalSeconds: int32Ptr(300),
 								},
 							},
@@ -185,8 +185,8 @@ func TestWithSecretRotationDaemonSetHook_ReplacesPlaceholders(t *testing.T) {
 				Spec: opv1.ClusterCSIDriverSpec{
 					DriverConfig: opv1.CSIDriverConfigSpec{
 						DriverType: opv1.SecretsStoreDriverType,
-						SecretsStore: &opv1.SecretsStoreCSIDriverConfigSpec{
-							SecretRotation: &opv1.SecretsStoreSecretRotation{
+						SecretsStore: opv1.SecretsStoreCSIDriverConfigSpec{
+							SecretRotation: opv1.SecretsStoreSecretRotation{
 								Type: opv1.SecretRotationNone,
 							},
 						},
@@ -206,10 +206,10 @@ func TestWithSecretRotationDaemonSetHook_ReplacesPlaceholders(t *testing.T) {
 				Spec: opv1.ClusterCSIDriverSpec{
 					DriverConfig: opv1.CSIDriverConfigSpec{
 						DriverType: opv1.SecretsStoreDriverType,
-						SecretsStore: &opv1.SecretsStoreCSIDriverConfigSpec{
-							SecretRotation: &opv1.SecretsStoreSecretRotation{
+						SecretsStore: opv1.SecretsStoreCSIDriverConfigSpec{
+							SecretRotation: opv1.SecretsStoreSecretRotation{
 								Type: opv1.SecretRotationCustom,
-								Custom: &opv1.CustomSecretRotation{
+								Custom: opv1.CustomSecretRotation{
 									RotationPollIntervalSeconds: int32Ptr(300),
 								},
 							},

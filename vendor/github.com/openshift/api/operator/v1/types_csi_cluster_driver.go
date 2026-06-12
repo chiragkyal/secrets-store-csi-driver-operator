@@ -162,7 +162,7 @@ type CSIDriverConfigSpec struct {
 
 	// secretsStore is used to configure the Secrets Store CSI driver.
 	// +optional
-	SecretsStore *SecretsStoreCSIDriverConfigSpec `json:"secretsStore,omitempty"`
+	SecretsStore SecretsStoreCSIDriverConfigSpec `json:"secretsStore,omitzero"`
 }
 
 // AWSCSIDriverConfigSpec defines properties that can be configured for the AWS CSI driver.
@@ -403,12 +403,14 @@ type SecretsStoreCSIDriverConfigSpec struct {
 	// secretRotation controls automatic secret rotation behavior.
 	// When omitted, secret rotation is enabled with a default poll interval of 2 minutes.
 	// +optional
-	SecretRotation *SecretsStoreSecretRotation `json:"secretRotation,omitempty"`
+	SecretRotation SecretsStoreSecretRotation `json:"secretRotation,omitzero"`
 
 	// tokenRequests controls service account token configuration for
 	// workload identity federation (WIF) with cloud providers.
+	// When omitted, the operator preserves any existing tokenRequests
+	// already configured on the CSIDriver object without modification.
 	// +optional
-	TokenRequests *SecretsStoreTokenRequests `json:"tokenRequests,omitempty"`
+	TokenRequests SecretsStoreTokenRequests `json:"tokenRequests,omitzero"`
 }
 
 // TokenRequestsType determines how the operator manages the tokenRequests
@@ -441,11 +443,18 @@ type SecretsStoreTokenRequests struct {
 
 // ManagedTokenRequests holds the configuration for operator-managed
 // service account token requests.
+// +kubebuilder:validation:MinProperties=1
 type ManagedTokenRequests struct {
+	// audiences specifies service account token audiences that kubelet will
+	// provide to the CSI driver during NodePublishVolume calls. These tokens
+	// enable workload identity federation (WIF) with cloud providers such as
+	// AWS, Azure, and GCP.
+	// When empty, the operator clears all tokenRequests from the CSIDriver object.
 	// +optional
-	// +listType=atomic
+	// +listType=map
+	// +listMapKey=audience
 	// +kubebuilder:validation:MaxItems=10
-	Audiences []SecretsStoreTokenRequest `json:"audiences,omitempty"`
+	Audiences *[]SecretsStoreTokenRequest `json:"audiences,omitempty"`
 }
 
 // SecretRotationType determines the secret rotation behavior for the
@@ -467,12 +476,20 @@ type SecretsStoreSecretRotation struct {
 	Type SecretRotationType `json:"type,omitempty"`
 
 	// +optional
-	Custom *CustomSecretRotation `json:"custom,omitempty"`
+	Custom CustomSecretRotation `json:"custom,omitzero"`
 }
 
 // CustomSecretRotation holds configuration for custom secret rotation behavior.
+// +kubebuilder:validation:MinProperties=1
 type CustomSecretRotation struct {
-	// +default=120
+	// rotationPollIntervalSeconds is the minimum time in seconds between secret
+	// rotation attempts. The driver skips provider calls if less than this interval
+	// has elapsed since the last successful rotation.
+	// Must be at least 1 second and no more than 31560000 seconds (~1 year).
+	// When omitted, this means no opinion and the platform is left to choose a
+	// reasonable default, which is subject to change over time.
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=31560000
 	// +optional
 	RotationPollIntervalSeconds *int32 `json:"rotationPollIntervalSeconds,omitempty"`
 }
@@ -485,6 +502,12 @@ type SecretsStoreTokenRequest struct {
 	// +required
 	Audience *string `json:"audience,omitempty"`
 
+	// expirationSeconds is the requested duration of validity of the service account token.
+	// The token issuer may return a token with a different validity duration.
+	// When omitted, the token expiration is determined by the kube-apiserver.
+	// Must be at least 600 seconds (10 minutes) and no more than 315360000 seconds (~10 years).
+	// +kubebuilder:validation:Minimum=600
+	// +kubebuilder:validation:Maximum=315360000
 	// +optional
 	ExpirationSeconds int64 `json:"expirationSeconds,omitempty"`
 }

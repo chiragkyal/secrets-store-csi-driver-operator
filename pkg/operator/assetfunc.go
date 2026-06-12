@@ -79,34 +79,31 @@ func getCSIDriverConfig(ccd *opv1.ClusterCSIDriver, csiDriverLister storagev1lis
 	}
 
 	ss := ccd.Spec.DriverConfig.SecretsStore
-	if ss == nil {
-		return requiresRepublish, getExistingTokenRequests(csiDriverLister)
-	}
 
-	if ss.SecretRotation != nil && ss.SecretRotation.Type == opv1.SecretRotationNone {
+	if ss.SecretRotation.Type == opv1.SecretRotationNone {
 		requiresRepublish = false
 	}
 
-	tokenRequests := resolveTokenRequests(ss.TokenRequests, csiDriverLister)
+	tokenRequests := resolveTokenRequests(&ss.TokenRequests, csiDriverLister)
 
 	return requiresRepublish, tokenRequests
 }
 
 // resolveTokenRequests determines the tokenRequests to set on the CSIDriver based on
-// the TokenRequestsType. When Unmanaged (or nil), it preserves the existing
+// the TokenRequestsType. When Unmanaged (or unset), it preserves the existing
 // tokenRequests from the live CSIDriver object. When Managed, it uses the audiences
 // from ClusterCSIDriver.
 func resolveTokenRequests(tr *opv1.SecretsStoreTokenRequests, csiDriverLister storagev1listers.CSIDriverLister) []storagev1.TokenRequest {
-	if tr == nil || tr.Type == "" || tr.Type == opv1.TokenRequestsUnmanaged {
+	if tr.Type == "" || tr.Type == opv1.TokenRequestsUnmanaged {
 		return getExistingTokenRequests(csiDriverLister)
 	}
 
-	if tr.Managed == nil {
+	if tr.Managed == nil || tr.Managed.Audiences == nil {
 		return nil
 	}
 
 	var tokenRequests []storagev1.TokenRequest
-	for _, audience := range tr.Managed.Audiences {
+	for _, audience := range *tr.Managed.Audiences {
 		a := ""
 		if audience.Audience != nil {
 			a = *audience.Audience
