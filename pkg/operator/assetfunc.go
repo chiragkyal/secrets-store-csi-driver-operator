@@ -98,7 +98,7 @@ func resolveTokenRequests(tr *opv1.SecretsStoreTokenRequests, csiDriverLister st
 		return getExistingTokenRequests(csiDriverLister)
 	}
 
-	if tr.Managed == nil || tr.Managed.Audiences == nil {
+	if tr.Managed.Audiences == nil {
 		return nil
 	}
 

@@ -110,7 +110,7 @@ func TestEnrichCSIDriverYAML_ManagedWithAudiences(t *testing.T) {
 				SecretsStore: opv1.SecretsStoreCSIDriverConfigSpec{
 					TokenRequests: opv1.SecretsStoreTokenRequests{
 						Type: opv1.TokenRequestsManaged,
-						Managed: &opv1.ManagedTokenRequests{
+						Managed: opv1.ManagedTokenRequests{
 							Audiences: &[]opv1.SecretsStoreTokenRequest{
 								{
 									Audience:          strPtr("sts.amazonaws.com"),
@@ -260,7 +260,7 @@ func TestEnrichCSIDriverYAML_ManagedEmptyAudiencesClearsTokenRequests(t *testing
 				SecretsStore: opv1.SecretsStoreCSIDriverConfigSpec{
 					TokenRequests: opv1.SecretsStoreTokenRequests{
 						Type: opv1.TokenRequestsManaged,
-						Managed: &opv1.ManagedTokenRequests{
+						Managed: opv1.ManagedTokenRequests{
 							Audiences: &[]opv1.SecretsStoreTokenRequest{},
 						},
 					},
@@ -369,12 +369,12 @@ func TestGetCSIDriverConfig(t *testing.T) {
 							SecretRotation: opv1.SecretsStoreSecretRotation{
 								Type: opv1.SecretRotationCustom,
 								Custom: opv1.CustomSecretRotation{
-									RotationPollIntervalSeconds: int32Ptr(300),
+									RotationPollIntervalSeconds: 300,
 								},
 							},
 							TokenRequests: opv1.SecretsStoreTokenRequests{
 								Type: opv1.TokenRequestsManaged,
-								Managed: &opv1.ManagedTokenRequests{
+								Managed: opv1.ManagedTokenRequests{
 									Audiences: &[]opv1.SecretsStoreTokenRequest{
 										{Audience: strPtr("sts.amazonaws.com")},
 									},
@@ -438,7 +438,7 @@ func TestGetCSIDriverConfig(t *testing.T) {
 						SecretsStore: opv1.SecretsStoreCSIDriverConfigSpec{
 							TokenRequests: opv1.SecretsStoreTokenRequests{
 								Type: opv1.TokenRequestsManaged,
-								Managed: &opv1.ManagedTokenRequests{
+								Managed: opv1.ManagedTokenRequests{
 									Audiences: &[]opv1.SecretsStoreTokenRequest{},
 								},
 							},
