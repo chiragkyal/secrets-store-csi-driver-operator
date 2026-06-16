@@ -112,7 +112,7 @@ func resolveTokenRequests(tr *opv1.SecretsStoreTokenRequests, csiDriverLister st
 			Audience: a,
 		}
 		if audience.ExpirationSeconds != 0 {
-			exp := audience.ExpirationSeconds
+			exp := int64(audience.ExpirationSeconds)
 			tokenReq.ExpirationSeconds = &exp
 		}
 		tokenRequests = append(tokenRequests, tokenReq)

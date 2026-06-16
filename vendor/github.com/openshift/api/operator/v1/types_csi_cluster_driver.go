@@ -398,7 +398,6 @@ type VSphereCSIDriverConfigSpec struct {
 
 // SecretsStoreCSIDriverConfigSpec defines properties that can be configured for the Secrets Store CSI driver.
 // +kubebuilder:validation:MinProperties=1
-// +kubebuilder:validation:XValidation:rule="!has(oldSelf.tokenRequests) || oldSelf.tokenRequests.type != 'Managed' || (has(self.tokenRequests) && self.tokenRequests.type == 'Managed')",message="tokenRequests cannot be removed when type is Managed"
 type SecretsStoreCSIDriverConfigSpec struct {
 	// secretRotation controls automatic secret rotation behavior.
 	// When omitted, secret rotation is enabled with a default poll interval of 2 minutes.
@@ -510,7 +509,7 @@ type SecretsStoreTokenRequest struct {
 	// +kubebuilder:validation:Minimum=600
 	// +kubebuilder:validation:Maximum=315360000
 	// +optional
-	ExpirationSeconds int64 `json:"expirationSeconds,omitempty"`
+	ExpirationSeconds int32 `json:"expirationSeconds,omitempty"`
 }
 
 // ClusterCSIDriverStatus is the observed status of CSI driver operator
