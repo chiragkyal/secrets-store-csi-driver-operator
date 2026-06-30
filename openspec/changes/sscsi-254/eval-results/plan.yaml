@@ -1,0 +1,16 @@
+artifact_id: plan
+artifact_path: openspec/changes/sscsi-254/plan.md
+stage: plan
+stage_eval_file: evals/plan_eval.yaml
+scored_at: "2026-06-30T13:40:00Z"
+eval_cases_total: 0
+eval_cases_passed: 0
+eval_cases_failed: 0
+overall_score: null
+note: >-
+  No eval cases defined in plan_eval.yaml (stub baseline).
+  Self-check: all §0–§8 sections complete. Every FR maps to ≥1 phase.
+  All P1 user stories covered. Greenfield reality check in §1. No false
+  "already exists" claims. Target files from repo-assessment only.
+  Open questions have owners and default assumptions.
+refinement_applied: false
