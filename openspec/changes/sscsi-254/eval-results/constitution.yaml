@@ -1,0 +1,15 @@
+artifact_id: constitution
+artifact_path: openspec/changes/sscsi-254/constitution.md
+stage: constitution
+stage_eval_file: evals/constitution_eval.yaml
+scored_at: "2026-06-30T13:25:00Z"
+eval_cases_total: 0
+eval_cases_passed: 0
+eval_cases_failed: 0
+overall_score: null
+note: >-
+  No eval cases defined in constitution_eval.yaml (stub baseline).
+  Self-check: 7 principles each with citable repo evidence. AgentRoutingMode: PROVIDED
+  (agents.md installed). No implementation details, no file inventories. All
+  SSCSI-254 routing rules and constraints documented.
+refinement_applied: false
