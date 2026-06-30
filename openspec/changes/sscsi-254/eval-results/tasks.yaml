@@ -1,0 +1,17 @@
+artifact_id: tasks
+artifact_path: openspec/changes/sscsi-254/tasks.md
+stage: tasks
+stage_eval_file: evals/tasks_eval.yaml
+scored_at: "2026-06-30T13:55:00Z"
+eval_cases_total: 0
+eval_cases_passed: 0
+eval_cases_failed: 0
+overall_score: null
+note: >-
+  No eval cases defined in tasks_eval.yaml (stub baseline).
+  Self-check: 10 tasks in §3 manifest, 10 matching §4 payload subsections.
+  AgentRoutingMode: PROVIDED matches constitution. All agent IDs from agents.md.
+  §2 linear order is valid topological sort of §1 DAG. §5 complete.
+  Every FR and SC covered in §0 checklist. Target files from repo-assessment only
+  (PARTIAL marked where appropriate).
+refinement_applied: false
