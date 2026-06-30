@@ -1,0 +1,5 @@
+jira_key: SSCSI-254
+target_repo: https://github.com/openshift/secrets-store-csi-driver-operator
+use_working_folder_as_repo: true
+created_at: "2026-06-30"
+ep_url: https://github.com/openshift/enhancements/pull/2012
