@@ -1,0 +1,15 @@
+artifact_id: repo-assessment
+artifact_path: openspec/changes/sscsi-254/repo-assessment.md
+stage: repo-assessment
+stage_eval_file: evals/repo-assessment_eval.yaml
+scored_at: "2026-06-30T13:15:00Z"
+eval_cases_total: 0
+eval_cases_passed: 0
+eval_cases_failed: 0
+overall_score: null
+note: >-
+  No eval cases defined in repo-assessment_eval.yaml (stub baseline).
+  Evaluation based on rubric self-check against agents.md repo-assessment hints.
+  All §0–§12 sections completed. Branch-specific absences documented in §11.1.
+  SSCSI-254 feature scope applied throughout.
+refinement_applied: false
