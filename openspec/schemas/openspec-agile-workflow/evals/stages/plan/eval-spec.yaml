@@ -1,0 +1,43 @@
+# Eval case schema — plan stage
+
+stage: plan
+template: templates/plan.md
+artifact: plan.md
+stage_eval_file: evals/plan_eval.yaml
+
+consolidated_schema:
+  stage: plan
+  template: templates/plan.md
+  artifact: plan.md
+  version: 1
+  eval_count: <N>
+  evals: [<case>, ...]
+
+required_fields:
+  - id
+  - round
+  - stage
+  - source_issue_ids
+  - input_refs
+  - assertions
+  - scoring
+  - pass_threshold
+
+assertion_types:
+  - must_cover_fr_ids
+  - must_include_verification_matrix
+  - must_cite_repo_assessment
+  - must_address_risk_from_ep
+  - must_phase_structure
+
+example:
+  id: eval-r001-plan-001
+  round: 1
+  stage: plan
+  source_issue_ids: [ISSUE-001]
+  assertions:
+    must_include_verification_matrix: true
+    must_cite_repo_assessment: true
+  scoring:
+    method: weighted_checklist
+    pass_threshold: 80

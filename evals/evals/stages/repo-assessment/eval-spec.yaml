@@ -1,0 +1,50 @@
+# Eval case schema — repo-assessment stage
+
+stage: repo-assessment
+template: evals/refined-templates/repo-assessment.md
+artifact: repo-assessment.md
+stage_eval_file: evals/baseline/evals/repo-assessment/repo-assessment_eval.yaml
+
+# All cases for this stage live in ONE file: repo-assessment_eval.yaml
+consolidated_schema:
+  stage: repo-assessment
+  template: evals/refined-templates/repo-assessment.md
+  artifact: repo-assessment.md
+  version: 1
+  eval_count: <N>
+  evals: [<case>, ...]
+
+required_fields:
+  - id
+  - round
+  - stage
+  - source_issue_ids
+  - input_refs
+  - assertions
+  - scoring
+  - pass_threshold
+
+assertion_types:
+  - must_mention
+  - must_identify_package
+  - must_cite_pre_feature_gap
+  - must_cross_reference_spec
+  - must_not_claim
+
+example:
+  id: eval-r001-repo-001
+  round: 1
+  stage: repo-assessment
+  source_issue_ids: [ISSUE-001]
+  input_refs:
+    - evals/inputs/03-original-repo.md
+    - evals/inputs/01-ep-ard.md
+  prompt: |
+    Given approved specs and pinned pre-feature repo, produce repo-assessment.md.
+  assertions:
+    must_mention:
+      - target controller package path
+    must_cite_pre_feature_gap: true
+  scoring:
+    method: weighted_checklist
+    pass_threshold: 80

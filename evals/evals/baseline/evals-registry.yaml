@@ -1,0 +1,24 @@
+version: 0
+templates_dir: evals/refined-templates/
+rounds: []
+evals: {}
+stage_eval_files:
+  repo-assessment:
+    path: evals/baseline/evals/repo-assessment/repo-assessment_eval.yaml
+    template: evals/refined-templates/repo-assessment.md
+  constitution:
+    path: evals/baseline/evals/constitution/constitution_eval.yaml
+    template: evals/refined-templates/constitution.md
+  plan:
+    path: evals/baseline/evals/plan/plan_eval.yaml
+    template: evals/refined-templates/plan.md
+  tasks:
+    path: evals/baseline/evals/tasks/tasks_eval.yaml
+    template: evals/refined-templates/tasks.md
+  implementation:
+    path: evals/baseline/evals/implementation/implementation_eval.yaml
+    template: evals/refined-templates/implementation.md
+  code-generation:
+    path: evals/baseline/evals/code-generation/code-generation_eval.yaml
+    template: null
+    note: Per-task code evals for /opsx-apply; cases tagged oape_command

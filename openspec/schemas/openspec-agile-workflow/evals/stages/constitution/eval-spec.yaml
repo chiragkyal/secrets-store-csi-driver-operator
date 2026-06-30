@@ -1,0 +1,45 @@
+# Eval case schema — constitution stage
+
+stage: constitution
+template: templates/constitution.md
+artifact: constitution.md
+stage_eval_file: evals/constitution_eval.yaml
+
+consolidated_schema:
+  stage: constitution
+  template: templates/constitution.md
+  artifact: constitution.md
+  version: 1
+  eval_count: <N>
+  evals: [<case>, ...]
+
+required_fields:
+  - id
+  - round
+  - stage
+  - source_issue_ids
+  - input_refs
+  - assertions
+  - scoring
+  - pass_threshold
+
+assertion_types:
+  - must_cite_repo_evidence
+  - must_set_agent_routing_mode
+  - must_align_with_agents_md
+  - must_not_duplicate_repo_assessment
+  - must_mention
+
+example:
+  id: eval-r001-const-001
+  round: 1
+  stage: constitution
+  source_issue_ids: [ISSUE-001]
+  input_refs:
+    - evals/baseline/routing-learnings.md
+  assertions:
+    must_cite_repo_evidence: true
+    must_set_agent_routing_mode: [PROVIDED, PROVISIONAL]
+  scoring:
+    method: weighted_checklist
+    pass_threshold: 80

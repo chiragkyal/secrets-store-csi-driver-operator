@@ -1,0 +1,211 @@
+name: openspec-eval-pipeline
+version: 1
+
+description: >-
+  Single-command retrospective loop: Epic Bug Analysis → Eval Generation →
+  cumulative baseline. One feature bundle per /eval-loop invocation.
+
+command: /eval-loop
+
+# Eval workflow template source — NOT schemas/ (upstream defaults for /opsx-* only)
+  refined_templates_dir: evals/refined-templates/
+  refined_agents_md: evals/refined-templates/agents.md
+
+# Upstream defaults (read-only during eval pipeline; seed refined-templates on round 1 if empty)
+schema_templates_dir:
+  installed: openspec/schemas/openspec-agile-workflow/templates
+  distribution: schemas/openspec-agile-workflow/templates
+
+phases:
+  - id: validate-inputs
+    reads:
+      - evals/inputs/feature-meta.yaml
+      - evals/inputs/01-ep-ard.md
+      - evals/inputs/02-jira-epic.md
+      - evals/inputs/03-original-repo.md
+      - evals/inputs/04-user-stories.md
+      - evals/inputs/05-repo-prs.md
+      - evals/inputs/bugs/index.yaml
+      - evals/inputs/bugs/*.md
+    rule: Stop if placeholders (PASTE_) are still unfilled
+
+  - id: load-baseline
+    reads:
+      - evals/round-state.yaml
+      - evals/baseline/evals-registry.yaml
+      - evals/baseline/evals/<stage>/<stage>_eval.yaml
+      - evals/baseline/routing-learnings.md
+      - evals/baseline/refinement-changelog.md
+      - evals/refined-templates/
+    when: round >= 1
+    rule: Round 1 may have empty baseline; round 2+ must read prior evals and refined templates
+
+  - id: epic-bug-analysis
+    name: Epic Bug Analysis
+    system_prompt: evals/epic-bug-analysis/SYSTEM_PROMPT.md
+    reads:
+      - evals/inputs/*
+      - evals/refined-templates/
+      - evals/baseline/
+    writes:
+      - evals/outputs/epic-bug-analysis/pattern-analysis.md
+      - evals/outputs/epic-bug-analysis/rca-summary.md
+      - evals/outputs/epic-bug-analysis/issue-taxonomy.json
+
+  - id: eval-generation
+    name: Eval Generation
+    system_prompt: evals/eval-generation/SYSTEM_PROMPT.md
+    reads:
+      - evals/outputs/epic-bug-analysis/*
+      - evals/eval-generation/template-inventory.yaml
+      - evals/refined-templates/
+      - evals/eval-generation/stage-samples/
+      - evals/baseline/evals/<stage>/<stage>_eval.yaml
+      - evals/baseline/routing-learnings.md
+      - evals/baseline/refinement-changelog.md
+    steps:
+      - id: seed-refined-templates
+        rule: >-
+          If evals/refined-templates/ is empty or missing key files, copy from
+          schema_templates_dir once and copy agents.md from schemas/openspec-agile-workflow/agents.md.
+          Never write eval refinements to schemas/.
+      - id: inventory-templates
+        reads: [evals/refined-templates/, evals/eval-generation/template-inventory.yaml]
+      - id: identify-gaps
+        writes: [evals/outputs/eval-generation/template-gaps.md]
+      - id: apply-template-refinements
+        rule: >-
+          For every gap marked patchable in template-gaps.md, patch the
+          corresponding file under evals/refined-templates/ IN PLACE.
+          Also refine evals/refined-templates/agents.md with operator-specific
+          learnings (new patterns, test strategies, architecture insights from bugs/PRs).
+          Save .patch files and update refinement-changelog.
+        writes:
+          - evals/refined-templates/*.md
+          - evals/refined-templates/agents.md
+          - evals/outputs/eval-generation/refinement-patches/*.patch
+          - evals/baseline/refinement-changelog.md
+      - id: refine-validation
+        writes:
+          - evals/refined-templates/validation.md
+          - evals/outputs/eval-generation/validation-refinements.md
+          - evals/outputs/eval-generation/refinement-patches/validation.md.patch
+      - id: create-eval-cases
+        rule: >-
+          Merge all eval cases per stage into ONE file:
+          evals/baseline/evals/<stage>/<stage>_eval.yaml
+          (e.g. constitution_eval.yaml). Do not scatter per-case files.
+          Then sync flat copies to schemas/openspec-agile-workflow/evals/<stage>_eval.yaml
+          with template: templates/<name>.md for forward /opsx-continue (artifact stages).
+          For code-generation: sync to schemas/.../evals/code-generation_eval.yaml
+          (no template — scores fork code during /opsx-apply per task).
+        writes:
+          - evals/baseline/evals/repo-assessment/repo-assessment_eval.yaml
+          - evals/baseline/evals/constitution/constitution_eval.yaml
+          - evals/baseline/evals/plan/plan_eval.yaml
+          - evals/baseline/evals/tasks/tasks_eval.yaml
+          - evals/baseline/evals/implementation/implementation_eval.yaml
+          - evals/baseline/evals/code-generation/code-generation_eval.yaml
+          - schemas/openspec-agile-workflow/evals/repo-assessment_eval.yaml
+          - schemas/openspec-agile-workflow/evals/constitution_eval.yaml
+          - schemas/openspec-agile-workflow/evals/plan_eval.yaml
+          - schemas/openspec-agile-workflow/evals/tasks_eval.yaml
+          - schemas/openspec-agile-workflow/evals/implementation_eval.yaml
+          - schemas/openspec-agile-workflow/evals/code-generation_eval.yaml
+      - id: create-code-generation-evals
+        name: Code Generation Eval Authoring
+        rule: >-
+          After artifact eval cases (create-eval-cases), derive code-generation
+          evals from PR diffs (05-repo-prs.md), bug postmortems, and
+          issue-taxonomy.json code-related patterns. Tag each case with
+          oape_command (api-generate, api-generate-tests, api-implement,
+          e2e-generate, manual, or any). Minimum 2 cases per oape_command
+          represented in the feature bundle when evidence exists; document
+          why fewer in template-gaps.md. Rubric: evals/stages/code-generation/eval-spec.yaml.
+        reads:
+          - evals/outputs/epic-bug-analysis/issue-taxonomy.json
+          - evals/inputs/05-repo-prs.md
+          - evals/inputs/bugs/*.md
+          - evals/stages/code-generation/eval-spec.yaml
+        writes:
+          - evals/baseline/evals/code-generation/code-generation_eval.yaml
+          - schemas/openspec-agile-workflow/evals/code-generation_eval.yaml
+      - id: update-registry
+        writes:
+          - evals/baseline/evals-registry.yaml
+          - evals/baseline/routing-learnings.md
+          - evals/baseline/rounds/round-<N>/
+          - evals/round-state.yaml
+    writes:
+      - evals/outputs/eval-generation/template-gaps.md
+      - evals/outputs/eval-generation/validation-refinements.md
+      - evals/outputs/eval-generation/refinement-patches/
+      - evals/baseline/evals/<stage>/<stage>_eval.yaml
+      - schemas/openspec-agile-workflow/evals/<stage>_eval.yaml
+      - evals/baseline/evals-registry.yaml
+      - evals/baseline/routing-learnings.md
+      - evals/baseline/refinement-changelog.md
+      - evals/baseline/rounds/round-<N>/
+      - evals/refined-templates/*.md
+
+eval_stages:
+  - repo-assessment
+  - constitution
+  - plan
+  - tasks
+  - implementation
+  - code-generation
+
+code_generation_eval:
+  description: >-
+    Per-task code evals for /opsx-apply. Not an /opsx-continue artifact stage.
+    Cases filtered by oape_command at runtime.
+  baseline: evals/baseline/evals/code-generation/code-generation_eval.yaml
+  forward: schemas/openspec-agile-workflow/evals/code-generation_eval.yaml
+  eval_spec: evals/stages/code-generation/eval-spec.yaml
+  gate_prompt: schemas/openspec-agile-workflow/stage-gate/CODE_GENERATION_EVAL_PROMPT.md
+  oape_commands:
+    - api-generate
+    - api-generate-tests
+    - api-implement
+    - e2e-generate
+    - manual
+    - any
+
+stage_eval_files:
+  retrospective: evals/baseline/evals/<stage>/<stage>_eval.yaml
+  forward_workflow: schemas/openspec-agile-workflow/evals/<stage>_eval.yaml
+  installed_forward: openspec/schemas/openspec-agile-workflow/evals/<stage>_eval.yaml
+
+stage_eval_files_baseline:
+  repo-assessment: evals/baseline/evals/repo-assessment/repo-assessment_eval.yaml
+  constitution: evals/baseline/evals/constitution/constitution_eval.yaml
+  plan: evals/baseline/evals/plan/plan_eval.yaml
+  tasks: evals/baseline/evals/tasks/tasks_eval.yaml
+  implementation: evals/baseline/evals/implementation/implementation_eval.yaml
+  code-generation: evals/baseline/evals/code-generation/code-generation_eval.yaml
+
+refine_in_place:
+  dir: evals/refined-templates/
+  files:
+    - validation.md
+    - repo-assessment.md
+    - constitution.md
+    - plan.md
+    - tasks.md
+    - implementation.md
+    - tasks-modes/*.md
+    - implementation-checklist.md
+    - implementation-report.md
+    - agents.md
+
+feedback_loop:
+  description: >-
+    After each /eval-loop, baseline stage eval files and evals/refined-templates/
+    become inputs to the next /eval-loop.
+  cumulative:
+    - evals/baseline/evals/<stage>/<stage>_eval.yaml
+    - evals/baseline/evals/code-generation/code-generation_eval.yaml
+    - evals/baseline/evals-registry.yaml
+  in_place:
+    - evals/refined-templates/

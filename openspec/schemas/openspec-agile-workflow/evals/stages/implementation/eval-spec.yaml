@@ -1,0 +1,43 @@
+# Eval case schema — implementation stage
+
+stage: implementation
+template: templates/implementation.md
+artifact: code changes + implementation-report.md
+stage_eval_file: evals/implementation_eval.yaml
+
+consolidated_schema:
+  stage: implementation
+  template: templates/implementation.md
+  artifact: code + phase FILE OPS
+  version: 1
+  eval_count: <N>
+  evals: [<case>, ...]
+
+required_fields:
+  - id
+  - round
+  - stage
+  - source_issue_ids
+  - input_refs
+  - assertions
+  - scoring
+  - pass_threshold
+
+assertion_types:
+  - must_follow_constitution
+  - must_use_ssa_not_create_or_update
+  - must_match_task_payloads
+  - must_include_tests
+  - must_not_violate_non_goals
+
+example:
+  id: eval-r001-impl-001
+  round: 1
+  stage: implementation
+  source_issue_ids: [ISSUE-001]
+  assertions:
+    must_use_ssa_not_create_or_update: true
+    must_match_task_payloads: true
+  scoring:
+    method: weighted_checklist
+    pass_threshold: 80

@@ -1,0 +1,90 @@
+# Template inventory — Eval Generation inputs
+# READ/WRITE: evals/refined-templates/ only (NOT schemas/)
+
+refined_templates_dir: evals/refined-templates/
+schema_templates_dir_readonly: schemas/openspec-agile-workflow/templates/
+
+agents_md:
+  workflow_roster: agents.md  # repo root → openspec/schemas/.../agents.md (OpenSpec workflow)
+  baseline_routing_learnings: evals/baseline/routing-learnings.md  # /eval-loop only
+
+spec_understanding:
+  - id: validation
+    file: validation.md
+    artifact: validation.json
+    note: Refine in evals/refined-templates/ — spec-stage eval; not duplicated under baseline/evals/
+  - id: specs
+    file: spec.md
+    artifact: specs.md
+    note: Spec authoring template; gaps inform validation refinement
+
+repo_understanding:
+  - id: repo-assessment
+    file: repo-assessment.md
+    artifact: repo-assessment.md
+    eval_stage: repo-assessment
+    stage_eval_file: evals/baseline/evals/repo-assessment/repo-assessment_eval.yaml
+  - id: constitution
+    file: constitution.md
+    artifact: constitution.md
+    eval_stage: constitution
+    stage_eval_file: evals/baseline/evals/constitution/constitution_eval.yaml
+
+planning:
+  - id: plan
+    file: plan.md
+    artifact: plan.md
+    eval_stage: plan
+    stage_eval_file: evals/baseline/evals/plan/plan_eval.yaml
+
+task_creation:
+  - id: tasks
+    file: tasks.md
+    artifact: tasks.md
+    eval_stage: tasks
+    stage_eval_file: evals/baseline/evals/tasks/tasks_eval.yaml
+  - id: tasks-skeleton
+    file: tasks-modes/skeleton.md
+  - id: tasks-payloads
+    file: tasks-modes/payloads.md
+  - id: tasks-orchestration
+    file: tasks-modes/orchestration.md
+  - id: tasks-single
+    file: tasks-modes/single.md
+  - id: tasks-impact-assessment
+    file: tasks-modes/impact_assessment.md
+  - id: tasks-payload-revision
+    file: tasks-modes/payload_revision.md
+
+implementation:
+  - id: implementation
+    file: implementation.md
+    artifact: code + phase FILE OPS
+    eval_stage: implementation
+    stage_eval_file: evals/baseline/evals/implementation/implementation_eval.yaml
+  - id: implementation-report
+    file: implementation-report.md
+  - id: implementation-checklist
+    file: implementation-checklist.md
+  - id: adrs
+    file: adrs.md
+
+code_generation:
+  description: >-
+    Per-task code evals for /opsx-apply — not a markdown artifact stage.
+    Cases tagged with oape_command; no template to refine.
+  eval_stage: code-generation
+  stage_eval_file: evals/baseline/evals/code-generation/code-generation_eval.yaml
+  forward_eval_file: schemas/openspec-agile-workflow/evals/code-generation_eval.yaml
+  eval_spec: evals/stages/code-generation/eval-spec.yaml
+  oape_commands:
+    - api-generate
+    - api-generate-tests
+    - api-implement
+    - e2e-generate
+    - manual
+    - any
+
+optional_not_in_eval_stages: []
+
+stage_samples_dir: evals/eval-generation/stage-samples/
