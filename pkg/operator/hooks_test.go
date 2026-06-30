@@ -131,7 +131,7 @@ func TestGetRotationConfig(t *testing.T) {
 							SecretRotation: opv1.SecretsStoreSecretRotation{
 								Type: opv1.SecretRotationCustom,
 								Custom: opv1.CustomSecretRotation{
-									RotationPollIntervalSeconds: 300,
+									MinimumRefreshAge: 300,
 								},
 							},
 						},
@@ -210,7 +210,7 @@ func TestWithSecretRotationDaemonSetHook_ReplacesPlaceholders(t *testing.T) {
 							SecretRotation: opv1.SecretsStoreSecretRotation{
 								Type: opv1.SecretRotationCustom,
 								Custom: opv1.CustomSecretRotation{
-									RotationPollIntervalSeconds: 300,
+									MinimumRefreshAge: 300,
 								},
 							},
 						},

@@ -95,8 +95,8 @@ func getRotationConfig(ccd *opv1.ClusterCSIDriver) (string, string) {
 	}
 
 	if ss.SecretRotation.Type == opv1.SecretRotationCustom {
-		if ss.SecretRotation.Custom.RotationPollIntervalSeconds != 0 {
-			d := time.Duration(ss.SecretRotation.Custom.RotationPollIntervalSeconds) * time.Second
+		if ss.SecretRotation.Custom.MinimumRefreshAge != 0 {
+			d := time.Duration(ss.SecretRotation.Custom.MinimumRefreshAge) * time.Second
 			pollInterval = d.String()
 		}
 	}
