@@ -1,0 +1,19 @@
+artifact_id: code-generation-T4_1
+task_id: T4_1
+oape_command: api-implement
+scored_at: "2026-07-01T10:05:00Z"
+eval_cases_total: 0
+eval_cases_passed: 0
+eval_cases_failed: 0
+overall_score: null
+verification:
+  go_build: PASSED
+  go_vet: PASSED
+  existing_unit_tests: PASSED (4/4 — TestGetOperatorSyncState all cases)
+test_block: SKIPPED (unit tests in T5_2)
+refinement_rounds: 0
+notes: >-
+  DaemonSetHookFunc signature is func(*opv1.OperatorSpec, *appsv1.DaemonSet) error
+  (not just *appsv1.DaemonSet as tasks.md assumed). First param _ ignored.
+  setArg uses manual prefix match (no strings.HasPrefix to avoid extra import).
+  factory package imported for []factory.Informer type in T4_2 wiring.

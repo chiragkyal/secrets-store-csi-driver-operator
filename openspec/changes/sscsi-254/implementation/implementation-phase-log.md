@@ -5,3 +5,5 @@
 | T1_1 | Update go.mod for openshift/api PR #2846 | ✓ APPROVED | [T1_1.md](task-reports/T1_1.md) |
 | T2_1 | Implement getRotationConfig helper | ✓ APPROVED | [T2_1.md](task-reports/T2_1.md) |
 | T2_2 | Implement getTokenRequests helper | ✓ APPROVED | [T2_2.md](task-reports/T2_2.md) |
+| T3_1 | Implement enrichedCSIDriverAssetFunc | ✓ APPROVED | [T3_1.md](task-reports/T3_1.md) |
+| T4_1+T4_2 | rotationArgsDaemonSetHook + RunOperator wiring | ✓ APPROVED | [T4_1.md](task-reports/T4_1.md) |

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	appsv1 "k8s.io/api/apps/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,6 +26,7 @@ import (
 	configinformers "github.com/openshift/client-go/config/informers/externalversions"
 	applyoperatorv1 "github.com/openshift/client-go/operator/applyconfigurations/operator/v1"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
+	factory "github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/csi/csicontrollerset"
 	"github.com/openshift/library-go/pkg/operator/csi/csidrivernodeservicecontroller"
 	goc "github.com/openshift/library-go/pkg/operator/genericoperatorclient"
@@ -87,7 +89,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		kubeClient,
 		dynamicClient,
 		kubeInformersForNamespaces,
-		replaceNamespaceFunc(operatorNamespace),
+		enrichedCSIDriverAssetFunc(operatorNamespace, dynamicClient),
 		[]string{
 			"node_sa.yaml",
 			"csidriver.yaml",
@@ -113,12 +115,13 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		"node.yaml",
 		kubeClient,
 		kubeInformersForNamespaces.InformersFor(operatorNamespace),
-		nil,
+		[]factory.Informer{dynamicInformers.ForResource(clusterCSIDriverGVR).Informer()},
 		csidrivernodeservicecontroller.WithCABundleDaemonSetHook(
 			operatorNamespace,
 			trustedCAConfigMap,
 			configMapInformer,
 		),
+		rotationArgsDaemonSetHook(dynamicClient),
 	)
 
 	klog.Info("Starting the informers")
@@ -331,6 +334,48 @@ func enrichedCSIDriverAssetFunc(namespace string, dynamicClient dynamic.Interfac
 		// Serialize back to JSON; TypeMeta (apiVersion/kind) is preserved from unmarshal
 		return json.Marshal(csiDriver)
 	}
+}
+
+// rotationArgsDaemonSetHook returns a DaemonSetHookFunc that injects
+// --enable-secret-rotation and --rotation-poll-interval into the csi-driver container
+// based on the current ClusterCSIDriver configuration. Defaults are used when the
+// ClusterCSIDriver cannot be read or has no secretRotation config.
+func rotationArgsDaemonSetHook(dynamicClient dynamic.Interface) csidrivernodeservicecontroller.DaemonSetHookFunc {
+	return func(_ *opv1.OperatorSpec, ds *appsv1.DaemonSet) error {
+		ctx := context.Background()
+		ccd, err := getClusterCSIDriver(ctx, dynamicClient)
+		if err != nil {
+			klog.Warningf("rotationArgsDaemonSetHook: could not read ClusterCSIDriver, using defaults: %v", err)
+		}
+		var spec *opv1.ClusterCSIDriverSpec
+		if ccd != nil {
+			spec = &ccd.Spec
+		}
+		_, enableRotation, pollInterval := getRotationConfig(spec)
+
+		for i, container := range ds.Spec.Template.Spec.Containers {
+			if container.Name != "csi-driver" {
+				continue
+			}
+			args := container.Args
+			args = setArg(args, "--enable-secret-rotation=", fmt.Sprintf("--enable-secret-rotation=%v", enableRotation))
+			args = setArg(args, "--rotation-poll-interval=", fmt.Sprintf("--rotation-poll-interval=%s", pollInterval))
+			ds.Spec.Template.Spec.Containers[i].Args = args
+			return nil
+		}
+		return fmt.Errorf("rotationArgsDaemonSetHook: csi-driver container not found in DaemonSet %s/%s", ds.Namespace, ds.Name)
+	}
+}
+
+// setArg replaces the first arg with the given prefix, or appends the value if not found.
+func setArg(args []string, prefix, value string) []string {
+	for i, arg := range args {
+		if len(arg) >= len(prefix) && arg[:len(prefix)] == prefix {
+			args[i] = value
+			return args
+		}
+	}
+	return append(args, value)
 }
 
 func extractOperatorSpec(obj *unstructured.Unstructured, fieldManager string) (*applyoperatorv1.OperatorSpecApplyConfiguration, error) {

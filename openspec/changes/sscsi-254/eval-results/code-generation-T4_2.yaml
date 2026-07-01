@@ -1,0 +1,18 @@
+artifact_id: code-generation-T4_2
+task_id: T4_2
+oape_command: api-implement
+scored_at: "2026-07-01T10:05:00Z"
+eval_cases_total: 0
+eval_cases_passed: 0
+eval_cases_failed: 0
+overall_score: null
+verification:
+  go_build: PASSED
+  go_vet: PASSED
+  existing_unit_tests: PASSED (4/4)
+test_block: SKIPPED (unit tests in T5_2)
+refinement_rounds: 0
+notes: >-
+  RunOperator wired: replaceNamespaceFunc → enrichedCSIDriverAssetFunc;
+  nil → []factory.Informer{dynamicInformers.ForResource(clusterCSIDriverGVR).Informer()};
+  added rotationArgsDaemonSetHook as second variadic DaemonSet hook after CA bundle hook.
