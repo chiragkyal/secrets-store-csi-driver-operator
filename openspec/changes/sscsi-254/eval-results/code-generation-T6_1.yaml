@@ -1,0 +1,17 @@
+artifact_id: code-generation-T6_1
+task_id: T6_1
+oape_command: manual
+scored_at: "2026-07-01T11:35:00Z"
+eval_cases_total: 0
+eval_cases_passed: 0
+eval_cases_failed: 0
+overall_score: null
+verification:
+  go_build: PASSED
+test_block: N/A (manual agent task)
+refinement_rounds: 0
+notes: >-
+  ClusterCSIDriver is a platform CRD (owned by openshift/api bundle), not this operator bundle.
+  Formal specDescriptors for ClusterCSIDriver cannot be added to this CSV.
+  Updated spec.description to document the new secretRotation + tokenRequests configuration surface.
+  make metadata not run — no version bump required for description-only change.

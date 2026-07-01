@@ -9,3 +9,5 @@
 | T4_1+T4_2 | rotationArgsDaemonSetHook + RunOperator wiring | ✓ APPROVED | [T4_1.md](task-reports/T4_1.md) |
 | T5_1 | Unit tests — Phase 2 helpers (18/18 pass) | ✓ APPROVED | [T5_1.md](task-reports/T5_1.md) |
 | T5_2 | Unit tests — Phase 3+4 hooks (26/26 pass) | ✓ APPROVED | [T5_2.md](task-reports/T5_2.md) |
+| T6_1 | OLM CSV description update | ✓ APPROVED | [T6_1.md](task-reports/T6_1.md) |
+| T7_1 | E2E test scenarios | ⏸ DEFERRED (requires live cluster) | [T7_1.md](task-reports/T7_1.md) |
