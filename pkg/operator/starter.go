@@ -6,8 +6,12 @@ import (
 	"fmt"
 	"time"
 
+	storagev1 "k8s.io/api/storage/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	kubeclient "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -195,6 +199,63 @@ func getRotationConfig(spec *opv1.ClusterCSIDriverSpec) (requiresRepublish bool,
 		// zero-value / omitzero SecretRotation — built-in defaults
 		return true, true, defaultInterval
 	}
+}
+
+// csiDriverGVR is the GVR for the storage.k8s.io CSIDriver cluster-scoped resource.
+var csiDriverGVR = schema.GroupVersionResource{Group: "storage.k8s.io", Version: "v1", Resource: "csidrivers"}
+
+// getTokenRequests returns the desired []storagev1.TokenRequest for the CSIDriver spec.
+//
+//   - When tokenRequests is absent, zero-value, or type is Unmanaged: reads the existing
+//     tokenRequests from the live CSIDriver object so they are preserved across reconciles
+//     (upgrade safety — prevents hash change and delete+recreate for clusters that manually
+//     patched tokenRequests before this feature existed).
+//   - When type is Managed: converts the audiences list from ClusterCSIDriver as sole source
+//     of truth. An empty audiences list explicitly clears all tokenRequests.
+func getTokenRequests(ctx context.Context, spec *opv1.ClusterCSIDriverSpec, dynamicClient dynamic.Interface) ([]storagev1.TokenRequest, error) {
+	isManaged := spec != nil &&
+		spec.DriverConfig.DriverType == opv1.SecretsStoreDriverType &&
+		spec.DriverConfig.SecretsStore.TokenRequests.Type == opv1.TokenRequestsManaged
+
+	if !isManaged {
+		return liveCSIDriverTokenRequests(ctx, dynamicClient)
+	}
+
+	audiences := spec.DriverConfig.SecretsStore.TokenRequests.Managed.Audiences
+	if audiences == nil {
+		// managed with nil audiences — no tokenRequests desired (distinct from empty list)
+		return nil, nil
+	}
+	result := make([]storagev1.TokenRequest, 0, len(*audiences))
+	for _, aud := range *audiences {
+		tr := storagev1.TokenRequest{}
+		if aud.Audience != nil {
+			tr.Audience = *aud.Audience
+		}
+		if aud.ExpirationSeconds > 0 {
+			exp := int64(aud.ExpirationSeconds)
+			tr.ExpirationSeconds = &exp
+		}
+		result = append(result, tr)
+	}
+	return result, nil
+}
+
+// liveCSIDriverTokenRequests fetches the current tokenRequests from the live CSIDriver
+// object. Returns nil (not an error) when the CSIDriver does not yet exist.
+func liveCSIDriverTokenRequests(ctx context.Context, dynamicClient dynamic.Interface) ([]storagev1.TokenRequest, error) {
+	obj, err := dynamicClient.Resource(csiDriverGVR).Get(ctx, providerName, metav1.GetOptions{})
+	if err != nil {
+		if kerrors.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("liveCSIDriverTokenRequests: failed to get CSIDriver %q: %w", providerName, err)
+	}
+	csiDriver := &storagev1.CSIDriver{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, csiDriver); err != nil {
+		return nil, fmt.Errorf("liveCSIDriverTokenRequests: failed to convert CSIDriver: %w", err)
+	}
+	return csiDriver.Spec.TokenRequests, nil
 }
 
 func extractOperatorSpec(obj *unstructured.Unstructured, fieldManager string) (*applyoperatorv1.OperatorSpecApplyConfiguration, error) {

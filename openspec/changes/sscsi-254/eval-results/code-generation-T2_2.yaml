@@ -1,0 +1,18 @@
+artifact_id: code-generation-T2_2
+task_id: T2_2
+oape_command: api-implement
+scored_at: "2026-07-01T08:05:00Z"
+eval_cases_total: 0
+eval_cases_passed: 0
+eval_cases_failed: 0
+overall_score: null
+verification:
+  go_build: PASSED
+  go_vet: PASSED
+test_block: SKIPPED (unit tests authored in T5_1)
+refinement_rounds: 0
+notes: >-
+  Signature uses *opv1.ClusterCSIDriverSpec + dynamic.Interface (consistent with T2_1
+  deviation). Audiences field is *[]SecretsStoreTokenRequest; ExpirationSeconds is int32
+  in opv1 vs *int64 in storagev1 — conversion applied correctly.
+  csiDriverGVR extracted as package-level var for testability.
