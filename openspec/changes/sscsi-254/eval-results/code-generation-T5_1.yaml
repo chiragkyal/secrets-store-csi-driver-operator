@@ -1,0 +1,21 @@
+artifact_id: code-generation-T5_1
+task_id: T5_1
+oape_command: api-implement
+scored_at: "2026-07-01T11:00:00Z"
+eval_cases_total: 0
+eval_cases_passed: 0
+eval_cases_failed: 0
+overall_score: null
+verification:
+  go_build: PASSED
+  go_vet: PASSED
+  make_check: PASSED
+test_block:
+  TestGetOperatorSyncState: 4/4 PASS
+  TestGetRotationConfig: 7/7 PASS
+  TestGetTokenRequests: 7/7 PASS
+  total: 18/18 PASS
+refinement_rounds: 1
+refinement_note: >-
+  gofmt -s -w applied to fix formatting (space alignment in struct literals).
+  make check passed after formatting fix. ld warning is macOS local artifact only.

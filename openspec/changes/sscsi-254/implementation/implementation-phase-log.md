@@ -7,3 +7,4 @@
 | T2_2 | Implement getTokenRequests helper | ✓ APPROVED | [T2_2.md](task-reports/T2_2.md) |
 | T3_1 | Implement enrichedCSIDriverAssetFunc | ✓ APPROVED | [T3_1.md](task-reports/T3_1.md) |
 | T4_1+T4_2 | rotationArgsDaemonSetHook + RunOperator wiring | ✓ APPROVED | [T4_1.md](task-reports/T4_1.md) |
+| T5_1 | Unit tests — Phase 2 helpers (18/18 pass) | ✓ APPROVED | [T5_1.md](task-reports/T5_1.md) |
