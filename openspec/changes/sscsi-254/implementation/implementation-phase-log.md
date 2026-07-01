@@ -8,3 +8,4 @@
 | T3_1 | Implement enrichedCSIDriverAssetFunc | ✓ APPROVED | [T3_1.md](task-reports/T3_1.md) |
 | T4_1+T4_2 | rotationArgsDaemonSetHook + RunOperator wiring | ✓ APPROVED | [T4_1.md](task-reports/T4_1.md) |
 | T5_1 | Unit tests — Phase 2 helpers (18/18 pass) | ✓ APPROVED | [T5_1.md](task-reports/T5_1.md) |
+| T5_2 | Unit tests — Phase 3+4 hooks (26/26 pass) | ✓ APPROVED | [T5_2.md](task-reports/T5_2.md) |

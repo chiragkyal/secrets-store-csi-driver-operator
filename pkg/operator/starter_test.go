@@ -2,10 +2,14 @@ package operator
 
 import (
 	"context"
+	"encoding/json"
+	"strings"
 	"testing"
 
 	opv1 "github.com/openshift/api/operator/v1"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -290,6 +294,194 @@ func TestGetTokenRequests(t *testing.T) {
 			}
 			if tc.wantLen > 0 && got[0].Audience != tc.wantAudience {
 				t.Fatalf("audience: want %q, got %q", tc.wantAudience, got[0].Audience)
+			}
+		})
+	}
+}
+
+// newFakeDynamicWithCCD returns a fake dynamic client pre-populated with a ClusterCSIDriver.
+func newFakeDynamicWithCCD(spec *opv1.ClusterCSIDriverSpec) *dynamicfake.FakeDynamicClient {
+	scheme := runtime.NewScheme()
+	_ = opv1.Install(scheme)
+	_ = storagev1.AddToScheme(scheme)
+	ccd := &opv1.ClusterCSIDriver{
+		TypeMeta:   metav1.TypeMeta{APIVersion: "operator.openshift.io/v1", Kind: "ClusterCSIDriver"},
+		ObjectMeta: metav1.ObjectMeta{Name: providerName},
+	}
+	if spec != nil {
+		ccd.Spec = *spec
+	}
+	return dynamicfake.NewSimpleDynamicClient(scheme, ccd)
+}
+
+func emptyFakeDynamic() *dynamicfake.FakeDynamicClient {
+	scheme := runtime.NewScheme()
+	_ = opv1.Install(scheme)
+	_ = storagev1.AddToScheme(scheme)
+	return dynamicfake.NewSimpleDynamicClient(scheme)
+}
+
+func TestEnrichedCSIDriverAssetFunc(t *testing.T) {
+	cases := []struct {
+		name                  string
+		assetName             string
+		spec                  *opv1.ClusterCSIDriverSpec
+		wantRequiresRepublish *bool
+		wantNamespaceInOutput string
+	}{
+		{
+			name:                  "non-CSIDriver asset gets namespace substitution only",
+			assetName:             "node_sa.yaml",
+			wantNamespaceInOutput: "test-ns",
+		},
+		{
+			name:                  "csidriver.yaml no CCD gets requiresRepublish=true",
+			assetName:             "csidriver.yaml",
+			wantRequiresRepublish: ptr(true),
+		},
+		{
+			name:                  "csidriver.yaml rotation None gets requiresRepublish=false",
+			assetName:             "csidriver.yaml",
+			spec:                  makeSecretsStoreSpec(opv1.SecretRotationNone, 0),
+			wantRequiresRepublish: ptr(false),
+		},
+		{
+			name:                  "csidriver.yaml Custom 300s gets requiresRepublish=true",
+			assetName:             "csidriver.yaml",
+			spec:                  makeSecretsStoreSpec(opv1.SecretRotationCustom, 300),
+			wantRequiresRepublish: ptr(true),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var fakeClient *dynamicfake.FakeDynamicClient
+			if tc.spec != nil {
+				fakeClient = newFakeDynamicWithCCD(tc.spec)
+			} else {
+				fakeClient = emptyFakeDynamic()
+			}
+
+			assetFn := enrichedCSIDriverAssetFunc("test-ns", fakeClient)
+			got, err := assetFn(tc.assetName)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if tc.wantNamespaceInOutput != "" {
+				if !strings.Contains(string(got), tc.wantNamespaceInOutput) {
+					t.Fatalf("want %q in output, got: %s", tc.wantNamespaceInOutput, got)
+				}
+				return
+			}
+
+			if tc.wantRequiresRepublish != nil {
+				csiDriver := &storagev1.CSIDriver{}
+				if err := json.Unmarshal(got, csiDriver); err != nil {
+					t.Fatalf("unmarshal: %v", err)
+				}
+				if csiDriver.Spec.RequiresRepublish == nil {
+					t.Fatalf("RequiresRepublish is nil, want %v", *tc.wantRequiresRepublish)
+				}
+				if *csiDriver.Spec.RequiresRepublish != *tc.wantRequiresRepublish {
+					t.Fatalf("RequiresRepublish: want %v, got %v", *tc.wantRequiresRepublish, *csiDriver.Spec.RequiresRepublish)
+				}
+			}
+		})
+	}
+}
+
+func makeTestDaemonSet(containerName string, args []string) *appsv1.DaemonSet {
+	return &appsv1.DaemonSet{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-ds", Namespace: "test-ns"},
+		Spec: appsv1.DaemonSetSpec{
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Name: containerName, Args: args},
+					},
+				},
+			},
+		},
+	}
+}
+
+func TestRotationArgsDaemonSetHook(t *testing.T) {
+	baseArgs := []string{
+		"--endpoint=$(CSI_ENDPOINT)",
+		"--enable-secret-rotation=true",
+		"--rotation-poll-interval=2m",
+	}
+
+	cases := []struct {
+		name            string
+		spec            *opv1.ClusterCSIDriverSpec
+		containerName   string
+		wantEnableArg   string
+		wantIntervalArg string
+		wantErr         bool
+	}{
+		{
+			name:            "nil CCD applies defaults",
+			containerName:   "csi-driver",
+			wantEnableArg:   "--enable-secret-rotation=true",
+			wantIntervalArg: "--rotation-poll-interval=2m0s",
+		},
+		{
+			name:            "rotation None disables",
+			spec:            makeSecretsStoreSpec(opv1.SecretRotationNone, 0),
+			containerName:   "csi-driver",
+			wantEnableArg:   "--enable-secret-rotation=false",
+			wantIntervalArg: "--rotation-poll-interval=2m0s",
+		},
+		{
+			name:            "Custom 300s sets 5m0s",
+			spec:            makeSecretsStoreSpec(opv1.SecretRotationCustom, 300),
+			containerName:   "csi-driver",
+			wantEnableArg:   "--enable-secret-rotation=true",
+			wantIntervalArg: "--rotation-poll-interval=5m0s",
+		},
+		{
+			name:          "missing csi-driver container returns error",
+			containerName: "wrong-container",
+			wantErr:       true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var fakeClient *dynamicfake.FakeDynamicClient
+			if tc.spec != nil {
+				fakeClient = newFakeDynamicWithCCD(tc.spec)
+			} else {
+				fakeClient = emptyFakeDynamic()
+			}
+
+			ds := makeTestDaemonSet(tc.containerName, append([]string{}, baseArgs...))
+			hook := rotationArgsDaemonSetHook(fakeClient)
+			err := hook(nil, ds)
+
+			if tc.wantErr {
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			argMap := make(map[string]string)
+			for _, a := range ds.Spec.Template.Spec.Containers[0].Args {
+				if idx := strings.Index(a, "="); idx >= 0 {
+					argMap[a[:idx+1]] = a
+				}
+			}
+			if got := argMap["--enable-secret-rotation="]; got != tc.wantEnableArg {
+				t.Fatalf("enable-secret-rotation: want %q, got %q", tc.wantEnableArg, got)
+			}
+			if got := argMap["--rotation-poll-interval="]; got != tc.wantIntervalArg {
+				t.Fatalf("rotation-poll-interval: want %q, got %q", tc.wantIntervalArg, got)
 			}
 		})
 	}

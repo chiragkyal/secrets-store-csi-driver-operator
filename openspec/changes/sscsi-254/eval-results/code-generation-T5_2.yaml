@@ -1,0 +1,24 @@
+artifact_id: code-generation-T5_2
+task_id: T5_2
+oape_command: api-implement
+scored_at: "2026-07-01T11:20:00Z"
+eval_cases_total: 0
+eval_cases_passed: 0
+eval_cases_failed: 0
+overall_score: null
+verification:
+  go_build: PASSED
+  go_vet: PASSED
+  make_check: PASSED
+test_block:
+  TestGetOperatorSyncState: 4/4 PASS
+  TestGetRotationConfig: 7/7 PASS
+  TestGetTokenRequests: 7/7 PASS
+  TestEnrichedCSIDriverAssetFunc: 4/4 PASS
+  TestRotationArgsDaemonSetHook: 4/4 PASS
+  total: 26/26 PASS
+refinement_rounds: 0
+notes: >-
+  newFakeDynamicWithCCD helper uses opv1.Install + storagev1.AddToScheme.
+  emptyFakeDynamic() covers nil-CCD paths without cluttering test cases.
+  gofmt -s -w applied before make check.
