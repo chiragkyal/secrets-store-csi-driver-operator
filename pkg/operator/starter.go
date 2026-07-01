@@ -3,6 +3,7 @@ package operator
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/clock"
+	sigsyaml "sigs.k8s.io/yaml"
 
 	opv1 "github.com/openshift/api/operator/v1"
 	configclient "github.com/openshift/client-go/config/clientset/versioned"
@@ -204,6 +206,9 @@ func getRotationConfig(spec *opv1.ClusterCSIDriverSpec) (requiresRepublish bool,
 // csiDriverGVR is the GVR for the storage.k8s.io CSIDriver cluster-scoped resource.
 var csiDriverGVR = schema.GroupVersionResource{Group: "storage.k8s.io", Version: "v1", Resource: "csidrivers"}
 
+// clusterCSIDriverGVR is the GVR for the operator.openshift.io ClusterCSIDriver resource.
+var clusterCSIDriverGVR = schema.GroupVersionResource{Group: "operator.openshift.io", Version: "v1", Resource: "clustercsidrivers"}
+
 // getTokenRequests returns the desired []storagev1.TokenRequest for the CSIDriver spec.
 //
 //   - When tokenRequests is absent, zero-value, or type is Unmanaged: reads the existing
@@ -256,6 +261,76 @@ func liveCSIDriverTokenRequests(ctx context.Context, dynamicClient dynamic.Inter
 		return nil, fmt.Errorf("liveCSIDriverTokenRequests: failed to convert CSIDriver: %w", err)
 	}
 	return csiDriver.Spec.TokenRequests, nil
+}
+
+// getClusterCSIDriver reads the ClusterCSIDriver singleton from the cluster via the dynamic
+// client. Returns nil without error when the object does not exist yet (e.g., first boot).
+func getClusterCSIDriver(ctx context.Context, dynamicClient dynamic.Interface) (*opv1.ClusterCSIDriver, error) {
+	obj, err := dynamicClient.Resource(clusterCSIDriverGVR).Get(ctx, providerName, metav1.GetOptions{})
+	if err != nil {
+		if kerrors.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("getClusterCSIDriver: %w", err)
+	}
+	ccd := &opv1.ClusterCSIDriver{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, ccd); err != nil {
+		return nil, fmt.Errorf("getClusterCSIDriver: convert: %w", err)
+	}
+	return ccd, nil
+}
+
+// enrichedCSIDriverAssetFunc returns a resourceapply.AssetFunc that enriches csidriver.yaml
+// with the current rotation and tokenRequests configuration from ClusterCSIDriver at each
+// reconcile call. All other assets are forwarded to replaceNamespaceFunc unchanged.
+//
+// The enrichment reads the live ClusterCSIDriver on every reconcile so that ClusterCSIDriver
+// spec changes propagate to the CSIDriver object immediately (once dynamicInformers is wired
+// to WithCSIDriverNodeService in T4_2, CSIDriver reconcilation also triggers on CR changes).
+func enrichedCSIDriverAssetFunc(namespace string, dynamicClient dynamic.Interface) resourceapply.AssetFunc {
+	return func(name string) ([]byte, error) {
+		if name != "csidriver.yaml" {
+			return replaceNamespaceFunc(namespace)(name)
+		}
+
+		ctx := context.Background()
+
+		// Read base manifest
+		baseBytes, err := assets.ReadFile("csidriver.yaml")
+		if err != nil {
+			return nil, fmt.Errorf("enrichedCSIDriverAssetFunc: read csidriver.yaml: %w", err)
+		}
+
+		// Deserialize to typed CSIDriver (sigs.k8s.io/yaml converts YAML→JSON internally)
+		csiDriver := &storagev1.CSIDriver{}
+		if err := sigsyaml.Unmarshal(baseBytes, csiDriver); err != nil {
+			return nil, fmt.Errorf("enrichedCSIDriverAssetFunc: unmarshal: %w", err)
+		}
+
+		// Read ClusterCSIDriver; fall back to built-in defaults on read error
+		ccd, err := getClusterCSIDriver(ctx, dynamicClient)
+		if err != nil {
+			klog.Warningf("enrichedCSIDriverAssetFunc: could not read ClusterCSIDriver, applying defaults: %v", err)
+		}
+		var spec *opv1.ClusterCSIDriverSpec
+		if ccd != nil {
+			spec = &ccd.Spec
+		}
+
+		// Apply rotation: set requiresRepublish from rotation config
+		requiresRepublish, _, _ := getRotationConfig(spec)
+		csiDriver.Spec.RequiresRepublish = &requiresRepublish
+
+		// Apply tokenRequests: Managed uses CR; Unmanaged/nil preserves live CSIDriver values
+		tokenRequests, err := getTokenRequests(ctx, spec, dynamicClient)
+		if err != nil {
+			return nil, fmt.Errorf("enrichedCSIDriverAssetFunc: getTokenRequests: %w", err)
+		}
+		csiDriver.Spec.TokenRequests = tokenRequests
+
+		// Serialize back to JSON; TypeMeta (apiVersion/kind) is preserved from unmarshal
+		return json.Marshal(csiDriver)
+	}
 }
 
 func extractOperatorSpec(obj *unstructured.Unstructured, fieldManager string) (*applyoperatorv1.OperatorSpecApplyConfiguration, error) {
