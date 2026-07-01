@@ -170,6 +170,33 @@ func getOperatorSyncState(operatorClient v1helpers.OperatorClientWithFinalizers)
 	return opv1.Managed
 }
 
+// getRotationConfig derives (requiresRepublish, enableRotation, pollInterval) from
+// a ClusterCSIDriverSpec. Built-in defaults (true, true, "2m0s") are applied at every
+// nil/zero level so upgrade clusters with no driverConfig see identical behavior.
+// Accepts the spec directly so callers and unit tests can construct it without a client.
+func getRotationConfig(spec *opv1.ClusterCSIDriverSpec) (requiresRepublish bool, enableRotation bool, pollInterval string) {
+	const defaultInterval = "2m0s"
+
+	if spec == nil || spec.DriverConfig.DriverType != opv1.SecretsStoreDriverType {
+		return true, true, defaultInterval
+	}
+
+	rotation := spec.DriverConfig.SecretsStore.SecretRotation
+	switch rotation.Type {
+	case opv1.SecretRotationNone:
+		return false, false, defaultInterval
+	case opv1.SecretRotationCustom:
+		secs := rotation.Custom.RotationPollIntervalSeconds
+		if secs <= 0 {
+			return true, true, defaultInterval
+		}
+		return true, true, (time.Duration(secs) * time.Second).String()
+	default:
+		// zero-value / omitzero SecretRotation — built-in defaults
+		return true, true, defaultInterval
+	}
+}
+
 func extractOperatorSpec(obj *unstructured.Unstructured, fieldManager string) (*applyoperatorv1.OperatorSpecApplyConfiguration, error) {
 	castObj := &opv1.ClusterCSIDriver{}
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, castObj); err != nil {
