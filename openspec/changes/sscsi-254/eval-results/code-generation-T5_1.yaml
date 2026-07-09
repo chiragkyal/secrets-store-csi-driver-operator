@@ -1,0 +1,48 @@
+task_id: T5_1
+oape_command: manual
+stage: code-generation
+stage_eval_file: evals/code-generation_eval.yaml
+scored_at: 2026-07-09T14:58:00Z
+note: >-
+  evals/code-generation_eval.yaml has an empty case list (unresolved merge-conflict
+  markers, same defect as prior tasks). No cases matched.
+refinement_rounds: 0
+overall_score: null
+overall_pass: null
+verification:
+  commands:
+    - cmd: "go build ./pkg/operator/..."
+      exit_code: 0
+      pass: true
+      note: "Verified PodInfoOnMount's actual field type (*bool, not bool) via source inspection before writing the assertion, avoiding a build failure. First actual build attempt succeeded."
+    - cmd: "go vet ./pkg/operator/..."
+      exit_code: 0
+      pass: true
+    - cmd: "gofmt -s -l pkg/operator/upgrade_parity_test.go"
+      exit_code: 0
+      pass: true
+    - cmd: "make verify"
+      exit_code: 0
+      pass: true
+  overall_pass: true
+test_execution:
+  strategy: co_generated_tests
+  commands:
+    - cmd: "go test ./pkg/operator/... -v -count=1 -run TestUpgradeDefaultParity"
+      exit_code: 0
+      pass: true
+      tests_run: 2
+      tests_passed: 2
+      tests_failed: 0
+      note: >-
+        Both tests read the REAL embedded production assets (assets.ReadFile),
+        not hand-built fixtures -- the strongest possible regression check tying
+        directly to plan.md Section 7's highest-priority risk.
+    - cmd: "make test-unit"
+      exit_code: 0
+      pass: true
+      summary: "ok  github.com/openshift/secrets-store-csi-driver-operator/pkg/operator 2.102s"
+  overall_pass: true
+  test_files_generated:
+    - pkg/operator/upgrade_parity_test.go
+cases: []

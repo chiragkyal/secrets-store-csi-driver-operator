@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-07-09T12:16:32.864520+00:00",
+  "exported_at": "2026-07-09T12:20:19.881949+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
@@ -270,8 +270,22 @@
       "task_id": "T6_1",
       "task_title": "Verify/close RBAC gaps against final mechanism",
       "agent_id": "StaticAssets_Agent",
-      "status": "running",
+      "status": "passed",
       "started_at": "2026-07-09T12:16:32.857463+00:00",
+      "completed_at": "2026-07-09T12:19:10.499260+00:00",
+      "tokens_in": 30453,
+      "tokens_out": 557,
+      "self_correction_loops": 0
+    },
+    {
+      "id": "2b1b7f81-fb47-4aa5-9e41-95bfb007bf39",
+      "run_id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
+      "phase_id": "163d9e96-dcc1-48e1-897e-4e0faaf7512d",
+      "task_id": "T5_1",
+      "task_title": "Upgrade-default-parity regression tests",
+      "agent_id": "Testing_Agent",
+      "status": "running",
+      "started_at": "2026-07-09T12:20:19.875346+00:00",
       "completed_at": null,
       "tokens_in": 0,
       "tokens_out": 0,
@@ -483,14 +497,14 @@
   "global_health": {
     "total_tokens_consumed": 109866,
     "estimated_cost_usd": 0.6953,
-    "cumulative_wall_time_s": 13529.8,
+    "cumulative_wall_time_s": 13756.8,
     "compliance_index": 80.0,
     "gate_passing_rate": 80.0,
     "human_rejection_rate": 0.0,
     "total_refinement_iterations": 0,
-    "agent_success_rate": 92.3,
-    "tasks_passed": 12,
-    "tasks_total": 13
+    "agent_success_rate": 92.9,
+    "tasks_passed": 13,
+    "tasks_total": 14
   },
   "artifact_edits": {
     "artifacts": [

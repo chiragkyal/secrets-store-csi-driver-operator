@@ -1,9 +1,9 @@
 machine:
   state: AWAITING_APPROVAL
-  current_task_id: T6_1
-  current_task_index: 13
+  current_task_id: T5_1
+  current_task_index: 14
   total_tasks: 19
-  last_transition: "2026-07-09T14:42:00Z"
+  last_transition: "2026-07-09T14:58:00Z"
 
 completed:
   - task_id: T1_1
@@ -54,15 +54,19 @@ completed:
     oape_command: manual
     test_result: PASS
     eval_score: null
+  - task_id: T6_1
+    oape_command: manual
+    test_result: PASS
+    eval_score: null
 
 current_task_result:
-  task_id: T6_1
+  task_id: T5_1
   oape_command: manual
-  files_changed: []
+  files_changed: [pkg/operator/upgrade_parity_test.go]
   verification_pass: true
-  test_command: "make test-unit"
+  test_command: "go test ./pkg/operator/... -v -count=1 -run TestUpgradeDefaultParity"
   test_result: PASS
-  test_output_summary: "no code changes; verification-only task confirming no RBAC gap"
+  test_output_summary: "2/2 tests passed, reading real embedded production assets"
   eval_score: null
   eval_cases_pass: 0
   eval_cases_total: 0
