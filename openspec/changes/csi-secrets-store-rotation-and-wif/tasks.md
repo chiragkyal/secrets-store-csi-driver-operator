@@ -309,6 +309,7 @@ graph TD
 - **Downstream handoff:** A green regression suite as input to T4_4's full `make check` run.
 
 ### Task T4_4: `make check`
+- **Status:** Completed — see `implementation/task-reports/T4_4.md` (clean pass, no code changes needed)
 - **Objective:** Run the full mandatory pre-PR verification chain (Constitution Principle V).
 - **Target file(s):** None (verification-only; runs against the whole repo).
 - **Non-goals / forbidden edits:** No code changes in this task except fixing any `make verify` (formatting/vet) failures surfaced.

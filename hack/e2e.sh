@@ -11,6 +11,9 @@ export E2E_PROVIDER_NAMESPACE=${E2E_PROVIDER_NAMESPACE:-openshift-cluster-csi-dr
 export E2E_PROVIDER_APP_LABEL=${E2E_PROVIDER_APP_LABEL:-csi-secrets-store-e2e-provider}
 export E2E_PROVIDER_SELECTOR="app=${E2E_PROVIDER_APP_LABEL}"
 export PROVISIONER_NAME="secrets-store.csi.k8s.io"
+export DS_NAME="secrets-store-csi-driver-node"
+export DS_CONTAINER_NAME="csi-driver"
+export ROTATION_WAIT_TIMEOUT=180 # seconds; time allowed for the operator to reconcile a ClusterCSIDriver change into the DaemonSet
 
 # The test namespace is created with a "random" postfix
 POSTFIX_CHARS=$(echo $RANDOM | md5sum | head -c5)
@@ -151,6 +154,128 @@ test_pod_with_secret() {
 	return 0
 }
 
+# --- Secret rotation configuration tests (US1/US3, SC-001/SC-002) ---
+#
+# These tests drive rotation behavior by patching the cluster-scoped
+# ClusterCSIDriver (${PROVISIONER_NAME}) and observing the resulting
+# "--enable-secret-rotation=" / "--rotation-poll-interval=" args on the
+# csi-driver container of the ${DS_NAME} DaemonSet, which is the operator's
+# own reconciliation surface for this feature (see
+# pkg/operator/rotation.go:WithSecretRotationDaemonSetHook). Mutating the
+# e2e-provider's returned secret VALUE to observe an actual refresh is out of
+# scope: this repo's e2e-provider has no such control today.
+
+# test_driver_config_save captures the ClusterCSIDriver's current
+# spec.driverConfig into the global ORIGINAL_DRIVER_CONFIG so it can be
+# restored byte-for-byte afterwards, regardless of what was configured
+# (or not) before the test ran.
+test_driver_config_save() {
+	echo "Saving original ClusterCSIDriver ${PROVISIONER_NAME} driverConfig"
+	ORIGINAL_DRIVER_CONFIG=$(oc get clustercsidriver ${PROVISIONER_NAME} -o jsonpath='{.spec.driverConfig}')
+	return $?
+}
+
+# test_driver_config_restore restores spec.driverConfig to the value captured
+# by test_driver_config_save, using a JSON patch "replace" (not a merge
+# patch) so the field is fully reset rather than recursively merged.
+test_driver_config_restore() {
+	echo "Restoring original ClusterCSIDriver ${PROVISIONER_NAME} driverConfig"
+	oc patch clustercsidriver ${PROVISIONER_NAME} --type=json -p "[{\"op\":\"replace\",\"path\":\"/spec/driverConfig\",\"value\":${ORIGINAL_DRIVER_CONFIG}}]" || return 1
+	test_wait_ds_arg "--enable-secret-rotation="
+	return $?
+}
+
+# test_get_ds_container_args prints the current args of the csi-driver
+# container on the ${DS_NAME} DaemonSet.
+test_get_ds_container_args() {
+	oc get daemonset ${DS_NAME} -n ${E2E_PROVIDER_NAMESPACE} -o jsonpath="{.spec.template.spec.containers[?(@.name=='${DS_CONTAINER_NAME}')].args}"
+}
+
+# test_wait_ds_arg polls (up to ROTATION_WAIT_TIMEOUT seconds) until the
+# csi-driver container's args contain the given substring, then waits for the
+# DaemonSet rollout triggered by that spec change to finish. Polling (rather
+# than a single check right after patching) is required because the operator
+# reconciles the ClusterCSIDriver change on its own sync loop, not
+# synchronously with `oc patch`.
+test_wait_ds_arg() {
+	local EXPECTED_ARG=$1
+	local ELAPSED=0
+	local INTERVAL=5
+	local DS_ARGS=""
+	echo "Waiting (up to ${ROTATION_WAIT_TIMEOUT}s) for ${DS_NAME} container ${DS_CONTAINER_NAME} args to contain: ${EXPECTED_ARG}"
+	while [ ${ELAPSED} -lt ${ROTATION_WAIT_TIMEOUT} ]; do
+		DS_ARGS=$(test_get_ds_container_args)
+		if echo "${DS_ARGS}" | grep -q -- "${EXPECTED_ARG}"; then
+			oc rollout status daemonset/${DS_NAME} -n ${E2E_PROVIDER_NAMESPACE} --timeout=${ROTATION_WAIT_TIMEOUT}s
+			return $?
+		fi
+		sleep ${INTERVAL}
+		ELAPSED=$((ELAPSED + INTERVAL))
+	done
+	echo "Timed out waiting for arg \"${EXPECTED_ARG}\"; last observed args: ${DS_ARGS}"
+	return 1
+}
+
+# test_rotation_toggle covers US1/SC-001: disabling rotation on a live driver
+# stops the operator from advertising rotation as enabled, and re-enabling it
+# resumes advertising rotation as enabled again -- without restarting any
+# workload pod using the driver.
+test_rotation_toggle() {
+	echo "Running test_rotation_toggle"
+	test_driver_config_save || return 1
+
+	echo "Disabling secret rotation via ClusterCSIDriver ${PROVISIONER_NAME}"
+	oc patch clustercsidriver ${PROVISIONER_NAME} --type=merge -p '{"spec":{"driverConfig":{"driverType":"SecretsStore","secretsStore":{"secretRotation":{"type":"None"}}}}}' || {
+		test_driver_config_restore
+		return 1
+	}
+	test_wait_ds_arg "--enable-secret-rotation=false" || {
+		test_driver_config_restore
+		return 1
+	}
+	echo "Confirmed driver DaemonSet reconciled with rotation disabled"
+
+	echo "Re-enabling secret rotation via ClusterCSIDriver ${PROVISIONER_NAME}"
+	oc patch clustercsidriver ${PROVISIONER_NAME} --type=merge -p '{"spec":{"driverConfig":{"driverType":"SecretsStore","secretsStore":{"secretRotation":{"type":"Custom","custom":{"minimumRefreshAge":120}}}}}}' || {
+		test_driver_config_restore
+		return 1
+	}
+	test_wait_ds_arg "--enable-secret-rotation=true" || {
+		test_driver_config_restore
+		return 1
+	}
+	echo "Confirmed driver DaemonSet reconciled with rotation re-enabled"
+
+	test_driver_config_restore || return 1
+	echo "test_rotation_toggle PASSED"
+	return 0
+}
+
+# test_rotation_custom_interval covers US3/SC-002: setting a custom rotation
+# interval is reflected in the driver's --rotation-poll-interval arg.
+test_rotation_custom_interval() {
+	echo "Running test_rotation_custom_interval"
+	local CUSTOM_INTERVAL_SECONDS=30
+	local EXPECTED_ARG="--rotation-poll-interval=${CUSTOM_INTERVAL_SECONDS}s"
+
+	test_driver_config_save || return 1
+
+	echo "Setting custom rotation interval (${CUSTOM_INTERVAL_SECONDS}s) via ClusterCSIDriver ${PROVISIONER_NAME}"
+	oc patch clustercsidriver ${PROVISIONER_NAME} --type=merge -p "{\"spec\":{\"driverConfig\":{\"driverType\":\"SecretsStore\",\"secretsStore\":{\"secretRotation\":{\"type\":\"Custom\",\"custom\":{\"minimumRefreshAge\":${CUSTOM_INTERVAL_SECONDS}}}}}}}" || {
+		test_driver_config_restore
+		return 1
+	}
+	test_wait_ds_arg "${EXPECTED_ARG}" || {
+		test_driver_config_restore
+		return 1
+	}
+	echo "Confirmed driver DaemonSet reconciled with custom rotation interval ${CUSTOM_INTERVAL_SECONDS}s"
+
+	test_driver_config_restore || return 1
+	echo "test_rotation_custom_interval PASSED"
+	return 0
+}
+
 test_prechecks
 if [ $? -ne 0 ]; then
 	echo "test_prechecks FAILED"
@@ -167,6 +292,22 @@ fi
 test_pod_with_secret
 if [ $? -ne 0 ]; then
 	echo "test_pod_with_secret FAILED"
+	test_pods_dump
+	test_teardown
+	exit 1
+fi
+
+test_rotation_toggle
+if [ $? -ne 0 ]; then
+	echo "test_rotation_toggle FAILED"
+	test_pods_dump
+	test_teardown
+	exit 1
+fi
+
+test_rotation_custom_interval
+if [ $? -ne 0 ]; then
+	echo "test_rotation_custom_interval FAILED"
 	test_pods_dump
 	test_teardown
 	exit 1
