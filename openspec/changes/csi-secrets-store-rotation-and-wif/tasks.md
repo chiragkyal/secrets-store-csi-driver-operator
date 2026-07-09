@@ -246,6 +246,7 @@ graph TD
 - **Downstream handoff:** A named function for T3_2's `AssetFunc` to call.
 
 ### Task T3_2: Dynamic `AssetFunc` for `csidriver.yaml`
+- **Status:** Completed — see `implementation/task-reports/T3_2.md`
 - **Objective:** Implement a `resourceapply.AssetFunc`-compatible function (`func(name string) ([]byte, error)`) that reads the base `assets/csidriver.yaml` (via the existing `assets.ReadFile`/`replaceNamespaceFunc` for `${NAMESPACE}` substitution — do not duplicate that logic), deserializes it, applies T3_1's computed `requiresRepublish`/`tokenRequests`, and re-serializes it for `StaticResourceController`/`resourceapply.ApplyDirectly` to apply via the **existing, unmodified** `resourceapply.ApplyCSIDriver` hash-recreate path (`vendor/.../resourceapply/storage.go:141` — reuse, do not reimplement).
 - **Target file(s):** `pkg/operator/csidriver_asset.go`.
 - **Non-goals / forbidden edits:** Do not modify `resourceapply.ApplyCSIDriver` or any vendored file. Do not modify `assets/csidriver.yaml`'s static content — it remains the unmutated starting point.

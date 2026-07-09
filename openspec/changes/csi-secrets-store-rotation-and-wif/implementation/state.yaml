@@ -6,10 +6,10 @@
 machine:
   # direct mode states: IDLE | EXECUTING_TASK | RUNNING_TESTS | AWAITING_APPROVAL | COMPLETE
   state: AWAITING_APPROVAL
-  current_task_id: T3_2
-  current_task_index: 10
+  current_task_id: T3_3
+  current_task_index: 11
   total_tasks: 22
-  last_transition: "2026-07-09T17:04:00Z"
+  last_transition: "2026-07-09T17:17:00Z"
 
 mode: direct
 working_folder_mode: true
@@ -53,30 +53,25 @@ completed:
     test_result: PASS
     report: implementation/task-reports/T3_1.md
     approved_at: "2026-07-09T16:53:00Z"
+  - task_id: T3_2
+    test_result: PASS
+    report: implementation/task-reports/T3_2.md
+    approved_at: "2026-07-09T17:05:00Z"
 
 # Current task result — written during execution, cleared on advance
 current_task_result:
-  task_id: T3_2
+  task_id: T3_3
   files_changed:
-    - pkg/operator/csidriver_asset.go
+    - pkg/operator/csidriver_asset_test.go
   verification_pass: true
-  test_command: "go build ./pkg/operator/... && go vet ./pkg/operator/... && make verify && make test-unit"
+  test_command: "go test ./pkg/operator/... -v -run 'TestGetRequiresRepublish|TestGetTokenRequests|TestNewDynamicCSIDriverAssetFunc' && make verify && make test-unit"
   test_result: PASS
   test_output_summary: >-
-    Build/vet/gofmt clean. make verify clean. make test-unit: pkg/operator
-    ok (2.163s). Acceptance-criteria-specific check performed via a
-    temporary (non-committed) standalone program: marshaled a
-    *storagev1.CSIDriver via sigs.k8s.io/yaml and successfully decoded it
-    back with resourceread.ReadGenericWithUnstructured (got *v1.CSIDriver),
-    confirming the exact round-trip StaticResourceController/
-    resourceapply.ApplyDirectly will perform. Temp files removed after
-    verification.
-  lister_mechanism_chosen: >-
-    storagelistersv1.CSIDriverLister for the live CSIDriver, sourced from
-    kubeInformersForNamespaces.InformersFor("") (already constructed in
-    starter.go with an empty-string namespace specifically to provide
-    cluster-scoped informers) -- resolves this task's Evidence:PARTIAL
-    note without adding any new informer factory.
+    TestGetRequiresRepublish: 3/3. TestGetTokenRequests: 8/8 (full six-way
+    matrix plus two defensive edge cases: nil-audiences-pointer preserve,
+    explicit-empty-slice clear). TestNewDynamicCSIDriverAssetFunc: 4/4
+    (no-ClusterCSIDriver, defaults, tokenRequests preservation, type=None).
+    make verify clean. make test-unit: pkg/operator ok (2.127s).
 
 # Rejection history for current task (cleared on advance)
 rejections: []
