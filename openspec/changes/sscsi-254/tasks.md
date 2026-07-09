@@ -105,7 +105,7 @@ graph TD
 
 ## 2. Linear Execution Order (Chronological)
 
-1. `T1_1` — Track upstream `openshift/api` PR status for `SecretsStore`
+1. [x] `T1_1` — Track upstream `openshift/api` PR status for `SecretsStore`
 2. `T1_2` — Bump `go.mod`/`go.sum`/`vendor/` once the upstream PR merges
 3. `T2_1` — Implement shared `ClusterCSIDriver.Spec.DriverConfig` read-path helper
 4. `T2_2` — Wire the new informer/typed-client access into `starter.go`

@@ -1,0 +1,68 @@
+task_id: T1_2
+oape_command: manual
+stage: code-generation
+stage_eval_file: evals/code-generation_eval.yaml
+scored_at: 2026-07-09T10:52:00Z
+note: >-
+  evals/code-generation_eval.yaml has an empty case list (unresolved merge-conflict
+  markers, same defect found during T1_1). No cases matched. Verification and test
+  steps were still mandatory and were executed for real.
+refinement_rounds: 1
+overall_score: null
+overall_pass: null
+verification:
+  commands:
+    - cmd: "go get github.com/openshift/api@50c3975e874ff67ee526e9ba68fc4f4edd5137ee"
+      exit_code: 0
+      pass: true
+    - cmd: "go mod tidy"
+      exit_code: 0
+      pass: true
+    - cmd: "go mod vendor"
+      exit_code: 0
+      pass: true
+    - cmd: "make verify"
+      exit_code: 1
+      pass: false
+      stderr_summary: "go vet failed: vendor/github.com/openshift/client-go/config/listers/config/v1alpha1 and .../applyconfigurations/config/v1alpha1 reference configv1alpha1 types (ClusterImagePolicy, ImagePolicy, ImageScope, PolicyType, etc.) that don't exist at the bumped openshift/api commit — version skew between openshift/api and the still-pinned openshift/client-go."
+      refinement_round: 1
+    - cmd: "go get github.com/openshift/client-go@master github.com/openshift/library-go@master"
+      exit_code: 0
+      pass: true
+      refinement_round: 1
+      note: "Fix: bump client-go and library-go in lockstep with the api bump, since these three OpenShift repos are released together. This transitively pulled openshift/api forward again to v0.0.0-20260702202555-ef71f942ef6c (July 2), a superset of the June 24 SecretsStore commit."
+    - cmd: "go mod tidy"
+      exit_code: 0
+      pass: true
+      refinement_round: 1
+    - cmd: "go mod vendor"
+      exit_code: 0
+      pass: true
+      refinement_round: 1
+    - cmd: "make verify"
+      exit_code: 0
+      pass: true
+      refinement_round: 1
+  overall_pass: true
+test_execution:
+  strategy: existing_tests
+  commands:
+    - cmd: "make test-unit"
+      exit_code: 0
+      pass: true
+      summary: "ok  github.com/openshift/secrets-store-csi-driver-operator/pkg/operator 2.593s"
+      tests_run: 4
+      tests_passed: 4
+      tests_failed: 0
+    - cmd: "go build ./..."
+      exit_code: 0
+      pass: true
+  overall_pass: true
+  test_files_generated: []
+cases: []
+manual_task_outcome:
+  vendored_openshift_api_commit: "v0.0.0-20260702202555-ef71f942ef6c"
+  vendored_openshift_client_go_commit: "v0.0.0-20260703082747-24d059aea27a"
+  vendored_openshift_library_go_commit: "v0.0.0-20260708075158-aa59c3fbacc1"
+  secretsstore_types_confirmed_present: true
+  acceptance_criteria_met: true
