@@ -32,6 +32,41 @@ export LIVENESS_PROBE_IMAGE=quay.io/openshift/origin-csi-livenessprobe:latest
 ./secrets-store-csi-driver-operator start --kubeconfig $KUBECONFIG --namespace openshift-cluster-csi-drivers
 ```
 
+## Configuring secret rotation and workload identity federation (WIF)
+
+`driverConfig.secretsStore` on the `ClusterCSIDriver` is entirely optional. When omitted, the driver behaves exactly as it did before this field existed: secret rotation is enabled with a 2-minute poll interval, and any `CSIDriver.spec.tokenRequests` set outside the operator is left untouched.
+
+To customize secret rotation (e.g. disable it, or use a custom poll interval) and/or opt in to operator-managed WIF token audiences:
+
+```yaml
+apiVersion: operator.openshift.io/v1
+kind: ClusterCSIDriver
+metadata:
+    name: secrets-store.csi.k8s.io
+spec:
+  managementState: Managed
+  driverConfig:
+    driverType: SecretsStore
+    secretsStore:
+      # Omit secretRotation entirely to keep the 2-minute default, or set
+      # type: None to disable rotation.
+      secretRotation:
+        type: Custom
+        custom:
+          rotationPollIntervalSeconds: 300
+      # Omit tokenRequests entirely to preserve any existing/external
+      # CSIDriver.spec.tokenRequests. Set type: Managed to let the operator
+      # own the token audience list -- this is a one-way transition and
+      # cannot be reverted to Unmanaged afterward.
+      tokenRequests:
+        type: Managed
+        managed:
+          audiences:
+            - audience: sts.amazonaws.com
+              expirationSeconds: 3600
+            - audience: api://AzureADTokenExchange
+```
+
 ## Bumping OCP version in CSV and OLM metadata
 
 This updates the package versions in `config/manifests/secrets-store-csi-driver-operator.package.yaml`, `config/manifests/stable/secrets-store-csi-driver-operator.clusterserviceversion.yaml`, `README.md` and `Makefile` to 4.20:

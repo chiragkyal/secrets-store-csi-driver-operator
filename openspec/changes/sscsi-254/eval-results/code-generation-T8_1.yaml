@@ -1,0 +1,42 @@
+task_id: T8_1
+oape_command: manual
+stage: code-generation
+stage_eval_file: evals/code-generation_eval.yaml
+scored_at: 2026-07-09T16:40:00Z
+note: >-
+  evals/code-generation_eval.yaml has an empty case list (unresolved merge-conflict
+  markers, same defect as prior tasks). No cases matched.
+refinement_rounds: 0
+overall_score: null
+overall_pass: null
+verification:
+  commands:
+    - cmd: "make verify"
+      exit_code: 0
+      pass: true
+      note: "Sanity check -- no Go code touched by this task (docs-only change)."
+  overall_pass: true
+test_execution:
+  strategy: build_only
+  commands:
+    - cmd: "make test-unit"
+      exit_code: 0
+      pass: true
+      summary: "ok  github.com/openshift/secrets-store-csi-driver-operator/pkg/operator (cached), no regression"
+  overall_pass: true
+  test_files_generated: []
+  note: "Docs-only change; no automated test coverage applicable."
+cases: []
+judgment_call: >-
+  Task explicitly allowed closing as "no change needed". Decision made to add
+  a new optional documentation section instead, since driverConfig.secretsStore
+  is a headline user-facing capability that would otherwise be undiscoverable
+  from the README. The existing minimal quick-start ClusterCSIDriver example
+  was left unchanged, since its absence of driverConfig already correctly
+  represents the default/no-op behavior (FR-010).
+field_name_verification: >-
+  Re-verified exact field names directly against
+  vendor/github.com/openshift/api/operator/v1/types_csi_cluster_driver.go
+  before writing the example (secretRotation.type/custom.rotationPollIntervalSeconds,
+  tokenRequests.type/managed.audiences[].audience+expirationSeconds) to avoid
+  repeating T7_2's initial field-name mismatch against the EP's assumptions.

@@ -122,8 +122,8 @@ graph TD
 15. [x] `T7_1` — Discovery: read `hack/e2e.sh` in full, enumerate existing e2e structure
 16. [x] `T7_2` — E2E rotation scenarios (enable/disable/custom-interval)
 17. [x] `T7_3` — E2E WIF scenarios (single/multi-audience)
-18. `T7_4` — E2E upgrade-preservation + no-`driverConfig` default-parity scenarios
-19. `T8_1` — Update `README.md` quick-start example, if warranted
+18. [x] `T7_4` — E2E upgrade-preservation + no-`driverConfig` default-parity scenarios
+19. [x] `T8_1` — Update `README.md` quick-start example, if warranted
 
 *(T3_1/T4_1 and their respective sub-chains are parallelizable once T2_2 completes — see §3 `Parallel OK` column and §5.)*
 
