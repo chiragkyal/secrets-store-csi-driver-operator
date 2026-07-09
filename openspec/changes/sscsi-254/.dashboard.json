@@ -24,7 +24,14 @@
       "id": "f56d7c98-210c-4e45-9828-b567c2dfb582",
       "name": "subtask_creation",
       "ended": true
+    },
+    "5": {
+      "id": "163d9e96-dcc1-48e1-897e-4e0faaf7512d",
+      "name": "code_generation",
+      "ended": false
     }
   },
-  "tasks": {}
+  "tasks": {
+    "T1_1": "c2d0a1aa-102e-4f6e-99d2-7f997bb4e25c"
+  }
 }

@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-07-09T09:46:08.925084+00:00",
+  "exported_at": "2026-07-09T09:59:27.393787+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
@@ -76,9 +76,40 @@
       "quality_label": "APPROVED",
       "iteration_count": 1,
       "duration_s": 273.2
+    },
+    {
+      "id": "163d9e96-dcc1-48e1-897e-4e0faaf7512d",
+      "run_id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
+      "phase_number": 5,
+      "phase_name": "code_generation",
+      "model_id": "",
+      "status": "running",
+      "started_at": "2026-07-09T09:59:10.529838+00:00",
+      "completed_at": null,
+      "tokens_in": 0,
+      "tokens_out": 0,
+      "quality_score": 0,
+      "quality_label": "",
+      "iteration_count": 1,
+      "duration_s": 0.0
     }
   ],
-  "tasks": [],
+  "tasks": [
+    {
+      "id": "c2d0a1aa-102e-4f6e-99d2-7f997bb4e25c",
+      "run_id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
+      "phase_id": "163d9e96-dcc1-48e1-897e-4e0faaf7512d",
+      "task_id": "T1_1",
+      "task_title": "Track upstream openshift/api PR for SecretsStore",
+      "agent_id": "N/A-external",
+      "status": "running",
+      "started_at": "2026-07-09T09:59:27.383068+00:00",
+      "completed_at": null,
+      "tokens_in": 0,
+      "tokens_out": 0,
+      "self_correction_loops": 0
+    }
+  ],
   "events": [
     {
       "id": "44ef40cf-ba39-4237-9043-d0448f69561c",
@@ -284,14 +315,14 @@
   "global_health": {
     "total_tokens_consumed": 109866,
     "estimated_cost_usd": 0.6953,
-    "cumulative_wall_time_s": 4505.9,
-    "compliance_index": 100.0,
-    "gate_passing_rate": 100.0,
+    "cumulative_wall_time_s": 5304.3,
+    "compliance_index": 80.0,
+    "gate_passing_rate": 80.0,
     "human_rejection_rate": 0.0,
     "total_refinement_iterations": 0,
-    "agent_success_rate": 100.0,
+    "agent_success_rate": 0.0,
     "tasks_passed": 0,
-    "tasks_total": 0
+    "tasks_total": 1
   },
   "artifact_edits": {
     "artifacts": [
