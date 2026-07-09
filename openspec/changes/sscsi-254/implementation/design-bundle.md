@@ -1,29 +1,49 @@
-# Design Bundle — Task T2_3
+# Design Bundle — Task T3_1
 
 **Change:** sscsi-254
-**Task:** T2_3 — Unit tests: read-path nil-safety branches
-**Assigned Agent:** Testing_Agent
-**Phase:** Phase 2: Shared Read Path
+**Task:** T3_1 — Dynamic `AssetFunc` for `csidriver.yaml`
+**Assigned Agent:** ControllerLogic_Agent
+**Phase:** Phase 3: Dynamic `CSIDriver` Object Generation (Rotation + WIF Fields)
 
-## Testing guidelines excerpts (binding)
+## Constitution excerpts (binding)
 
-> Use table-driven tests with named test cases as the default pattern... Run subtests with `t.Run(tc.name, ...)`... Use `t.Errorf` when subsequent assertions may still provide useful diagnostic information... No third-party assertion libraries.
+> **Principle II:** New assets MUST be plain YAML files added to `assets/` with `${NAMESPACE}` as the only runtime token... Never add a bindata code-generation step.
+> **Principle X:** Never modify `vendor/` directly.
 
-## Task T2_3 Payload (from tasks.md §4)
+## Specs excerpts
 
-- **Objective:** Cover every nil-safety branch in `T2_1`'s helper with table-driven tests.
-- **Target file(s):** New `_test.go` file co-located with `T2_1`'s new file, following the `pkg/operator/starter_test.go` pattern.
-- **Implementation notes:** Cases: `driverConfig` absent; `driverType != SecretsStore`; `secretsStore` nil; `secretRotation` nil; `tokenRequests` nil; fully-populated happy path.
-- **Acceptance criteria:** `make test-unit` passes; every branch in `T2_1` has at least one covering case.
+> FR-003/FR-004/FR-011: configure one or more token audiences; support multiple simultaneous audiences with independent validity durations.
+> Edge case (resolved Open Question 1 from the source EP, carried via specs.md): `requiresRepublish` mirrors `secretRotation.type` — false only when explicitly `"None"`.
 
-## Existing coverage (from T2_1's smoke tests, `pkg/operator/secretsstoreconfig_test.go`)
+## Task T3_1 Payload (from tasks.md §4)
 
-Already covered: nil spec; `DriverType` = AWS (not SecretsStore); `SecretsStore` fully zero-value (all sub-fields omitted); `secretRotation.Type: None`; `secretRotation.Type: Custom` (interval > 0 set); `tokenRequests.Type: Managed`; `tokenRequests.Type: Unmanaged`; managed-audiences nil/empty/populated.
+- **Objective:** Replace the byte-level-only application of `assets/csidriver.yaml` with a dynamic `AssetFunc` that additionally sets `spec.requiresRepublish` and `spec.tokenRequests` based on `T2_1`'s resolved config.
+- **Target file(s):** `assets/csidriver.yaml` (base template, content otherwise unchanged); new/extended file in `pkg/operator/`.
+- **Non-goals / forbidden edits:** Do not touch `podInfoOnMount`/`attachRequired`/`fsGroupPolicy`/`volumeLifecycleModes`. **Do not implement live-tokenRequests preservation here — that is T3_2's job** (Unmanaged/omitted case just leaves `tokenRequests` unset from this AssetFunc; T3_2 layers the preservation read on top).
+- **Implementation notes:** Follow `replaceNamespaceFunc`'s closure shape but decode via `resourceread.ReadCSIDriverV1OrDie`, mutate, re-serialize via `sigs.k8s.io/yaml.Marshal` (already vendored). `requiresRepublish` = `rotation.Enabled` directly (T2_1's resolver already encodes the "false only when explicitly None" rule).
+- **Acceptance criteria:** Traces to FR-003, FR-004, FR-011. Verified by `T3_4` (not this task).
+- **Downstream handoff:** A working `AssetFunc` that `T3_2` extends with preservation logic and `T3_3` registers into `starter.go`.
 
-## Gap identified for this task to close
+## Reusable assets confirmed
 
-Reviewing `ResolveSecretsStoreConfig`'s `switch secretsStore.SecretRotation.Type` branch: the `case opv1.SecretRotationCustom` path only sets `rotation.RotationPollIntervalSeconds` `if interval > 0`. **No existing test exercises `Type: Custom` with `RotationPollIntervalSeconds` omitted (zero value)** — this must fall back to the default 120s per FR-010, but it's untested. Also adding: an explicit `DriverType: ""` (true zero-value, "driverConfig absent" framing) case, and a combined "fully-populated happy path" case (custom rotation + managed multi-audience tokenRequests together) per this task's own payload language.
+- `resourceread.ReadCSIDriverV1OrDie(objBytes []byte) *storagev1.CSIDriver` — vendored decoder, exact library-go precedent for this pattern.
+- `sigs.k8s.io/yaml` — vendored, used for `Marshal` to re-serialize the mutated typed object back to bytes for the `AssetFunc` return value.
+- `T2_2`'s `operatorv1listers.ClusterCSIDriverLister` (via the informer wired in `starter.go`) — the read path this `AssetFunc` will use to get the live `ClusterCSIDriver` spec (passed as a constructor parameter, matching `WithCABundleDaemonSetHook`'s pattern of accepting the lister/informer directly rather than a closure).
+
+## storagev1.CSIDriverSpec field types confirmed
+
+```go
+type CSIDriverSpec struct {
+    // ...
+    TokenRequests     []TokenRequest `json:"tokenRequests,omitempty"`
+    RequiresRepublish *bool          `json:"requiresRepublish,omitempty"`
+}
+type TokenRequest struct {
+    Audience          string `json:"audience"`
+    ExpirationSeconds *int64 `json:"expirationSeconds,omitempty"`
+}
+```
 
 ## Execution approach
 
-Extend the existing `pkg/operator/secretsstoreconfig_test.go` (rather than creating a second, redundant test file for the same production file — cleaner and avoids Go test-file fragmentation for one small package) with a new test function covering the identified gap plus the explicitly-named cases from the task payload.
+New file `pkg/operator/csidriverasset.go`: `withSecretsStoreCSIDriverAsset(base resourceapply.AssetFunc, clusterCSIDriverLister operatorv1listers.ClusterCSIDriverLister) resourceapply.AssetFunc` — a wrapping `AssetFunc` that special-cases `csidriver.yaml` only, passing every other asset name through unchanged. Not yet registered in `starter.go` (that's T3_3).
