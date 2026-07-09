@@ -1,0 +1,36 @@
+artifact_id: tasks
+artifact_path: openspec/changes/sscsi-254/tasks.md
+stage: tasks
+stage_eval_file: evals/tasks_eval.yaml
+scored_at: 2026-07-09T09:35:00Z
+note: >-
+  evals/tasks_eval.yaml ships with an empty `evals: []` list in this schema
+  installation (same gap as validation/repo-assessment/plan). Scored instead
+  against the tasks template's own embedded "Quality self-check (target >=75%)".
+overall_score: 100
+overall_pass: true
+cases: []
+self_check_items:
+  - item: "Section 0 lists every FR-xx, SC-xx, and plan phase with covering Task IDs"
+    pass: true
+    evidence: "11 FRs, 7 SCs, and 8 plan phases each mapped to specific Task IDs in Section 0"
+  - item: "AgentRoutingMode matches constitution.md (PROVIDED vs PROVISIONAL)"
+    pass: true
+    evidence: "Header declares PROVIDED per constitution.md, with an explicit substitution note rather than silently downgrading to PROVISIONAL"
+  - item: "Section 3 manifest row count equals Section 4 payload subsection count"
+    pass: true
+    evidence: "19 manifest rows (T1_1..T8_1), 19 matching Section 4 payload subsections"
+  - item: "Section 2 linear order is a valid topological sort of Section 1 DAG"
+    pass: true
+    evidence: "Manually verified: every task in Section 2 appears after all of its Section 1 dependencies"
+  - item: "Assigned Agent values exist in agents.md (when PROVIDED) or match provisional IDs exactly"
+    pass: true
+    evidence: "AGENTS.md has no formal ID table; per plan.md's documented substitution, Constitution Code Ownership categories (ControllerLogic_Agent/StaticAssets_Agent/Testing_Agent/OLMRelease_Agent/Docs_Agent) are used consistently, plus one explicit N/A for the external-tracking task T1_1"
+  - item: "Target file(s) in each payload trace to repo_assessment.md or plan.md (marked PARTIAL if uncertain)"
+    pass: true
+    evidence: "T2_1 and T7_1-T7_4 explicitly marked UNVERIFIED/discovery-pending per repo-assessment.md 11.1, consistent with plan.md Phase 2/7"
+  - item: "Section 5 present with Retry Boundaries, Merge Conflict Hotspots, and Open Questions"
+    pass: true
+  - item: "No truncated mid-task payloads; document ends cleanly after Section 5"
+    pass: true
+failures: []
