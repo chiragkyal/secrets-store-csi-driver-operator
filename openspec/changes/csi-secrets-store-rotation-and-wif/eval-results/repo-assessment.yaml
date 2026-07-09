@@ -1,0 +1,37 @@
+artifact_id: repo-assessment
+artifact_path: openspec/changes/csi-secrets-store-rotation-and-wif/repo-assessment.md
+stage: repo-assessment
+gate: stage_evals
+stage_eval_file: evals/repo-assessment_eval.yaml
+scored_at: "2026-07-09T15:20:00Z"
+overall_score: 98
+overall_pass: true
+cases: []
+cases_note: >-
+  evals/repo-assessment_eval.yaml has an empty `evals: []` list for this schema
+  (no authored cases). Scored instead against the template's own embedded
+  "Quality Checklist (self-check before output — target >=90%)" from
+  templates/repo-assessment.md, per stage-gate guidance to always generate an
+  evaluation report even absent stage cases.
+self_check:
+  completeness_reaches_section_12: true
+  section0_branch_pin_recorded: true
+  feature_tailoring_present: true
+  branch_honesty_greenfield_stated: true
+  section1_before_section2: true
+  traps_and_do_not_edit_warnings_present: true
+  section4_1_field_tables_present: true
+  section4_2_numbered_hook_table_with_error_behavior: true
+  sections5_6_present: true
+  section7_cascade_table_with_real_commands: true
+  section8_2_copy_paste_test_commands: true
+  section9_4_how_to_add_walkthrough: true
+  section11_1_unverified_and_branch_absences_listed: true
+  section12_preflight_and_quicknav_present: true
+  no_unevidenced_file_paths: true
+  no_draft_meta_prose: true
+  greenfield_vs_delta_explicit: true
+  agents_md_repo_assessment_hints_checked: true
+  agents_md_repo_assessment_hints_found: false
+refinement_round: 1
+refined: false
