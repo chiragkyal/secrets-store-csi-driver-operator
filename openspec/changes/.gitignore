@@ -1,0 +1,5 @@
+# Per-ticket working artifacts — ephemeral, never commit to operator repo.
+# Created by /opsx-new, used during /opsx-continue and /opsx-apply.
+# *
+# !.gitignore
+# !.gitkeep
