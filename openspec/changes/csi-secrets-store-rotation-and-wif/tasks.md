@@ -210,6 +210,7 @@ graph TD
 - **Downstream handoff:** A reusable helper for T2_3.
 
 ### Task T2_3: `DaemonSetHookFunc` factory function
+- **Status:** Completed — see `implementation/task-reports/T2_3.md`
 - **Objective:** Implement a factory function returning a `csidrivernodeservicecontroller.DaemonSetHookFunc` (signature `func(*opv1.OperatorSpec, *appsv1.DaemonSet) error`), modeled directly on `csidrivernodeservicecontroller.WithCABundleDaemonSetHook` (`vendor/.../csidrivernodeservicecontroller/helpers.go:32`): it must close over a way to read the live `ClusterCSIDriver` (not rely on its `*opv1.OperatorSpec` parameter, which does not carry `DriverConfig` — `repo-assessment.md` §1.3 trap), call T2_1's extraction function, find the `csi-driver` container by name, and use T2_2's helper to set both args.
 - **Target file(s):** `pkg/operator/rotation.go`.
 - **Non-goals / forbidden edits:** Do not modify `WithCABundleDaemonSetHook` itself or any vendored file. Do not add the resulting hook to `starter.go` in this task (that is T2_5).

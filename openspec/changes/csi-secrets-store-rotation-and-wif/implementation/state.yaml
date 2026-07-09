@@ -6,10 +6,10 @@
 machine:
   # direct mode states: IDLE | EXECUTING_TASK | RUNNING_TESTS | AWAITING_APPROVAL | COMPLETE
   state: AWAITING_APPROVAL
-  current_task_id: T2_3
-  current_task_index: 6
+  current_task_id: T2_4
+  current_task_index: 7
   total_tasks: 22
-  last_transition: "2026-07-09T16:21:00Z"
+  last_transition: "2026-07-09T16:33:00Z"
 
 mode: direct
 working_folder_mode: true
@@ -37,28 +37,33 @@ completed:
     test_result: PASS
     report: implementation/task-reports/T2_2.md
     approved_at: "2026-07-09T16:13:00Z"
+  - task_id: T2_3
+    test_result: PASS
+    report: implementation/task-reports/T2_3.md
+    approved_at: "2026-07-09T16:22:00Z"
 
 # Current task result — written during execution, cleared on advance
 current_task_result:
-  task_id: T2_3
+  task_id: T2_4
   files_changed:
-    - pkg/operator/rotation.go
+    - pkg/operator/rotation_test.go
   verification_pass: true
-  test_command: "go build ./pkg/operator/... && go vet ./pkg/operator/... && make verify && make test-unit"
+  test_command: "go test ./pkg/operator/... -v -run 'TestGetSecretRotationConfig|TestWithSecretRotationDaemonSetHook|TestSetArg' && make verify && make test-unit"
   test_result: PASS
   test_output_summary: >-
-    Build/vet/gofmt clean. make verify clean (FIPS warning only, expected).
-    make test-unit: pkg/operator ok (2.140s) -- no new tests added in this
-    task (deferred to T2_4 per approved backlog), but existing suite
-    (TestSetArg, TestGetOperatorSyncState) still passes with the new
-    WithSecretRotationDaemonSetHook function present.
-  lister_mechanism_chosen: >-
-    cache.GenericLister for the clustercsidrivers resource, obtained from
-    the existing dynamicInformers.ForResource(gvr).Lister() already
-    constructed in starter.go -- resolves the Evidence:PARTIAL note and
-    Open Question #2 from plan.md/tasks.md for this specific task. Wiring
-    (actually calling .ForResource(gvr).Lister() and passing it in) is
-    deferred to T2_5 per this task's Non-goals.
+    TestGetSecretRotationConfig: 7/7 subtests pass (full nil-path matrix).
+    TestWithSecretRotationDaemonSetHook: 4/4 subtests pass (NotFound,
+    no driverConfig, type=None, type=Custom with explicit interval).
+    TestWithSecretRotationDaemonSetHookMissingContainer: 1/1 pass (error
+    path). make verify clean. make test-unit: pkg/operator ok (2.115s).
+  self_caught_bug: >-
+    Initial TestWithSecretRotationDaemonSetHookMissingContainer used a nil
+    driver, which hit the hook's early NotFound return before reaching the
+    container-lookup code, so the test passed for the wrong reason (a false
+    negative was actually caught: it failed on first run because the
+    NotFound path returns nil, not an error). Fixed by using a present-but-
+    unconfigured driver so the test actually exercises the missing-container
+    error path.
 
 # Rejection history for current task (cleared on advance)
 rejections: []

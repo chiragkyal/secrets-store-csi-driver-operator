@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-07-09T16:17:03.034720+00:00",
+  "exported_at": "2026-07-09T16:21:09.580459+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "1f9581fb-2858-45cd-aa01-e6a49fa80d30",
@@ -172,8 +172,22 @@
       "task_id": "T2_3",
       "task_title": "DaemonSetHookFunc factory function",
       "agent_id": "ControllerLogic_Agent",
-      "status": "running",
+      "status": "passed",
       "started_at": "2026-07-09T16:17:03.029276+00:00",
+      "completed_at": "2026-07-09T16:19:33.933623+00:00",
+      "tokens_in": 30345,
+      "tokens_out": 676,
+      "self_correction_loops": 0
+    },
+    {
+      "id": "a47c9b0a-38dd-484e-8cf0-f8b4dd92206e",
+      "run_id": "1f9581fb-2858-45cd-aa01-e6a49fa80d30",
+      "phase_id": "f4494877-4d0b-42a1-8afe-af0dfe9e1da0",
+      "task_id": "T2_4",
+      "task_title": "Unit tests for rotation hook",
+      "agent_id": "Testing_Agent",
+      "status": "running",
+      "started_at": "2026-07-09T16:21:09.575248+00:00",
       "completed_at": null,
       "tokens_in": 0,
       "tokens_out": 0,
@@ -385,14 +399,14 @@
   "global_health": {
     "total_tokens_consumed": 108596,
     "estimated_cost_usd": 0.6975,
-    "cumulative_wall_time_s": 5111.4,
+    "cumulative_wall_time_s": 5358.0,
     "compliance_index": 80.0,
     "gate_passing_rate": 80.0,
     "human_rejection_rate": 0.0,
     "total_refinement_iterations": 0,
-    "agent_success_rate": 83.3,
-    "tasks_passed": 5,
-    "tasks_total": 6
+    "agent_success_rate": 85.7,
+    "tasks_passed": 6,
+    "tasks_total": 7
   },
   "artifact_edits": {
     "artifacts": [
