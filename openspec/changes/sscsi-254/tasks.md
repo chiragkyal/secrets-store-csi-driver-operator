@@ -114,7 +114,7 @@ graph TD
 7. [x] `T4_1` — Implement the rotation-args `DaemonSetHookFunc`
 8. [x] `T3_2` — Implement `tokenRequests` preservation-on-upgrade logic
 9. [x] `T4_2` — Register the new hook alongside the existing CA-bundle hook
-10. `T3_3` — Register the new `AssetFunc` in `WithConditionalStaticResourcesController`
+10. [x] `T3_3` — Register the new `AssetFunc` in `WithConditionalStaticResourcesController`
 11. `T4_3` — Unit tests for the DaemonSet hook + container-not-found error path
 12. `T3_4` — Unit tests for `CSIDriver` field mapping + preservation cascade
 13. `T6_1` — Verify/close RBAC gaps against the finalized read-path mechanism

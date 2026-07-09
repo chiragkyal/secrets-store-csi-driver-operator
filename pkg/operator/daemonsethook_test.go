@@ -127,6 +127,69 @@ func TestWithSecretsStoreRotationDaemonSetHook_ListerError(t *testing.T) {
 	}
 }
 
+// TestWithSecretsStoreRotationDaemonSetHook_AppendsWhenArgsMissing covers task T4_3:
+// setArgPrefix's append branch, which is never exercised by the other tests above
+// (their fixture always pre-populates both rotation args).
+func TestWithSecretsStoreRotationDaemonSetHook_AppendsWhenArgsMissing(t *testing.T) {
+	ds := &appsv1.DaemonSet{
+		ObjectMeta: metav1.ObjectMeta{Name: "secrets-store-csi-driver-node", Namespace: "openshift-cluster-csi-drivers"},
+		Spec: appsv1.DaemonSetSpec{
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Name: csiDriverContainerName, Args: []string{"--endpoint=$(CSI_ENDPOINT)"}},
+					},
+				},
+			},
+		},
+	}
+	hook := withSecretsStoreRotationDaemonSetHook(&fakeClusterCSIDriverLister{})
+
+	if err := hook(nil, ds); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	container, _ := findContainer(ds, csiDriverContainerName)
+	if len(container.Args) != 3 {
+		t.Fatalf("expected 3 args (1 original + 2 appended), got %d: %v", len(container.Args), container.Args)
+	}
+	assertArgValue(t, container.Args, rotationEnabledArgPrefix, "true")
+	assertArgValue(t, container.Args, rotationIntervalArgPrefix, "120s")
+}
+
+// TestWithSecretsStoreRotationDaemonSetHook_UnrelatedArgsPreserved covers task T4_3:
+// a regression-safety check that the find/replace-by-prefix logic does not disturb
+// unrelated args or other containers.
+func TestWithSecretsStoreRotationDaemonSetHook_UnrelatedArgsPreserved(t *testing.T) {
+	ds := buildTestDaemonSet()
+	originalArgCount := len(ds.Spec.Template.Spec.Containers[0].Args)
+	otherContainer := ds.Spec.Template.Spec.Containers[1]
+
+	hook := withSecretsStoreRotationDaemonSetHook(&fakeClusterCSIDriverLister{})
+	if err := hook(nil, ds); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	container, _ := findContainer(ds, csiDriverContainerName)
+	if len(container.Args) != originalArgCount {
+		t.Errorf("expected arg count to stay %d (replace, not append, when both flags already present), got %d: %v", originalArgCount, len(container.Args), container.Args)
+	}
+	found := false
+	for _, a := range container.Args {
+		if a == "--endpoint=$(CSI_ENDPOINT)" {
+			found = true
+		}
+		if strings.HasPrefix(a, "--provider-health-check=") && a != "--provider-health-check=false" {
+			t.Errorf("expected unrelated arg --provider-health-check=false to be untouched, got %q", a)
+		}
+	}
+	if !found {
+		t.Errorf("expected unrelated arg --endpoint=$(CSI_ENDPOINT) to be preserved, got %v", container.Args)
+	}
+	if ds.Spec.Template.Spec.Containers[1].Name != otherContainer.Name {
+		t.Errorf("expected other container to be untouched")
+	}
+}
+
 func assertArgValue(t *testing.T, args []string, prefix, expectedValue string) {
 	t.Helper()
 	for _, a := range args {

@@ -1,9 +1,9 @@
 machine:
   state: AWAITING_APPROVAL
-  current_task_id: T3_3
-  current_task_index: 10
+  current_task_id: T4_3
+  current_task_index: 11
   total_tasks: 19
-  last_transition: "2026-07-09T14:02:00Z"
+  last_transition: "2026-07-09T14:15:00Z"
 
 completed:
   - task_id: T1_1
@@ -42,15 +42,19 @@ completed:
     oape_command: manual
     test_result: PASS
     eval_score: null
+  - task_id: T3_3
+    oape_command: manual
+    test_result: PASS
+    eval_score: null
 
 current_task_result:
-  task_id: T3_3
+  task_id: T4_3
   oape_command: manual
-  files_changed: [pkg/operator/starter.go]
+  files_changed: [pkg/operator/daemonsethook_test.go]
   verification_pass: true
-  test_command: "make test-unit"
+  test_command: "go test ./pkg/operator/... -v -count=1 -run TestWithSecretsStoreRotationDaemonSetHook"
   test_result: PASS
-  test_output_summary: "ok  github.com/openshift/secrets-store-csi-driver-operator/pkg/operator 2.199s"
+  test_output_summary: "7/7 tests passed (5 pre-existing + 2 new)"
   eval_score: null
   eval_cases_pass: 0
   eval_cases_total: 0
