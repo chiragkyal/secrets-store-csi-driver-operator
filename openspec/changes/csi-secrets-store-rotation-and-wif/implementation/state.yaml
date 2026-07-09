@@ -6,10 +6,10 @@
 machine:
   # direct mode states: IDLE | EXECUTING_TASK | RUNNING_TESTS | AWAITING_APPROVAL | COMPLETE
   state: AWAITING_APPROVAL
-  current_task_id: T4_1
-  current_task_index: 14
+  current_task_id: T4_2
+  current_task_index: 15
   total_tasks: 22
-  last_transition: "2026-07-09T17:46:00Z"
+  last_transition: "2026-07-09T17:59:00Z"
 
 mode: direct
 working_folder_mode: true
@@ -69,23 +69,28 @@ completed:
     test_result: PASS
     report: implementation/task-reports/T3_5.md
     approved_at: "2026-07-09T17:39:00Z"
+  - task_id: T4_1
+    test_result: PASS
+    report: implementation/task-reports/T4_1.md
+    approved_at: "2026-07-09T17:47:00Z"
 
 # Current task result — written during execution, cleared on advance
 current_task_result:
-  task_id: T4_1
-  files_changed: []
+  task_id: T4_2
+  files_changed:
+    - pkg/operator/rotation_test.go
   verification_pass: true
-  test_command: "make verify && make test-unit"
+  test_command: "go test ./pkg/operator/... -v -run TestCABundleAndRotationHooksCoexist && make verify && make test-unit"
   test_result: PASS
   test_output_summary: >-
-    Review-only task, no gap found, no code changed. make verify clean.
-    make test-unit: pkg/operator ok (cached). Confirmed via code review
-    (starter.go) plus a grep across rotation.go/csidriver_asset.go for
-    kubeClient./dynamicClient./.Create(/.Update(/.Delete(/.Apply( -- zero
-    matches, confirming both new mechanisms are read-only (via listers)
-    plus in-memory mutation, with all actual cluster writes delegated to
-    the pre-existing, already-gated library-go controller machinery.
-  finding: "gating_inheritance_confirmed_no_gap"
+    TestCABundleAndRotationHooksCoexist: PASS. Applied both hooks in the
+    exact order registered in starter.go (CA bundle first, then rotation)
+    to a single DaemonSet fixture using a fake ConfigMap informer (seeded
+    via indexer, no goroutines started) and the existing fake
+    ClusterCSIDriver lister. Confirmed the CA bundle volume/mount survived
+    the rotation hook running afterward, and the rotation args were set
+    correctly without the CA bundle hook interfering. make verify clean.
+    make test-unit: pkg/operator ok (2.416s).
 
 # Rejection history for current task (cleared on advance)
 rejections: []

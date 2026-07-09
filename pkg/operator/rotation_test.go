@@ -6,11 +6,14 @@ import (
 	"time"
 
 	opv1 "github.com/openshift/api/operator/v1"
+	"github.com/openshift/library-go/pkg/operator/csi/csidrivernodeservicecontroller"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/informers"
+	fakekubeclient "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -307,5 +310,103 @@ func TestWithSecretRotationDaemonSetHookMissingContainer(t *testing.T) {
 
 	if err := hook(&opv1.OperatorSpec{}, daemonSet); err == nil {
 		t.Fatalf("expected an error when the csi-driver container is missing, got nil")
+	}
+}
+
+// TestCABundleAndRotationHooksCoexist regression-checks Constitution
+// Principle VIII: the pre-existing WithCABundleDaemonSetHook must remain
+// registered and functionally unchanged now that WithSecretRotationDaemonSetHook
+// has been added to the same optionalDaemonSetHooks variadic list in
+// starter.go. Applies both hooks, in the exact order they are registered in
+// starter.go, to a single DaemonSet fixture, and asserts neither hook's
+// mutations clobber the other's.
+func TestCABundleAndRotationHooksCoexist(t *testing.T) {
+	const (
+		driverName         = "secrets-store.csi.k8s.io"
+		configMapNamespace = "openshift-cluster-csi-drivers"
+		configMapName      = "secrets-store-csi-driver-trusted-ca-bundle"
+		caBundleVolumeName = "non-standard-root-system-trust-ca-bundle"
+	)
+
+	cm := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: configMapName, Namespace: configMapNamespace},
+		Data:       map[string]string{"ca-bundle.crt": "fake-ca-bundle-contents"},
+	}
+	fakeClient := fakekubeclient.NewSimpleClientset(cm)
+	informerFactory := informers.NewSharedInformerFactory(fakeClient, 0)
+	cmInformer := informerFactory.Core().V1().ConfigMaps()
+	if err := cmInformer.Informer().GetIndexer().Add(cm); err != nil {
+		t.Fatalf("failed to seed ConfigMap informer indexer: %v", err)
+	}
+
+	caBundleHook := csidrivernodeservicecontroller.WithCABundleDaemonSetHook(configMapNamespace, configMapName, cmInformer)
+
+	driver := &opv1.ClusterCSIDriver{
+		ObjectMeta: metav1.ObjectMeta{Name: driverName},
+		Spec: opv1.ClusterCSIDriverSpec{
+			DriverConfig: opv1.CSIDriverConfigSpec{
+				DriverType: opv1.SecretsStoreDriverType,
+				SecretsStore: opv1.SecretsStoreCSIDriverConfigSpec{
+					SecretRotation: opv1.SecretsStoreSecretRotation{
+						Type: opv1.SecretRotationCustom,
+						Custom: opv1.CustomSecretRotation{
+							MinimumRefreshAge: 300,
+						},
+					},
+				},
+			},
+		},
+	}
+	rotationHook := WithSecretRotationDaemonSetHook(newFakeClusterCSIDriverLister(t, driver), driverName)
+
+	daemonSet := newTestDaemonSet()
+	// Matches node.yaml's annotation naming convention for the containers
+	// WithCABundleDaemonSetHook should inject the CA bundle into.
+	daemonSet.Annotations = map[string]string{
+		"config.openshift.io/inject-proxy-cabundle": csiDriverContainerName,
+	}
+
+	// Apply in the exact order starter.go registers them: CA bundle hook
+	// first, then the rotation hook.
+	if err := caBundleHook(&opv1.OperatorSpec{}, daemonSet); err != nil {
+		t.Fatalf("unexpected error from CA bundle hook: %v", err)
+	}
+	if err := rotationHook(&opv1.OperatorSpec{}, daemonSet); err != nil {
+		t.Fatalf("unexpected error from rotation hook: %v", err)
+	}
+
+	// The CA bundle hook's mutations must have survived the rotation hook
+	// running afterward.
+	foundVolume := false
+	for _, v := range daemonSet.Spec.Template.Spec.Volumes {
+		if v.Name == caBundleVolumeName {
+			foundVolume = true
+			break
+		}
+	}
+	if !foundVolume {
+		t.Errorf("expected CA bundle volume %q to be present after both hooks ran", caBundleVolumeName)
+	}
+
+	container := daemonSet.Spec.Template.Spec.Containers[0]
+	foundMount := false
+	for _, m := range container.VolumeMounts {
+		if m.Name == caBundleVolumeName {
+			foundMount = true
+			break
+		}
+	}
+	if !foundMount {
+		t.Errorf("expected CA bundle volume mount %q on container %q after both hooks ran", caBundleVolumeName, container.Name)
+	}
+
+	// The rotation hook's mutations must have applied correctly and must
+	// not have been undone by (or interfere with) the CA bundle hook.
+	expectedArgs := []string{
+		"--enable-secret-rotation=true",
+		"--rotation-poll-interval=5m0s",
+	}
+	if !reflect.DeepEqual(container.Args, expectedArgs) {
+		t.Errorf("expected rotation args to be %v after both hooks ran, got %v", expectedArgs, container.Args)
 	}
 }

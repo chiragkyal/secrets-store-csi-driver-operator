@@ -282,6 +282,7 @@ graph TD
 - **Downstream handoff:** Either "no RBAC change" confirmation, or a new RBAC task to be added ad hoc if a gap is found (not pre-created here, per the plan's "do not invent" boundary).
 
 ### Task T4_1: Management-state gating verification
+- **Status:** Completed — see `implementation/task-reports/T4_1.md`
 - **Objective:** Explicitly verify both new mechanisms (T2_5's rotation hook, T3_4's dynamic CSIDriver controller) correctly respect `getOperatorSyncState`/the parent controllers' existing Managed/Unmanaged/Removed gating (Constitution Principle IV) — i.e., no new unconditional resource writes were introduced.
 - **Target file(s):** `pkg/operator/starter.go` (review only, changes only if a gap is found).
 - **Non-goals / forbidden edits:** This is a verification task, not a feature-implementation task — avoid unrelated refactors.
