@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-07-09T10:45:11.670872+00:00",
+  "exported_at": "2026-07-09T11:14:34.121088+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
@@ -116,8 +116,22 @@
       "task_id": "T1_2",
       "task_title": "Bump go.mod/go.sum/vendor once merged",
       "agent_id": "ControllerLogic_Agent",
-      "status": "running",
+      "status": "passed",
       "started_at": "2026-07-09T10:45:11.658781+00:00",
+      "completed_at": "2026-07-09T11:13:08.013742+00:00",
+      "tokens_in": 30436,
+      "tokens_out": 1163,
+      "self_correction_loops": 1
+    },
+    {
+      "id": "e081607e-376b-4ac4-b2c6-cab5861bffd4",
+      "run_id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
+      "phase_id": "163d9e96-dcc1-48e1-897e-4e0faaf7512d",
+      "task_id": "T2_1",
+      "task_title": "Implement shared DriverConfig read-path helper",
+      "agent_id": "ControllerLogic_Agent",
+      "status": "running",
+      "started_at": "2026-07-09T11:14:34.109526+00:00",
       "completed_at": null,
       "tokens_in": 0,
       "tokens_out": 0,
@@ -329,14 +343,14 @@
   "global_health": {
     "total_tokens_consumed": 109866,
     "estimated_cost_usd": 0.6953,
-    "cumulative_wall_time_s": 8048.6,
+    "cumulative_wall_time_s": 9811.1,
     "compliance_index": 80.0,
     "gate_passing_rate": 80.0,
     "human_rejection_rate": 0.0,
     "total_refinement_iterations": 0,
-    "agent_success_rate": 50.0,
-    "tasks_passed": 1,
-    "tasks_total": 2
+    "agent_success_rate": 66.7,
+    "tasks_passed": 2,
+    "tasks_total": 3
   },
   "artifact_edits": {
     "artifacts": [

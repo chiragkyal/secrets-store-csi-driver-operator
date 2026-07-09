@@ -1,0 +1,45 @@
+task_id: T2_1
+oape_command: manual
+stage: code-generation
+stage_eval_file: evals/code-generation_eval.yaml
+scored_at: 2026-07-09T11:28:00Z
+note: >-
+  evals/code-generation_eval.yaml has an empty case list (unresolved merge-conflict
+  markers, same defect found in T1_1/T1_2). No cases matched. Verification and test
+  steps were mandatory and executed for real.
+refinement_rounds: 0
+overall_score: null
+overall_pass: null
+verification:
+  commands:
+    - cmd: "go build ./pkg/operator/..."
+      exit_code: 0
+      pass: true
+    - cmd: "go vet ./pkg/operator/..."
+      exit_code: 0
+      pass: true
+    - cmd: "gofmt -s -l pkg/operator/secretsstoreconfig.go pkg/operator/secretsstoreconfig_test.go"
+      exit_code: 0
+      pass: true
+      note: "Initial run flagged the test file for formatting; fixed with gofmt -s -w before final verification."
+    - cmd: "make verify"
+      exit_code: 0
+      pass: true
+  overall_pass: true
+test_execution:
+  strategy: co_generated_tests
+  commands:
+    - cmd: "go test ./pkg/operator/... -v -count=1 -run TestResolveSecretsStoreConfig"
+      exit_code: 0
+      pass: true
+      tests_run: 10
+      tests_passed: 10
+      tests_failed: 0
+    - cmd: "make test-unit"
+      exit_code: 0
+      pass: true
+      summary: "ok  github.com/openshift/secrets-store-csi-driver-operator/pkg/operator 2.498s"
+  overall_pass: true
+  test_files_generated:
+    - pkg/operator/secretsstoreconfig_test.go
+cases: []
