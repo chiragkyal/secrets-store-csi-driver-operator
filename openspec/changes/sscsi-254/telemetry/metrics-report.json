@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-07-09T12:11:29.505981+00:00",
+  "exported_at": "2026-07-09T12:16:32.864520+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
@@ -256,8 +256,22 @@
       "task_id": "T3_4",
       "task_title": "Unit tests: CSIDriver mapping + preservation cascade",
       "agent_id": "Testing_Agent",
-      "status": "running",
+      "status": "passed",
       "started_at": "2026-07-09T12:11:29.498964+00:00",
+      "completed_at": "2026-07-09T12:15:25.613877+00:00",
+      "tokens_in": 30305,
+      "tokens_out": 681,
+      "self_correction_loops": 0
+    },
+    {
+      "id": "40616f4b-2bf2-473e-8963-619fb0c06db7",
+      "run_id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
+      "phase_id": "163d9e96-dcc1-48e1-897e-4e0faaf7512d",
+      "task_id": "T6_1",
+      "task_title": "Verify/close RBAC gaps against final mechanism",
+      "agent_id": "StaticAssets_Agent",
+      "status": "running",
+      "started_at": "2026-07-09T12:16:32.857463+00:00",
       "completed_at": null,
       "tokens_in": 0,
       "tokens_out": 0,
@@ -469,14 +483,14 @@
   "global_health": {
     "total_tokens_consumed": 109866,
     "estimated_cost_usd": 0.6953,
-    "cumulative_wall_time_s": 13226.4,
+    "cumulative_wall_time_s": 13529.8,
     "compliance_index": 80.0,
     "gate_passing_rate": 80.0,
     "human_rejection_rate": 0.0,
     "total_refinement_iterations": 0,
-    "agent_success_rate": 91.7,
-    "tasks_passed": 11,
-    "tasks_total": 12
+    "agent_success_rate": 92.3,
+    "tasks_passed": 12,
+    "tasks_total": 13
   },
   "artifact_edits": {
     "artifacts": [

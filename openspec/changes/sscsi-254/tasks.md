@@ -116,7 +116,7 @@ graph TD
 9. [x] `T4_2` — Register the new hook alongside the existing CA-bundle hook
 10. [x] `T3_3` — Register the new `AssetFunc` in `WithConditionalStaticResourcesController`
 11. [x] `T4_3` — Unit tests for the DaemonSet hook + container-not-found error path
-12. `T3_4` — Unit tests for `CSIDriver` field mapping + preservation cascade
+12. [x] `T3_4` — Unit tests for `CSIDriver` field mapping + preservation cascade
 13. `T6_1` — Verify/close RBAC gaps against the finalized read-path mechanism
 14. `T5_1` — Upgrade-default-parity regression tests (no-`driverConfig` / nil-`SecretsStore` paths)
 15. `T7_1` — Discovery: read `hack/e2e.sh` in full, enumerate existing e2e structure

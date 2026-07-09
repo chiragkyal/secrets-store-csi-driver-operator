@@ -1,27 +1,35 @@
-# Design Bundle — Task T3_4
+# Design Bundle — Task T6_1
 
 **Change:** sscsi-254
-**Task:** T3_4 — Unit tests: `CSIDriver` mapping + preservation cascade
-**Assigned Agent:** Testing_Agent
-**Phase:** Phase 3: Dynamic `CSIDriver` Object Generation (Rotation + WIF Fields)
+**Task:** T6_1 — Verify/close RBAC gaps against the finalized read-path mechanism
+**Assigned Agent:** StaticAssets_Agent
+**Phase:** Phase 6: RBAC Verification
 
-## Task T3_4 Payload (from tasks.md §4)
+## Constitution excerpts (binding)
 
-- **Objective:** Table-driven coverage of `T3_1`/`T3_2`'s field mapping and all 5 preservation nil-check levels.
-- **Target file(s):** New `_test.go` co-located with `T3_1`/`T3_2`'s file(s).
-- **Implementation notes:** Cases per the source EP's own Unit Test Plan: each nil-check level with/without existing live `tokenRequests`; `Managed` with populated audiences; `Managed` with empty audiences (clear); `requiresRepublish` mirroring `secretRotation.type`.
-- **Acceptance criteria:** `make test-unit` passes; traces to `specs.md` FR-003/004/006/008/011 and Edge Cases.
+> **Principle VI — RBAC Is Least-Privilege and Asset-Driven:** All RBAC for the operand is defined as explicit YAML manifests in `assets/rbac/`. New RBAC requirements MUST be added as YAML files in `assets/rbac/` and registered in the asset list — never granted inline or dynamically at runtime.
 
-## Existing coverage (from T3_1/T3_2's mandatory verification tests)
+## Task T6_1 Payload (from tasks.md §4)
 
-13 tests already cover: pass-through, no-ClusterCSIDriver-yet, rotation mirroring (omitted/Custom/None), Managed with 1 audience, cluster-lister error, preservation on upgrade (no-driverConfig / explicit Unmanaged), live-object-not-found, Managed-overrides-preservation, live-lister-error.
+- **Objective:** Confirm the RBAC verbs already granted for `clustercsidrivers`/`clustercsidrivers/status`/`csidrivers` are sufficient for whatever mechanism `T2_2` finalized; add the minimal necessary verb in both places if a gap is found.
+- **Non-goals:** Do not grant RBAC inline/dynamically — any new verb must be an explicit YAML change in `assets/rbac/`, mirrored in the CSV.
+- **Implementation notes:** Expected outcome, per `plan.md` §3.4, is **no change** — primarily a verification step.
+- **Acceptance criteria:** Documented confirmation that the finalized mechanism's calls are covered by existing RBAC, OR a matching pair of edits if not.
 
-## Gap identified for this task to close
+## Finalized mechanism (confirmed via T2_2, T3_2, T3_3)
 
-Per the source EP's own Test Plan (`inputs/ep.md` "Multi-cloud WIF scenarios: Multiple audiences (e.g., AWS + Azure): verify CSIDriver has both tokenRequests entries" and "`tokenRequests.type: 'Managed'` with empty `managed.audiences`: verify CSIDriver.spec.tokenRequests is cleared"), two integration-level cases are not yet covered by the existing 13 tests:
-1. **Multiple simultaneous audiences** (specs.md FR-004/FR-011) — only a single-audience case exists at the `withSecretsStoreCSIDriverAsset` integration level (the multi-audience case was only tested at `T2_1`'s `ResolveSecretsStoreConfig` unit level, not end-to-end through the `AssetFunc`).
-2. **`Managed` with an explicit empty audience list clears tokenRequests even when the live object has pre-existing audiences** — the existing `ManagedOverridesLivePreservation` test only exercises a populated audience list overriding live data, not the explicit-clear case at this integration level.
+1. `clusterCSIDriverClient` (typed `operator.openshift.io/v1` clientset) → `clusterCSIDriverInformers.Operator().V1().ClusterCSIDrivers()` → used only for **List/Watch** (informer cache population) and `Lister().Get()` (in-memory cache reads, no additional API calls).
+2. `csiDriverInformer` (`kubeInformersForNamespaces.InformersFor("").Storage().V1().CSIDrivers()`) → same pattern: **List/Watch** for cache population, `Lister().Get()` for reads.
+3. No code path anywhere in `T2_1`–`T4_3` makes a live `Get`/`Create`/`Update`/`Delete` call against either resource directly — all reads go through listers; all writes (the `CSIDriver` object mutation) go through the existing `resourceapply.ApplyCSIDriver` path used since before this feature (already covered by existing RBAC).
+
+## RBAC verification (from `config/manifests/stable/secrets-store-csi-driver-operator.clusterserviceversion.yaml`)
+
+| Resource | Granted verbs | Needed by finalized mechanism | Gap? |
+|---|---|---|---|
+| `operator.openshift.io/clustercsidrivers` (lines 140-150) | get, list, watch, update, patch | get, list, watch (informer) | **No gap** |
+| `operator.openshift.io/clustercsidrivers/status` (lines 151-160) | get, list, watch, update, patch | Not used by this feature | **No gap** |
+| `storage.k8s.io/csidrivers` (lines 274-284) | create, get, list, watch, update, delete | get, list, watch (informer) + create/update/delete (existing `ApplyCSIDriver` path) | **No gap** |
 
 ## Execution approach
 
-Extend `pkg/operator/csidriverasset_test.go` (from `T3_1`/`T3_2`) with 2 new test functions closing these gaps.
+This is a verification-only task. No code or RBAC changes are made — the confirmation above closes the task per its own "expected outcome: no change" framing.
