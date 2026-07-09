@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-07-09T15:27:26.036784+00:00",
+  "exported_at": "2026-07-09T15:31:05.899715+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "1f9581fb-2858-45cd-aa01-e6a49fa80d30",
@@ -9,8 +9,8 @@
     "status": "running",
     "started_at": "2026-07-09T14:51:51.616054+00:00",
     "completed_at": null,
-    "total_tokens_in": 57510,
-    "total_tokens_out": 20480
+    "total_tokens_in": 77618,
+    "total_tokens_out": 30978
   },
   "phases": [
     {
@@ -67,15 +67,15 @@
       "phase_number": 4,
       "phase_name": "subtask_creation",
       "model_id": "",
-      "status": "running",
+      "status": "passed",
       "started_at": "2026-07-09T15:22:10.999505+00:00",
-      "completed_at": null,
-      "tokens_in": 0,
-      "tokens_out": 0,
-      "quality_score": 0,
-      "quality_label": "",
+      "completed_at": "2026-07-09T15:31:05.894356+00:00",
+      "tokens_in": 20108,
+      "tokens_out": 10498,
+      "quality_score": 95.0,
+      "quality_label": "excellent",
       "iteration_count": 1,
-      "duration_s": 0.0
+      "duration_s": 534.9
     }
   ],
   "tasks": [],
@@ -259,14 +259,34 @@
       "event_type": "state_machine",
       "message": "Artifact 'tasks' ready for approval (eval score: 95.0%) \u2014 waiting for human decision",
       "metadata_json": null
+    },
+    {
+      "id": "a70f6dd4-02aa-4dca-82bd-7b583f19d621",
+      "ts": "2026-07-09T15:31:05.893707+00:00",
+      "run_id": "1f9581fb-2858-45cd-aa01-e6a49fa80d30",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Human approved artifact 'tasks'",
+      "metadata_json": null
+    },
+    {
+      "id": "8e2d887c-0069-41d2-8dca-aa68ba1d6744",
+      "ts": "2026-07-09T15:31:05.894037+00:00",
+      "run_id": "1f9581fb-2858-45cd-aa01-e6a49fa80d30",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Artifact 'tasks' completed with status: passed",
+      "metadata_json": null
     }
   ],
   "global_health": {
-    "total_tokens_consumed": 77990,
-    "estimated_cost_usd": 0.4797,
-    "cumulative_wall_time_s": 2134.4,
-    "compliance_index": 75.0,
-    "gate_passing_rate": 75.0,
+    "total_tokens_consumed": 108596,
+    "estimated_cost_usd": 0.6975,
+    "cumulative_wall_time_s": 2354.3,
+    "compliance_index": 100.0,
+    "gate_passing_rate": 100.0,
     "human_rejection_rate": 0.0,
     "total_refinement_iterations": 0,
     "agent_success_rate": 100.0,

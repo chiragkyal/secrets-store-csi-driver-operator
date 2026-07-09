@@ -23,7 +23,7 @@
     "4": {
       "id": "a3303d1a-e37c-4ed5-992e-bd007bbf9811",
       "name": "subtask_creation",
-      "ended": false
+      "ended": true
     }
   },
   "tasks": {}
