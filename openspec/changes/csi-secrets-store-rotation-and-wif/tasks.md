@@ -219,6 +219,7 @@ graph TD
 - **Downstream handoff:** A ready-to-register hook value for T2_5.
 
 ### Task T2_4: Unit tests for rotation hook
+- **Status:** Completed — see `implementation/task-reports/T2_4.md`
 - **Objective:** Table-driven unit tests covering T2_1's full nil-path matrix and T2_3's arg-mutation behavior, following `pkg/operator/starter_test.go`'s exact shape (`v1helpers.NewFakeOperatorClientWithObjectMeta`, `t.Run`, `t.Fatalf` — `docs/testing-guidelines.md`).
 - **Target file(s):** New `pkg/operator/rotation_test.go`.
 - **Non-goals / forbidden edits:** No third-party assertion libraries (Constitution / `docs/testing-guidelines.md` — standard `if`/`t.Fatalf`/`t.Errorf` only).

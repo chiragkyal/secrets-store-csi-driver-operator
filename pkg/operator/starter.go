@@ -19,6 +19,7 @@ import (
 	configinformers "github.com/openshift/client-go/config/informers/externalversions"
 	applyoperatorv1 "github.com/openshift/client-go/operator/applyconfigurations/operator/v1"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
+	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/csi/csicontrollerset"
 	"github.com/openshift/library-go/pkg/operator/csi/csidrivernodeservicecontroller"
 	goc "github.com/openshift/library-go/pkg/operator/genericoperatorclient"
@@ -70,6 +71,15 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		return err
 	}
 
+	// clusterCSIDriverInformer backs the secret-rotation DaemonSet hook's
+	// read of driverConfig.secretsStore.secretRotation. It reuses the
+	// dynamicInformers factory already constructed above for the same GVR
+	// rather than registering a second, redundant informer. Passing its
+	// Informer() into WithCSIDriverNodeService's optionalInformers below
+	// makes the DaemonSet resync promptly on ClusterCSIDriver changes,
+	// instead of relying solely on the controller's 1-minute ResyncEvery.
+	clusterCSIDriverInformer := dynamicInformers.ForResource(gvr)
+
 	csiControllerSet := csicontrollerset.NewCSIControllerSet(
 		operatorClient,
 		controllerConfig.EventRecorder,
@@ -107,11 +117,15 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		"node.yaml",
 		kubeClient,
 		kubeInformersForNamespaces.InformersFor(operatorNamespace),
-		nil,
+		[]factory.Informer{clusterCSIDriverInformer.Informer()},
 		csidrivernodeservicecontroller.WithCABundleDaemonSetHook(
 			operatorNamespace,
 			trustedCAConfigMap,
 			configMapInformer,
+		),
+		WithSecretRotationDaemonSetHook(
+			clusterCSIDriverInformer.Lister(),
+			providerName,
 		),
 	)
 
