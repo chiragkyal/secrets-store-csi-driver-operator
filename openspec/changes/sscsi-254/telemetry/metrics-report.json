@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-07-09T12:36:23.014037+00:00",
+  "exported_at": "2026-07-09T12:42:46.946748+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
@@ -326,8 +326,22 @@
       "task_id": "T7_3",
       "task_title": "E2E WIF scenarios",
       "agent_id": "Testing_Agent",
-      "status": "running",
+      "status": "passed",
       "started_at": "2026-07-09T12:36:23.007451+00:00",
+      "completed_at": "2026-07-09T12:41:10.212237+00:00",
+      "tokens_in": 30505,
+      "tokens_out": 778,
+      "self_correction_loops": 0
+    },
+    {
+      "id": "40920987-db36-4566-bbf6-63ebd347469d",
+      "run_id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
+      "phase_id": "163d9e96-dcc1-48e1-897e-4e0faaf7512d",
+      "task_id": "T7_4",
+      "task_title": "E2E upgrade-preservation + default-parity scenarios",
+      "agent_id": "Testing_Agent",
+      "status": "running",
+      "started_at": "2026-07-09T12:42:46.938883+00:00",
       "completed_at": null,
       "tokens_in": 0,
       "tokens_out": 0,
@@ -539,14 +553,14 @@
   "global_health": {
     "total_tokens_consumed": 109866,
     "estimated_cost_usd": 0.6953,
-    "cumulative_wall_time_s": 14720.0,
+    "cumulative_wall_time_s": 15103.9,
     "compliance_index": 80.0,
     "gate_passing_rate": 80.0,
     "human_rejection_rate": 0.0,
     "total_refinement_iterations": 0,
-    "agent_success_rate": 94.1,
-    "tasks_passed": 16,
-    "tasks_total": 17
+    "agent_success_rate": 94.4,
+    "tasks_passed": 17,
+    "tasks_total": 18
   },
   "artifact_edits": {
     "artifacts": [

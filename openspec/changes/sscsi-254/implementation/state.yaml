@@ -1,9 +1,9 @@
 machine:
   state: AWAITING_APPROVAL
-  current_task_id: T7_3
-  current_task_index: 17
+  current_task_id: T7_4
+  current_task_index: 18
   total_tasks: 19
-  last_transition: "2026-07-09T16:20:00Z"
+  last_transition: "2026-07-09T16:32:00Z"
 
 completed:
   - task_id: T1_1
@@ -70,9 +70,13 @@ completed:
     oape_command: manual
     test_result: PASS
     eval_score: null
+  - task_id: T7_3
+    oape_command: manual
+    test_result: PASS
+    eval_score: null
 
 current_task_result:
-  task_id: T7_3
+  task_id: T7_4
   oape_command: manual
   files_changed:
     - hack/e2e.sh

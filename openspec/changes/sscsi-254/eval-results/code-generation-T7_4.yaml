@@ -1,0 +1,58 @@
+task_id: T7_4
+oape_command: manual
+stage: code-generation
+stage_eval_file: evals/code-generation_eval.yaml
+scored_at: 2026-07-09T16:32:00Z
+note: >-
+  evals/code-generation_eval.yaml has an empty case list (unresolved merge-conflict
+  markers, same defect as prior tasks). No cases matched.
+refinement_rounds: 0
+overall_score: null
+overall_pass: null
+verification:
+  commands:
+    - cmd: "bash -n hack/e2e.sh"
+      exit_code: 0
+      pass: true
+    - cmd: "make verify"
+      exit_code: 0
+      pass: true
+      note: "Sanity check -- no Go code touched by this task."
+  overall_pass: true
+test_execution:
+  strategy: build_only
+  commands:
+    - cmd: "make test-unit"
+      exit_code: 0
+      pass: true
+      summary: "ok  github.com/openshift/secrets-store-csi-driver-operator/pkg/operator (cached), no regression"
+  overall_pass: true
+  test_files_generated: []
+  note: >-
+    Full e2e execution (make test-e2e) requires a live OpenShift cluster and
+    cannot run in this environment, per docs/testing-guidelines.md and this
+    repo's own AGENTS.md ("E2E tests are not expected to pass locally"). Only
+    static syntax verification was performed; scenarios themselves are unexecuted
+    pending a live cluster.
+cases: []
+scenarios_added:
+  - test_upgrade_no_driverconfig_default_parity
+  - test_upgrade_preserves_manually_patched_tokenrequests
+  - test_upgrade_daemonset_args_unchanged
+  - test_upgrade_post_opt_in_to_managed
+sequencing_resolution: >-
+  Per T7_3's design finding (tokenRequests.type is a one-way, CEL-enforced
+  transition on the singleton ClusterCSIDriver), this task's four new scenario
+  functions were inserted BEFORE T7_3's Managed-audience WIF block in
+  hack/e2e.sh's execution order (a reorder, not an append), since they depend
+  on tokenRequests.type == "Unmanaged". This task's own final scenario
+  (test_upgrade_post_opt_in_to_managed) is itself the transition to Managed,
+  and is positioned as the very last "Unmanaged"-dependent call, immediately
+  before T7_3's block. Both blocks' comments were updated to cross-reference
+  this ordering constraint for future maintainers.
+verification_technique: >-
+  Preservation-without-recreation is verified by comparing
+  CSIDriver.metadata.uid before/after a manual live-object patch + a 30s
+  reconcile-wait window (per this task's explicit acceptance criterion "no
+  spec-hash change, no delete+recreate") rather than relying on
+  resourceVersion, since UID is the more reliable delete+recreate signal.

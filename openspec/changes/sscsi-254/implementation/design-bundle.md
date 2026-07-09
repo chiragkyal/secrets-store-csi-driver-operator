@@ -1,28 +1,34 @@
-# Design Bundle — Task T7_3
+# Design Bundle — Task T7_4
 
 **Change:** sscsi-254
-**Task:** T7_3 — E2E WIF scenarios (single/multi-audience)
+**Task:** T7_4 — E2E upgrade-preservation + no-`driverConfig` default-parity scenarios
 **Assigned Agent:** Testing_Agent
-**Phase:** Phase 7: E2E Scenarios
+**Phase:** Phase 7: E2E Scenarios (highest-risk e2e set per `plan.md` §7)
 
-## Task T7_3 Payload (from tasks.md §4)
+## Task T7_4 Payload (from tasks.md §4)
 
-- **Objective:** Implement the source EP's e2e WIF scenarios: single audience; multiple audiences (AWS + Azure); custom `expirationSeconds`; clearing via empty list; Unmanaged→Managed transition.
-- **Target file(s):** Per `T7_1`'s discovery output — new bash functions in `hack/e2e.sh`.
-- **Acceptance criteria:** `make test-e2e` (requires live cluster) passes these scenarios; traces to `specs.md` SC-003/SC-004/SC-007, User Story 2.
+- **Objective:** Implement the source EP's e2e upgrade scenarios: minimal CR with no existing tokenRequests; minimal CR with pre-existing manually-patched Azure WIF audiences (verify preservation, no spec-hash change, no delete+recreate); DaemonSet args unchanged; post-upgrade opt-in.
+- **Target file(s):** Per `T7_1`'s discovery output — `hack/e2e.sh`.
+- **Non-goals / forbidden edits:** None beyond staying within upgrade-scenario scope.
+- **Implementation notes:** This is the highest-risk e2e set per `plan.md` §7 — pay particular attention to confirming the `CSIDriver` object's spec-hash does **not** change (i.e. no unnecessary delete+recreate) when nothing should have changed.
+- **Acceptance criteria:** `make test-e2e` passes these scenarios; traces to `specs.md` SC-005, User Story 3, FR-010.
+- **Downstream handoff:** Upgrade-safety behavior e2e-verified — this closes the feature's highest-priority risk.
 
-## ⚠️ Critical sequencing constraint discovered during design (worth flagging as a deviation)
+## Critical carry-over from T7_3's design finding — MUST resolve in this task
 
-`tokenRequests.type` is a **one-way, CEL-enforced transition**: once set to `"Managed"` on the singleton `ClusterCSIDriver`, it can **never** revert to `"Unmanaged"` — confirmed both in the source EP and in the actual merged API's CEL rule (`T1_2`'s vendored types). Since there is only **one** `ClusterCSIDriver` object per cluster (singleton, `secrets-store.csi.k8s.io`), **any e2e scenario that needs `Unmanaged` behavior (preservation of pre-existing/externally-configured audiences — this task payload's own "Unmanaged→Managed transition" case, and all of `T7_4`'s preservation scenarios) MUST run and complete before this task's `Managed`-audience scenarios execute**, or they become permanently untestable for the remainder of the e2e run.
+`T7_3`'s task report flagged: `tokenRequests.type` is a **one-way, CEL-enforced transition** on the singleton `ClusterCSIDriver` — once `"Managed"`, it can never revert to `"Unmanaged"`. `T7_3` already wired its `Managed`-audience scenario calls at the very bottom of `hack/e2e.sh`'s execution block, behind an explicit comment marker stating that is the *last safe insertion point* for anything depending on `"Unmanaged"` behavior.
 
-`plan.md`/`tasks.md` marked `T7_2`/`T7_3`/`T7_4` `Parallel OK: Yes` based on the assumption they were independent — this is **not actually true** for `T7_3` vs. `T7_4` specifically, due to this shared-singleton, one-way-transition constraint. This was not visible until actually implementing the e2e scenarios against the real CEL semantics.
+**This task's own scenarios are exactly that "Unmanaged"-dependent case** (no-`driverConfig` default parity + preservation of pre-existing/manually-set audiences while `Unmanaged`/omitted). Per `T7_3`'s explicit handoff instruction, this task MUST:
+1. Insert its new function calls **before** `T7_3`'s WIF-block marker/calls in the execution block at the bottom of `hack/e2e.sh` (a reorder, not an append).
+2. Its own final scenario — "post-upgrade opt-in" (adopting a previously-preserved audience under `Managed`) — is itself a transition to `Managed`, so it must be the *last* Unmanaged-dependent call, immediately before `T7_3`'s block.
 
-**Resolution for this task**: implement `T7_3`'s `Managed`-audience functions now (single/multiple/clear/custom-expiration), but insert their execution-block wiring **after** a clearly-commented placeholder marker, so that `T7_4` (next task) can insert its `Unmanaged`-preservation scenario calls **before** this block when it lands — `T7_4` will need to reorder the execution block, not just append to it. This is flagged explicitly in this task's Deviations for `T7_4` to act on.
+## Scenario design
 
-## API shape (confirmed unchanged from EP assumptions — per T1_1)
+1. `test_upgrade_no_driverconfig_default_parity` — with no `driverConfig` at all, `CSIDriver.spec.tokenRequests` must stay unset (FR-010, byte-for-byte parity with pre-feature behavior).
+2. `test_upgrade_preserves_manually_patched_tokenrequests` — manually `oc patch csidriver` with an externally-set Azure audience (simulating a pre-existing/out-of-band config), confirm the operator's periodic reconciliation preserves it verbatim (FR-006) and does **not** delete+recreate the object (compare `metadata.uid` before/after a resync wait, per this task's explicit acceptance criterion).
+3. `test_upgrade_daemonset_args_unchanged` — confirm the unrelated tokenRequests-only patch above does not perturb the DaemonSet's rotation args (still at built-in defaults).
+4. `test_upgrade_post_opt_in_to_managed` — explicit administrator opt-in, adopting the previously-preserved audience under `Managed` (User Story 3's concluding acceptance scenario). This is the last `Unmanaged`-dependent call in the whole script.
 
-`tokenRequests` API shape matches the EP's original proposal exactly (unlike `secretRotation`'s field-name difference) — `type: Managed|Unmanaged`, `managed.audiences: [{audience, expirationSeconds}]`.
+## Verification commands (repo-assessment.md §12 style)
 
-## Execution approach
-
-Add `test_wif_managed_single_audience`, `test_wif_managed_multiple_audiences`, `test_wif_managed_clear_audiences` to `hack/e2e.sh`, using `oc get csidriver ... -o jsonpath='{.spec.tokenRequests[*].audience}'` (and per-audience `expirationSeconds` lookups) for verification, following `repo-assessment.md` §12's command style. Wire into the execution block after `T7_2`'s rotation block, with an explicit comment marking this as the **last** safe insertion point for any future `Unmanaged`-dependent scenario.
+`oc get csidriver ${PROVISIONER_NAME} -o jsonpath='{.spec.tokenRequests}'`, `-o jsonpath='{.metadata.uid}'`, `oc get ds -n ${E2E_PROVIDER_NAMESPACE} ${SECRETS_STORE_NODE_DAEMONSET} -o jsonpath='{...containers[?(@.name=="csi-driver")].args}'`.

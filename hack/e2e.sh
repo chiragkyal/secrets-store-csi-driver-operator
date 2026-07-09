@@ -269,6 +269,120 @@ test_rotation_cleanup() {
 	return 0
 }
 
+# --- SSCSI-254: Upgrade-preservation + no-driverConfig default-parity e2e scenarios ---
+#
+# IMPORTANT: these scenarios rely on tokenRequests.type being "Unmanaged" (the
+# default/omitted state). Per the one-way CEL transition documented in the WIF
+# block below, they MUST run -- and fully complete, including this block's own
+# "post-upgrade opt-in" scenario -- BEFORE any "Managed" scenario. Any future
+# "Unmanaged"-dependent scenario must be added to THIS block, never after it.
+
+get_csidriver_token_requests_raw() {
+	oc get csidriver ${PROVISIONER_NAME} -o jsonpath='{.spec.tokenRequests}'
+}
+
+get_csidriver_uid() {
+	oc get csidriver ${PROVISIONER_NAME} -o jsonpath='{.metadata.uid}'
+}
+
+get_node_daemonset_args() {
+	oc get ds -n ${E2E_PROVIDER_NAMESPACE} ${SECRETS_STORE_NODE_DAEMONSET} \
+		-o jsonpath='{.spec.template.spec.containers[?(@.name=="csi-driver")].args}'
+}
+
+# test_upgrade_no_driverconfig_default_parity verifies that with no driverConfig
+# set at all, CSIDriver.spec.tokenRequests stays unset -- identical to the
+# pre-feature hardcoded behavior (specs.md FR-010).
+test_upgrade_no_driverconfig_default_parity() {
+	echo "Verifying no-driverConfig default parity for tokenRequests"
+	local TOKEN_REQUESTS=$(get_csidriver_token_requests_raw)
+	if [ -n "${TOKEN_REQUESTS}" ]; then
+		echo "Expected empty tokenRequests with no driverConfig, got '${TOKEN_REQUESTS}'"
+		return 1
+	fi
+	echo "test_upgrade_no_driverconfig_default_parity PASSED"
+	return 0
+}
+
+# test_upgrade_preserves_manually_patched_tokenrequests simulates a pre-existing,
+# externally/manually-configured WIF audience on the live CSIDriver object
+# (e.g. set before this operator's SecretsStore support existed, or by another
+# actor) and verifies the operator's reconciliation preserves it verbatim while
+# driverConfig.secretsStore.tokenRequests stays Unmanaged/omitted, and does NOT
+# delete+recreate the object in the process (specs.md FR-006, User Story 3).
+test_upgrade_preserves_manually_patched_tokenrequests() {
+	local AZURE_AUDIENCE="api://AzureADTokenExchange"
+	echo "Manually patching CSIDriver.spec.tokenRequests to simulate pre-existing config"
+	oc patch csidriver ${PROVISIONER_NAME} --type=merge -p \
+		"{\"spec\":{\"tokenRequests\":[{\"audience\":\"${AZURE_AUDIENCE}\"}]}}" || return 1
+
+	local UID_BEFORE=$(get_csidriver_uid)
+	echo "Waiting for a reconcile cycle (operator resync) to confirm preservation"
+	sleep 30
+
+	local UID_AFTER=$(get_csidriver_uid)
+	if [ "${UID_BEFORE}" != "${UID_AFTER}" ]; then
+		echo "Expected CSIDriver UID to remain stable (no delete+recreate), before='${UID_BEFORE}' after='${UID_AFTER}'"
+		return 1
+	fi
+
+	local TOKEN_REQUESTS=$(get_csidriver_token_requests_raw)
+	if [[ "${TOKEN_REQUESTS}" != *"${AZURE_AUDIENCE}"* ]]; then
+		echo "Expected manually-patched audience '${AZURE_AUDIENCE}' to be preserved, got '${TOKEN_REQUESTS}'"
+		return 1
+	fi
+	echo "test_upgrade_preserves_manually_patched_tokenrequests PASSED"
+	return 0
+}
+
+# test_upgrade_daemonset_args_unchanged verifies that reconciling an unrelated
+# (tokenRequests-only) live-CSIDriver patch does not perturb the DaemonSet's
+# rotation args, which remain at their built-in defaults (specs.md FR-010).
+test_upgrade_daemonset_args_unchanged() {
+	echo "Verifying DaemonSet rotation args are unaffected by the tokenRequests preservation scenario above"
+	local ARGS_BEFORE=$(get_node_daemonset_args)
+	sleep 10
+	local ARGS_AFTER=$(get_node_daemonset_args)
+	if [ "${ARGS_BEFORE}" != "${ARGS_AFTER}" ]; then
+		echo "Expected DaemonSet csi-driver args to remain unchanged, before='${ARGS_BEFORE}' after='${ARGS_AFTER}'"
+		return 1
+	fi
+	if [[ "${ARGS_AFTER}" != *"--enable-secret-rotation=true"* ]]; then
+		echo "Expected default --enable-secret-rotation=true to still be present, got '${ARGS_AFTER}'"
+		return 1
+	fi
+	echo "test_upgrade_daemonset_args_unchanged PASSED"
+	return 0
+}
+
+# test_upgrade_post_opt_in_to_managed verifies the documented upgrade path:
+# after preservation is confirmed, an administrator can explicitly opt in to
+# Managed mode, adopting the previously-externally-set audience under operator
+# management (specs.md User Story 3, concluding acceptance scenario). This is
+# a one-way transition (see WIF block below) -- it MUST be the last
+# "Unmanaged"-dependent scenario in this script; it permanently moves the
+# singleton to Managed for the remainder of this e2e run.
+test_upgrade_post_opt_in_to_managed() {
+	local AZURE_AUDIENCE="api://AzureADTokenExchange"
+	echo "Opting in to Managed tokenRequests, adopting the previously-preserved audience"
+	oc patch clustercsidriver ${PROVISIONER_NAME} --type=merge -p \
+		"{\"spec\":{\"driverConfig\":{\"driverType\":\"SecretsStore\",\"secretsStore\":{\"tokenRequests\":{\"type\":\"Managed\",\"managed\":{\"audiences\":[{\"audience\":\"${AZURE_AUDIENCE}\"}]}}}}}}" || return 1
+
+	local ATTEMPTS=0
+	local CURRENT=""
+	while [ ${ATTEMPTS} -lt 12 ]; do
+		CURRENT=$(get_token_requests_audiences)
+		if [ "${CURRENT}" == "${AZURE_AUDIENCE}" ]; then
+			echo "test_upgrade_post_opt_in_to_managed PASSED"
+			return 0
+		fi
+		sleep 5
+		ATTEMPTS=$((ATTEMPTS + 1))
+	done
+	echo "Expected Managed tokenRequests to show '${AZURE_AUDIENCE}', last saw '${CURRENT}'"
+	return 1
+}
+
 # --- SSCSI-254: Workload Identity Federation (WIF) token audience e2e scenarios ---
 #
 # IMPORTANT: tokenRequests.type is a one-way, CEL-enforced transition on the
@@ -276,8 +390,9 @@ test_rotation_cleanup() {
 # "Unmanaged" for the lifetime of this e2e run. Any scenario that depends on
 # "Unmanaged" behavior (preserving pre-existing/externally-configured audiences,
 # or an Unmanaged->Managed transition) MUST run and complete BEFORE the functions
-# below. Do not insert new "Unmanaged"-dependent test calls after this block in
-# the execution order at the bottom of this script.
+# below (see the upgrade-preservation block above, which already does this). Do
+# not insert new "Unmanaged"-dependent test calls after this block in the
+# execution order at the bottom of this script.
 
 get_token_requests_audiences() {
 	oc get csidriver ${PROVISIONER_NAME} -o jsonpath='{.spec.tokenRequests[*].audience}'
@@ -421,11 +536,38 @@ fi
 
 test_rotation_cleanup
 
-# NOTE (SSCSI-254): this is the LAST safe point to insert any e2e scenario that
-# depends on tokenRequests.type == "Unmanaged" (e.g. preservation-on-upgrade
-# scenarios). The WIF tests below permanently transition tokenRequests to
-# "Managed" for the rest of this run (one-way CEL-enforced transition) -- any
-# "Unmanaged"-dependent scenario added after this point would be unable to run.
+# NOTE (SSCSI-254): the upgrade-preservation scenarios below depend on
+# tokenRequests.type == "Unmanaged" (the default/omitted state) and MUST run
+# -- and fully complete -- before any "Managed" scenario, since that transition
+# is one-way and CEL-enforced on the singleton ClusterCSIDriver. This is the
+# LAST safe point to insert any future "Unmanaged"-dependent scenario; nothing
+# depending on "Unmanaged" may be added after this block.
+test_upgrade_no_driverconfig_default_parity
+if [ $? -ne 0 ]; then
+	echo "test_upgrade_no_driverconfig_default_parity FAILED"
+	exit 1
+fi
+
+test_upgrade_preserves_manually_patched_tokenrequests
+if [ $? -ne 0 ]; then
+	echo "test_upgrade_preserves_manually_patched_tokenrequests FAILED"
+	exit 1
+fi
+
+test_upgrade_daemonset_args_unchanged
+if [ $? -ne 0 ]; then
+	echo "test_upgrade_daemonset_args_unchanged FAILED"
+	exit 1
+fi
+
+test_upgrade_post_opt_in_to_managed
+if [ $? -ne 0 ]; then
+	echo "test_upgrade_post_opt_in_to_managed FAILED"
+	exit 1
+fi
+
+# From this point on, tokenRequests.type is permanently "Managed" for the rest
+# of this run (one-way CEL-enforced transition) -- see note above.
 test_wif_managed_single_audience
 if [ $? -ne 0 ]; then
 	echo "test_wif_managed_single_audience FAILED"

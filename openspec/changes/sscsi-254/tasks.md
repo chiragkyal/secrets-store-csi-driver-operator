@@ -121,7 +121,7 @@ graph TD
 14. [x] `T5_1` — Upgrade-default-parity regression tests (no-`driverConfig` / nil-`SecretsStore` paths)
 15. [x] `T7_1` — Discovery: read `hack/e2e.sh` in full, enumerate existing e2e structure
 16. [x] `T7_2` — E2E rotation scenarios (enable/disable/custom-interval)
-17. `T7_3` — E2E WIF scenarios (single/multi-audience)
+17. [x] `T7_3` — E2E WIF scenarios (single/multi-audience)
 18. `T7_4` — E2E upgrade-preservation + no-`driverConfig` default-parity scenarios
 19. `T8_1` — Update `README.md` quick-start example, if warranted
 
