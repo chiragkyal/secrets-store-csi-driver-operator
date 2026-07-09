@@ -151,6 +151,124 @@ test_pod_with_secret() {
 	return 0
 }
 
+# --- SSCSI-254: Configurable Secret Rotation e2e scenarios ---
+export SECRETS_STORE_NODE_DAEMONSET="secrets-store-csi-driver-node"
+
+# get_rotation_arg extracts the value of a --<flag>= arg from the csi-driver
+# container's current args, e.g. get_rotation_arg enable-secret-rotation -> "true".
+get_rotation_arg() {
+	local FLAG_NAME=$1
+	oc get ds -n ${E2E_PROVIDER_NAMESPACE} ${SECRETS_STORE_NODE_DAEMONSET} \
+		-o jsonpath="{.spec.template.spec.containers[?(@.name==\"csi-driver\")].args}" \
+		| grep -o -- "--${FLAG_NAME}=[^ ]*" | cut -d= -f2
+}
+
+get_requires_republish() {
+	oc get csidriver ${PROVISIONER_NAME} -o jsonpath='{.spec.requiresRepublish}'
+}
+
+wait_for_node_daemonset_rollout() {
+	oc rollout status daemonset/${SECRETS_STORE_NODE_DAEMONSET} -n ${E2E_PROVIDER_NAMESPACE} --timeout=60s
+	return $?
+}
+
+# test_rotation_defaults verifies that with no driverConfig set on ClusterCSIDriver,
+# rotation remains enabled at the operator's built-in default (specs.md FR-010).
+test_rotation_defaults() {
+	echo "Verifying default rotation behavior (no driverConfig set)"
+	local REPUBLISH=$(get_requires_republish)
+	if [ "${REPUBLISH}" != "true" ]; then
+		echo "Expected requiresRepublish=true by default, got '${REPUBLISH}'"
+		return 1
+	fi
+	local ENABLED=$(get_rotation_arg enable-secret-rotation)
+	if [ "${ENABLED}" != "true" ]; then
+		echo "Expected --enable-secret-rotation=true by default, got '${ENABLED}'"
+		return 1
+	fi
+	echo "test_rotation_defaults PASSED"
+	return 0
+}
+
+# test_rotation_custom_interval verifies secretRotation.type: Custom with a
+# configured rotationPollIntervalSeconds propagates to both CSIDriver.requiresRepublish
+# and the DaemonSet's --rotation-poll-interval arg (specs.md FR-002).
+test_rotation_custom_interval() {
+	local INTERVAL_SECONDS=300
+	echo "Setting custom rotation interval to ${INTERVAL_SECONDS}s"
+	oc patch clustercsidriver ${PROVISIONER_NAME} --type=merge -p \
+		"{\"spec\":{\"driverConfig\":{\"driverType\":\"SecretsStore\",\"secretsStore\":{\"secretRotation\":{\"type\":\"Custom\",\"custom\":{\"rotationPollIntervalSeconds\":${INTERVAL_SECONDS}}}}}}}" || return 1
+	wait_for_node_daemonset_rollout || return 1
+
+	local REPUBLISH=$(get_requires_republish)
+	if [ "${REPUBLISH}" != "true" ]; then
+		echo "Expected requiresRepublish=true with secretRotation.type=Custom, got '${REPUBLISH}'"
+		return 1
+	fi
+	local INTERVAL=$(get_rotation_arg rotation-poll-interval)
+	if [ "${INTERVAL}" != "${INTERVAL_SECONDS}s" ]; then
+		echo "Expected --rotation-poll-interval=${INTERVAL_SECONDS}s, got '${INTERVAL}'"
+		return 1
+	fi
+	echo "test_rotation_custom_interval PASSED"
+	return 0
+}
+
+# test_rotation_disabled verifies secretRotation.type: None disables rotation on
+# both the CSIDriver object and the DaemonSet args (specs.md FR-001, Edge Cases).
+test_rotation_disabled() {
+	echo "Disabling secret rotation (secretRotation.type: None)"
+	oc patch clustercsidriver ${PROVISIONER_NAME} --type=merge -p \
+		'{"spec":{"driverConfig":{"driverType":"SecretsStore","secretsStore":{"secretRotation":{"type":"None"}}}}}' || return 1
+	wait_for_node_daemonset_rollout || return 1
+
+	local REPUBLISH=$(get_requires_republish)
+	if [ "${REPUBLISH}" != "false" ]; then
+		echo "Expected requiresRepublish=false with secretRotation.type=None, got '${REPUBLISH}'"
+		return 1
+	fi
+	local ENABLED=$(get_rotation_arg enable-secret-rotation)
+	if [ "${ENABLED}" != "false" ]; then
+		echo "Expected --enable-secret-rotation=false with secretRotation.type=None, got '${ENABLED}'"
+		return 1
+	fi
+	echo "test_rotation_disabled PASSED"
+	return 0
+}
+
+# test_rotation_toggle_back_to_custom verifies that after disabling rotation,
+# switching back to Custom re-enables it correctly (specs.md User Story 1,
+# Acceptance Scenario 3).
+test_rotation_toggle_back_to_custom() {
+	local INTERVAL_SECONDS=300
+	echo "Re-enabling rotation with Custom interval after having disabled it"
+	oc patch clustercsidriver ${PROVISIONER_NAME} --type=merge -p \
+		"{\"spec\":{\"driverConfig\":{\"driverType\":\"SecretsStore\",\"secretsStore\":{\"secretRotation\":{\"type\":\"Custom\",\"custom\":{\"rotationPollIntervalSeconds\":${INTERVAL_SECONDS}}}}}}}" || return 1
+	wait_for_node_daemonset_rollout || return 1
+
+	local REPUBLISH=$(get_requires_republish)
+	if [ "${REPUBLISH}" != "true" ]; then
+		echo "Expected requiresRepublish=true after toggling back to Custom, got '${REPUBLISH}'"
+		return 1
+	fi
+	local ENABLED=$(get_rotation_arg enable-secret-rotation)
+	if [ "${ENABLED}" != "true" ]; then
+		echo "Expected --enable-secret-rotation=true after toggling back to Custom, got '${ENABLED}'"
+		return 1
+	fi
+	echo "test_rotation_toggle_back_to_custom PASSED"
+	return 0
+}
+
+# test_rotation_cleanup removes the driverConfig set by the rotation tests above,
+# restoring the singleton ClusterCSIDriver to its pre-test state for subsequent runs.
+test_rotation_cleanup() {
+	echo "Restoring ClusterCSIDriver to no driverConfig (cleanup)"
+	oc patch clustercsidriver ${PROVISIONER_NAME} --type=json -p '[{"op":"remove","path":"/spec/driverConfig"}]' 2>/dev/null
+	wait_for_node_daemonset_rollout
+	return 0
+}
+
 test_prechecks
 if [ $? -ne 0 ]; then
 	echo "test_prechecks FAILED"
@@ -177,6 +295,38 @@ if [ $? -ne 0 ]; then
 	echo "test_teardown FAILED"
 	exit 1
 fi
+
+# SSCSI-254: rotation scenarios run after the pod-mount test tears down, since
+# each mutates the singleton ClusterCSIDriver and triggers a node DaemonSet
+# rollout that could otherwise disrupt the concurrently-running pod-mount test.
+test_rotation_defaults
+if [ $? -ne 0 ]; then
+	echo "test_rotation_defaults FAILED"
+	exit 1
+fi
+
+test_rotation_custom_interval
+if [ $? -ne 0 ]; then
+	echo "test_rotation_custom_interval FAILED"
+	test_rotation_cleanup
+	exit 1
+fi
+
+test_rotation_disabled
+if [ $? -ne 0 ]; then
+	echo "test_rotation_disabled FAILED"
+	test_rotation_cleanup
+	exit 1
+fi
+
+test_rotation_toggle_back_to_custom
+if [ $? -ne 0 ]; then
+	echo "test_rotation_toggle_back_to_custom FAILED"
+	test_rotation_cleanup
+	exit 1
+fi
+
+test_rotation_cleanup
 
 echo "All tests PASSED"
 exit 0

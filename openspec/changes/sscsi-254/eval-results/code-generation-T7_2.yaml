@@ -1,0 +1,48 @@
+task_id: T7_2
+oape_command: manual
+stage: code-generation
+stage_eval_file: evals/code-generation_eval.yaml
+scored_at: 2026-07-09T16:08:00Z
+note: >-
+  evals/code-generation_eval.yaml has an empty case list (unresolved merge-conflict
+  markers, same defect as prior tasks). No cases matched.
+refinement_rounds: 0
+overall_score: null
+overall_pass: null
+verification:
+  commands:
+    - cmd: "bash -n hack/e2e.sh"
+      exit_code: 0
+      pass: true
+    - cmd: "make verify"
+      exit_code: 0
+      pass: true
+      note: "Sanity check -- no Go code touched by this task."
+  overall_pass: true
+test_execution:
+  strategy: build_only
+  commands:
+    - cmd: "make test-unit"
+      exit_code: 0
+      pass: true
+      summary: "ok  github.com/openshift/secrets-store-csi-driver-operator/pkg/operator (cached), no regression"
+  overall_pass: true
+  test_files_generated: []
+  note: >-
+    Full e2e execution (make test-e2e) requires a live OpenShift cluster and
+    cannot run in this environment, per docs/testing-guidelines.md and this
+    repo's own AGENTS.md ("E2E tests are not expected to pass locally"). Only
+    static syntax verification was performed; scenarios themselves are unexecuted
+    pending a live cluster.
+cases: []
+scenarios_added:
+  - test_rotation_defaults
+  - test_rotation_custom_interval
+  - test_rotation_disabled
+  - test_rotation_toggle_back_to_custom
+  - test_rotation_cleanup
+field_name_correction: >-
+  Used the actual merged API field name rotationPollIntervalSeconds (confirmed in
+  T1_1) rather than the EP's original minimumRefreshAge assumption, and the actual
+  hook-produced arg format "<N>s" (confirmed in T4_1) rather than the EP's assumed
+  "5m0s" format.
