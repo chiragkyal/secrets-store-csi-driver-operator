@@ -21,11 +21,11 @@ flags:
   #                  specialized Cursor commands for API/controller/e2e generation, eval scoring)
   #   "direct"     — plain agent implementation (reads context files, applies FILE OPERATIONS
   #                  directly, no OAPE commands, no code eval gate)
-  codegen_mode: ai-helpers
-  max_feedback_rounds: 3          # Max user rejection + refinement loops per artifact before halting (USER_FEEDBACK_PROMPT.md)
+  codegen_mode: direct
+  max_feedback_rounds: 3 # Max user rejection + refinement loops per artifact before halting (USER_FEEDBACK_PROMPT.md)
   exit_on_all_tasks_complete: true # Exit implementation stage automatically when all tasks in tasks.md are marked [x]
   generate_evaluation_reports: true # Generate <artifact>_evaluation_report.md alongside each artifact
- 
+
 rules:
   validation:
     - "Read jira_key from inputs/jira.yaml; use inputs/jira-spec.md as spec source"
