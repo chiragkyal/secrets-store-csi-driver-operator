@@ -345,6 +345,7 @@ graph TD
 - **Downstream handoff:** Final e2e coverage state for the feature, ready for review.
 
 ### Task T6_1: README update (optional)
+- **Status:** Completed — see `implementation/task-reports/T6_1.md`
 - **Objective:** Document the new `secretRotation`/`tokenRequests` configuration surface in `README.md`, including the manual verification commands from `openspec/inputs/ep.md` §"Support Procedures" (`oc get csidriver ... -o yaml`, `oc get ds ... -o jsonpath=...`).
 - **Target file(s):** `README.md`.
 - **Non-goals / forbidden edits:** Do not modify `hack/update-metadata.sh`-managed version strings as part of this doc update (Constitution Principle IX — those are script-managed only).

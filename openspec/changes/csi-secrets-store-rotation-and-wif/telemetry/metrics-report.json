@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-07-09T18:02:07.198276+00:00",
+  "exported_at": "2026-07-09T18:06:30.156467+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "1f9581fb-2858-45cd-aa01-e6a49fa80d30",
@@ -382,8 +382,22 @@
       "task_id": "T6_1",
       "task_title": "README update (optional)",
       "agent_id": "Docs_Agent",
-      "status": "running",
+      "status": "passed",
       "started_at": "2026-07-09T18:02:07.193216+00:00",
+      "completed_at": "2026-07-09T18:05:19.534555+00:00",
+      "tokens_in": 30732,
+      "tokens_out": 505,
+      "self_correction_loops": 0
+    },
+    {
+      "id": "45d2b1f0-5ca7-43c2-a8ed-a92dedac84f8",
+      "run_id": "1f9581fb-2858-45cd-aa01-e6a49fa80d30",
+      "phase_id": "f4494877-4d0b-42a1-8afe-af0dfe9e1da0",
+      "task_id": "T6_2",
+      "task_title": "Sample ClusterCSIDriver YAML (optional)",
+      "agent_id": "Docs_Agent",
+      "status": "running",
+      "started_at": "2026-07-09T18:06:30.151023+00:00",
       "completed_at": null,
       "tokens_in": 0,
       "tokens_out": 0,
@@ -595,14 +609,14 @@
   "global_health": {
     "total_tokens_consumed": 108596,
     "estimated_cost_usd": 0.6975,
-    "cumulative_wall_time_s": 11415.6,
+    "cumulative_wall_time_s": 11678.5,
     "compliance_index": 80.0,
     "gate_passing_rate": 80.0,
     "human_rejection_rate": 0.0,
     "total_refinement_iterations": 0,
-    "agent_success_rate": 95.2,
-    "tasks_passed": 20,
-    "tasks_total": 21
+    "agent_success_rate": 95.5,
+    "tasks_passed": 21,
+    "tasks_total": 22
   },
   "artifact_edits": {
     "artifacts": [
