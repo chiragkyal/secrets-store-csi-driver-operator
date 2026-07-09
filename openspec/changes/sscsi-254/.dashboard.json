@@ -6,7 +6,7 @@
     "1": {
       "id": "1f95541a-e173-448d-b99b-a5862047ab9c",
       "name": "spec_understanding",
-      "ended": false,
+      "ended": true,
       "tokens_in": 10186,
       "tokens_out": 764
     }

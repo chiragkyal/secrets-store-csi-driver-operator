@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-07-09T08:41:05.038976+00:00",
+  "exported_at": "2026-07-09T08:55:08.156007+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
@@ -9,8 +9,8 @@
     "status": "running",
     "started_at": "2026-07-09T08:31:03.056093+00:00",
     "completed_at": null,
-    "total_tokens_in": 10186,
-    "total_tokens_out": 764
+    "total_tokens_in": 21136,
+    "total_tokens_out": 4055
   },
   "phases": [
     {
@@ -19,15 +19,15 @@
       "phase_number": 1,
       "phase_name": "spec_understanding",
       "model_id": "",
-      "status": "running",
+      "status": "passed",
       "started_at": "2026-07-09T08:37:08.387112+00:00",
-      "completed_at": null,
-      "tokens_in": 10186,
-      "tokens_out": 764,
-      "quality_score": 93.0,
-      "quality_label": "PASS",
+      "completed_at": "2026-07-09T08:55:08.151633+00:00",
+      "tokens_in": 21136,
+      "tokens_out": 4055,
+      "quality_score": 0,
+      "quality_label": "APPROVED",
       "iteration_count": 1,
-      "duration_s": 60.0
+      "duration_s": 1079.8
     }
   ],
   "tasks": [],
@@ -71,14 +71,54 @@
       "event_type": "state_machine",
       "message": "Artifact 'validation' completed with status: passed",
       "metadata_json": null
+    },
+    {
+      "id": "8872786b-b37d-4257-9241-40b028e042a3",
+      "ts": "2026-07-09T08:44:37.543392+00:00",
+      "run_id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Artifact 'specs' created \u2014 awaiting eval gate",
+      "metadata_json": null
+    },
+    {
+      "id": "876b05f3-d19a-4005-a600-3427fbfb2922",
+      "ts": "2026-07-09T08:45:11.950035+00:00",
+      "run_id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Artifact 'specs' ready for approval \u2014 waiting for human decision",
+      "metadata_json": null
+    },
+    {
+      "id": "07332e2f-ccc8-441f-815d-133e599c4608",
+      "ts": "2026-07-09T08:55:08.151238+00:00",
+      "run_id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Human approved artifact 'specs'",
+      "metadata_json": null
+    },
+    {
+      "id": "37d252fe-5f10-47e8-bf04-ef8d198310b5",
+      "ts": "2026-07-09T08:55:08.151489+00:00",
+      "run_id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Artifact 'specs' completed with status: passed",
+      "metadata_json": null
     }
   ],
   "global_health": {
-    "total_tokens_consumed": 10950,
-    "estimated_cost_usd": 0.042,
-    "cumulative_wall_time_s": 602.0,
-    "compliance_index": 0.0,
-    "gate_passing_rate": 0.0,
+    "total_tokens_consumed": 25191,
+    "estimated_cost_usd": 0.1242,
+    "cumulative_wall_time_s": 1445.1,
+    "compliance_index": 100.0,
+    "gate_passing_rate": 100.0,
     "human_rejection_rate": 0.0,
     "total_refinement_iterations": 0,
     "agent_success_rate": 100.0,
@@ -89,6 +129,13 @@
     "artifacts": [
       {
         "artifact_id": "validation",
+        "phase_name": "spec_understanding",
+        "eval_refinements": 0,
+        "feedback_rounds": 0,
+        "total_edits": 0
+      },
+      {
+        "artifact_id": "specs",
         "phase_name": "spec_understanding",
         "eval_refinements": 0,
         "feedback_rounds": 0,
