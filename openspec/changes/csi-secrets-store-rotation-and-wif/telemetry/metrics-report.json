@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-07-09T17:58:48.318328+00:00",
+  "exported_at": "2026-07-09T18:02:07.198276+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "1f9581fb-2858-45cd-aa01-e6a49fa80d30",
@@ -368,8 +368,22 @@
       "task_id": "T5_3",
       "task_title": "E2E: upgrade preservation",
       "agent_id": "Testing_Agent",
-      "status": "running",
+      "status": "passed",
       "started_at": "2026-07-09T17:58:48.312875+00:00",
+      "completed_at": "2026-07-09T18:01:14.178293+00:00",
+      "tokens_in": 30715,
+      "tokens_out": 840,
+      "self_correction_loops": 0
+    },
+    {
+      "id": "3d284b31-eb1e-4d79-9b1e-7c7538979d32",
+      "run_id": "1f9581fb-2858-45cd-aa01-e6a49fa80d30",
+      "phase_id": "f4494877-4d0b-42a1-8afe-af0dfe9e1da0",
+      "task_id": "T6_1",
+      "task_title": "README update (optional)",
+      "agent_id": "Docs_Agent",
+      "status": "running",
+      "started_at": "2026-07-09T18:02:07.193216+00:00",
       "completed_at": null,
       "tokens_in": 0,
       "tokens_out": 0,
@@ -581,14 +595,14 @@
   "global_health": {
     "total_tokens_consumed": 108596,
     "estimated_cost_usd": 0.6975,
-    "cumulative_wall_time_s": 11216.7,
+    "cumulative_wall_time_s": 11415.6,
     "compliance_index": 80.0,
     "gate_passing_rate": 80.0,
     "human_rejection_rate": 0.0,
     "total_refinement_iterations": 0,
-    "agent_success_rate": 95.0,
-    "tasks_passed": 19,
-    "tasks_total": 20
+    "agent_success_rate": 95.2,
+    "tasks_passed": 20,
+    "tasks_total": 21
   },
   "artifact_edits": {
     "artifacts": [

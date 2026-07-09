@@ -6,19 +6,19 @@
 machine:
   # direct mode states: IDLE | EXECUTING_TASK | RUNNING_TESTS | AWAITING_APPROVAL | COMPLETE
   state: AWAITING_APPROVAL
-  current_task_id: T5_3
-  current_task_index: 20
+  current_task_id: T6_1
+  current_task_index: 21
   total_tasks: 22
-  last_transition: "2026-07-09T19:03:00Z"
+  last_transition: "2026-07-09T19:10:00Z"
 
 current_task_result:
-  task_id: T5_3
+  task_id: T6_1
   files_changed:
-    - hack/e2e.sh
+    - README.md
   verification_pass: true
-  test_command: "bash -n hack/e2e.sh && go build -mod=vendor ./..."
+  test_command: "manual review (docs-only task; plan.md Phase 6 verification hook is manual review, no automated make test-unit/test-e2e coverage applies to docs)"
   test_result: PASS
-  test_output_summary: "bash -n: syntax OK (comment-only addition). go build: repo still builds cleanly. Acceptance criterion narrowed from automated test to documented manual runbook per task's own Implementation notes, since no upgrade-testing mechanism exists anywhere in this repo (confirmed: no 'upgrade' references in any repo YAML, no upgrade Prow-job scaffolding, no operator-version-swap script)."
+  test_output_summary: "New '## Configuring secret rotation and workload identity federation (WIF)' section added, describing both secretRotation and tokenRequests configuration with YAML examples, the Managed/Unmanaged irreversibility caveat (FR-006), and the manual verification commands from ep.md's Support Procedures section. No hack/update-metadata.sh-managed version strings were touched."
 
 mode: direct
 working_folder_mode: true
@@ -102,6 +102,10 @@ completed:
     test_result: PASS
     report: implementation/task-reports/T5_2.md
     approved_at: "2026-07-09T18:57:00Z"
+  - task_id: T5_3
+    test_result: PASS
+    report: implementation/task-reports/T5_3.md
+    approved_at: "2026-07-09T19:05:00Z"
 
 # Current task result — written during execution, cleared on advance
 current_task_result: null

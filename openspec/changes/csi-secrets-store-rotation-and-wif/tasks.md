@@ -336,6 +336,7 @@ graph TD
 - **Downstream handoff:** Extended `hack/e2e.sh` for T5_3.
 
 ### Task T5_3: E2E: upgrade preservation
+- **Status:** Completed — see `implementation/task-reports/T5_3.md` (narrowed to a documented manual runbook per this task's own Implementation notes; no upgrade-testing mechanism exists in this repo)
 - **Objective:** Extend `hack/e2e.sh` (or document as a separate upgrade-test runbook if the existing script's structure doesn't fit an upgrade scenario) to verify that a cluster with pre-existing, manually-configured `CSIDriver.spec.tokenRequests` and no `driverConfig.secretsStore` set retains that configuration and its existing rotation cadence after the operator upgrades to include this feature — per `repo-assessment.md` §11 (the highest-impact untested path today) and `specs.md` SC-005.
 - **Target file(s):** `hack/e2e.sh`.
 - **Non-goals / forbidden edits:** Do not invent a new upgrade-testing framework — reuse whatever mechanism CI already has for upgrade-path Prow jobs if one exists (`Evidence: PARTIAL` — this repo's own `hack/e2e.sh` does not currently model an upgrade scenario; `repo-assessment.md` did not find one).
