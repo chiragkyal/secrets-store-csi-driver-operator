@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-07-09T15:44:15.049435+00:00",
+  "exported_at": "2026-07-09T16:01:14.039115+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "1f9581fb-2858-45cd-aa01-e6a49fa80d30",
@@ -116,8 +116,36 @@
       "task_id": "T1_2",
       "task_title": "Vendor bump go.mod/vendor for new types",
       "agent_id": "ControllerLogic_Agent",
-      "status": "running",
+      "status": "passed",
       "started_at": "2026-07-09T15:44:15.044262+00:00",
+      "completed_at": "2026-07-09T15:54:05.554305+00:00",
+      "tokens_in": 30277,
+      "tokens_out": 1164,
+      "self_correction_loops": 0
+    },
+    {
+      "id": "2acee610-05c3-4beb-8bb8-ea131c132ab0",
+      "run_id": "1f9581fb-2858-45cd-aa01-e6a49fa80d30",
+      "phase_id": "f4494877-4d0b-42a1-8afe-af0dfe9e1da0",
+      "task_id": "T1_3",
+      "task_title": "Verify build compiles against new types",
+      "agent_id": "ControllerLogic_Agent",
+      "status": "passed",
+      "started_at": "2026-07-09T15:54:56.480580+00:00",
+      "completed_at": "2026-07-09T15:59:32.031308+00:00",
+      "tokens_in": 30294,
+      "tokens_out": 374,
+      "self_correction_loops": 0
+    },
+    {
+      "id": "7b20cec0-2eb6-48aa-b127-4720019e4301",
+      "run_id": "1f9581fb-2858-45cd-aa01-e6a49fa80d30",
+      "phase_id": "f4494877-4d0b-42a1-8afe-af0dfe9e1da0",
+      "task_id": "T2_1",
+      "task_title": "Rotation config extraction (nil-safety + defaults)",
+      "agent_id": "ControllerLogic_Agent",
+      "status": "running",
+      "started_at": "2026-07-09T16:01:14.033667+00:00",
       "completed_at": null,
       "tokens_in": 0,
       "tokens_out": 0,
@@ -329,14 +357,14 @@
   "global_health": {
     "total_tokens_consumed": 108596,
     "estimated_cost_usd": 0.6975,
-    "cumulative_wall_time_s": 3143.4,
+    "cumulative_wall_time_s": 4162.4,
     "compliance_index": 80.0,
     "gate_passing_rate": 80.0,
     "human_rejection_rate": 0.0,
     "total_refinement_iterations": 0,
-    "agent_success_rate": 50.0,
-    "tasks_passed": 1,
-    "tasks_total": 2
+    "agent_success_rate": 75.0,
+    "tasks_passed": 3,
+    "tasks_total": 4
   },
   "artifact_edits": {
     "artifacts": [
