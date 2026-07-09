@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-07-09T16:01:14.039115+00:00",
+  "exported_at": "2026-07-09T16:06:23.382932+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "1f9581fb-2858-45cd-aa01-e6a49fa80d30",
@@ -144,8 +144,22 @@
       "task_id": "T2_1",
       "task_title": "Rotation config extraction (nil-safety + defaults)",
       "agent_id": "ControllerLogic_Agent",
-      "status": "running",
+      "status": "passed",
       "started_at": "2026-07-09T16:01:14.033667+00:00",
+      "completed_at": "2026-07-09T16:04:01.528135+00:00",
+      "tokens_in": 30311,
+      "tokens_out": 636,
+      "self_correction_loops": 0
+    },
+    {
+      "id": "c53dec9f-f444-42b8-9265-2a277de20cd3",
+      "run_id": "1f9581fb-2858-45cd-aa01-e6a49fa80d30",
+      "phase_id": "f4494877-4d0b-42a1-8afe-af0dfe9e1da0",
+      "task_id": "T2_2",
+      "task_title": "setArg prefix-replace helper",
+      "agent_id": "ControllerLogic_Agent",
+      "status": "running",
+      "started_at": "2026-07-09T16:06:23.377495+00:00",
       "completed_at": null,
       "tokens_in": 0,
       "tokens_out": 0,
@@ -357,14 +371,14 @@
   "global_health": {
     "total_tokens_consumed": 108596,
     "estimated_cost_usd": 0.6975,
-    "cumulative_wall_time_s": 4162.4,
+    "cumulative_wall_time_s": 4471.8,
     "compliance_index": 80.0,
     "gate_passing_rate": 80.0,
     "human_rejection_rate": 0.0,
     "total_refinement_iterations": 0,
-    "agent_success_rate": 75.0,
-    "tasks_passed": 3,
-    "tasks_total": 4
+    "agent_success_rate": 80.0,
+    "tasks_passed": 4,
+    "tasks_total": 5
   },
   "artifact_edits": {
     "artifacts": [

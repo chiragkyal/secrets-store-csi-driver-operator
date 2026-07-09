@@ -1,6 +1,7 @@
 package operator
 
 import (
+	"strings"
 	"time"
 
 	opv1 "github.com/openshift/api/operator/v1"
@@ -58,4 +59,21 @@ func getSecretRotationConfig(driverConfig opv1.CSIDriverConfigSpec) (enabled boo
 		// opinion expressed, keep the defaults.
 		return defaultRotationEnabled, defaultRotationPollInterval
 	}
+}
+
+// setArg finds the element of args whose value starts with prefix and
+// replaces it with prefix+value, in place. If no element matches, prefix+value
+// is appended. All other elements are left unchanged and in their original
+// order. Used to update individual flag arguments (e.g.
+// "--rotation-poll-interval=") on a container's args without disturbing
+// unrelated flags.
+func setArg(args []string, prefix, value string) []string {
+	newArg := prefix + value
+	for i, arg := range args {
+		if strings.HasPrefix(arg, prefix) {
+			args[i] = newArg
+			return args
+		}
+	}
+	return append(args, newArg)
 }

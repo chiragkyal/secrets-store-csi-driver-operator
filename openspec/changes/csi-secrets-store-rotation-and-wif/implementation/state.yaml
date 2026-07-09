@@ -6,10 +6,10 @@
 machine:
   # direct mode states: IDLE | EXECUTING_TASK | RUNNING_TESTS | AWAITING_APPROVAL | COMPLETE
   state: AWAITING_APPROVAL
-  current_task_id: T2_1
-  current_task_index: 4
+  current_task_id: T2_2
+  current_task_index: 5
   total_tasks: 22
-  last_transition: "2026-07-09T16:04:00Z"
+  last_transition: "2026-07-09T16:12:00Z"
 
 mode: direct
 working_folder_mode: true
@@ -29,21 +29,24 @@ completed:
     test_result: PASS
     report: implementation/task-reports/T1_3.md
     approved_at: "2026-07-09T15:58:00Z"
+  - task_id: T2_1
+    test_result: PASS
+    report: implementation/task-reports/T2_1.md
+    approved_at: "2026-07-09T16:05:00Z"
 
 # Current task result — written during execution, cleared on advance
 current_task_result:
-  task_id: T2_1
+  task_id: T2_2
   files_changed:
     - pkg/operator/rotation.go
+    - pkg/operator/rotation_test.go
   verification_pass: true
-  test_command: "go build ./pkg/operator/... && go vet ./pkg/operator/... && make verify"
+  test_command: "go test ./pkg/operator/... -run TestSetArg -v && make verify && make test-unit"
   test_result: PASS
   test_output_summary: >-
-    go build and go vet on pkg/operator/... both exit 0; gofmt -s -l clean;
-    make verify passes (FIPS warning only, expected locally). No _test.go
-    written in this task by design -- tasks.md's backlog places unit test
-    coverage for this function in the dedicated T2_4 task, which will exercise
-    the full nil-safety matrix implemented here.
+    TestSetArg: 4/4 subtests pass (replace existing, append when absent,
+    no reorder of unrelated args, append into empty slice). make verify
+    clean. make test-unit: pkg/operator ok (2.132s).
 
 # Rejection history for current task (cleared on advance)
 rejections: []

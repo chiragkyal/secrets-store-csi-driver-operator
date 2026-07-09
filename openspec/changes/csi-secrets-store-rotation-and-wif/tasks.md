@@ -192,6 +192,7 @@ graph TD
 - **Downstream handoff:** A green build baseline for Phase 2 and Phase 3 to branch from in parallel.
 
 ### Task T2_1: Rotation config extraction (nil-safety + defaults)
+- **Status:** Completed — see `implementation/task-reports/T2_1.md`
 - **Objective:** Implement a pure function that reads a `ClusterCSIDriver`'s `driverConfig.secretsStore.secretRotation` and returns the effective enable-flag and poll-interval, handling every nil-path from `openspec/inputs/ep.md`'s Test Plan (nil `driverConfig`; nil `secretsStore`; nil `secretRotation` → default `true`/`2m`; `type: None` → `false`; `type: Custom` with `minimumRefreshAge` → derived interval; `type: Custom` with omitted `minimumRefreshAge` → default `120s`).
 - **Target file(s):** New `pkg/operator/rotation.go` (repo-assessment §2 confirms `pkg/operator/` currently has only `starter.go`/`starter_test.go` — this is a new file, not an edit to an existing one).
 - **Non-goals / forbidden edits:** Do not touch `pkg/operator/starter.go` in this task (wiring happens in T2_5). Do not implement bounds validation (1s–~1yr) here — that is enforced by the upstream CRD schema (FR-008), not this operator's Go code.
