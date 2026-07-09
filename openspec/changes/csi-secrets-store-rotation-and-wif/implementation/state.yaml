@@ -6,10 +6,10 @@
 machine:
   # direct mode states: IDLE | EXECUTING_TASK | RUNNING_TESTS | AWAITING_APPROVAL | COMPLETE
   state: AWAITING_APPROVAL
-  current_task_id: T3_3
-  current_task_index: 11
+  current_task_id: T3_4
+  current_task_index: 12
   total_tasks: 22
-  last_transition: "2026-07-09T17:17:00Z"
+  last_transition: "2026-07-09T17:28:00Z"
 
 mode: direct
 working_folder_mode: true
@@ -57,21 +57,30 @@ completed:
     test_result: PASS
     report: implementation/task-reports/T3_2.md
     approved_at: "2026-07-09T17:05:00Z"
+  - task_id: T3_3
+    test_result: PASS
+    report: implementation/task-reports/T3_3.md
+    approved_at: "2026-07-09T17:18:00Z"
 
 # Current task result — written during execution, cleared on advance
 current_task_result:
-  task_id: T3_3
+  task_id: T3_4
   files_changed:
-    - pkg/operator/csidriver_asset_test.go
+    - pkg/operator/starter.go
   verification_pass: true
-  test_command: "go test ./pkg/operator/... -v -run 'TestGetRequiresRepublish|TestGetTokenRequests|TestNewDynamicCSIDriverAssetFunc' && make verify && make test-unit"
+  test_command: "go build ./... && go vet ./... && make verify && make test-unit"
   test_result: PASS
   test_output_summary: >-
-    TestGetRequiresRepublish: 3/3. TestGetTokenRequests: 8/8 (full six-way
-    matrix plus two defensive edge cases: nil-audiences-pointer preserve,
-    explicit-empty-slice clear). TestNewDynamicCSIDriverAssetFunc: 4/4
-    (no-ClusterCSIDriver, defaults, tokenRequests preservation, type=None).
-    make verify clean. make test-unit: pkg/operator ok (2.127s).
+    go build ./... clean. go vet clean. gofmt clean. make verify clean.
+    make test-unit: pkg/operator ok (2.640s). Sanity grep confirms
+    csidriver.yaml appears exactly once, in the new dedicated
+    "SecretsStoreDynamicCSIDriverController" call; the original shared
+    call now lists the remaining 7 files only.
+  design_note: >-
+    Both WithConditionalStaticResourcesController calls gate identically
+    on getOperatorSyncState (Managed/Removed), per Constitution Principle
+    IV and this task's Non-goals. Diff is minimal (30 insertions, 1
+    deletion) as instructed.
 
 # Rejection history for current task (cleared on advance)
 rejections: []

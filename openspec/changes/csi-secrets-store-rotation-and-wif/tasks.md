@@ -255,6 +255,7 @@ graph TD
 - **Downstream handoff:** A ready-to-register `AssetFunc` for T3_4's controller-call split.
 
 ### Task T3_3: Unit tests for dynamic CSIDriver asset
+- **Status:** Completed — see `implementation/task-reports/T3_3.md`
 - **Objective:** Table-driven unit tests covering T3_1's full six-way nil-path preservation matrix and T3_2's rendering correctness (namespace substitution preserved, valid YAML produced), following `starter_test.go`'s shape.
 - **Target file(s):** New `pkg/operator/csidriver_asset_test.go`.
 - **Non-goals / forbidden edits:** No third-party assertion libraries.

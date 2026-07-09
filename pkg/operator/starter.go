@@ -94,13 +94,42 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		replaceNamespaceFunc(operatorNamespace),
 		[]string{
 			"node_sa.yaml",
-			"csidriver.yaml",
 			"cabundle_cm.yaml",
 			"rbac/privileged_role.yaml",
 			"rbac/node_privileged_binding.yaml",
 			"rbac/secretproviderclasses_role.yaml",
 			"rbac/secretproviderclasses_binding.yaml",
 			"network-policy/allow-ingress-to-metrics-operand.yaml",
+		},
+		func() bool {
+			return getOperatorSyncState(operatorClient) == opv1.Managed
+		},
+		func() bool {
+			return getOperatorSyncState(operatorClient) == opv1.Removed
+		},
+	).WithConditionalStaticResourcesController(
+		// csidriver.yaml is deliberately split into its own controller
+		// instance, rather than sharing the AssetFunc/file list above,
+		// because its content is now dynamic (requiresRepublish and
+		// tokenRequests are computed from the live ClusterCSIDriver and
+		// CSIDriver objects). Keeping it separate avoids any risk of a
+		// bug in this dynamic AssetFunc affecting the unrelated static
+		// assets (RBAC, ServiceAccount, ConfigMap, NetworkPolicy) reconciled
+		// above. Gating is identical to the call above (Managed/Removed via
+		// getOperatorSyncState), per Constitution Principle IV.
+		"SecretsStoreDynamicCSIDriverController",
+		kubeClient,
+		dynamicClient,
+		kubeInformersForNamespaces,
+		NewDynamicCSIDriverAssetFunc(
+			replaceNamespaceFunc(operatorNamespace),
+			clusterCSIDriverInformer.Lister(),
+			providerName,
+			kubeInformersForNamespaces.InformersFor("").Storage().V1().CSIDrivers().Lister(),
+			providerName,
+		),
+		[]string{
+			"csidriver.yaml",
 		},
 		func() bool {
 			return getOperatorSyncState(operatorClient) == opv1.Managed
