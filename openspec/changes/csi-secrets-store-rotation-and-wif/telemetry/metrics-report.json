@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-07-09T16:06:23.382932+00:00",
+  "exported_at": "2026-07-09T16:17:03.034720+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "1f9581fb-2858-45cd-aa01-e6a49fa80d30",
@@ -158,8 +158,22 @@
       "task_id": "T2_2",
       "task_title": "setArg prefix-replace helper",
       "agent_id": "ControllerLogic_Agent",
-      "status": "running",
+      "status": "passed",
       "started_at": "2026-07-09T16:06:23.377495+00:00",
+      "completed_at": "2026-07-09T16:15:24.830661+00:00",
+      "tokens_in": 30328,
+      "tokens_out": 505,
+      "self_correction_loops": 0
+    },
+    {
+      "id": "767ca21e-a20d-411d-90c0-fdceb2d9321d",
+      "run_id": "1f9581fb-2858-45cd-aa01-e6a49fa80d30",
+      "phase_id": "f4494877-4d0b-42a1-8afe-af0dfe9e1da0",
+      "task_id": "T2_3",
+      "task_title": "DaemonSetHookFunc factory function",
+      "agent_id": "ControllerLogic_Agent",
+      "status": "running",
+      "started_at": "2026-07-09T16:17:03.029276+00:00",
       "completed_at": null,
       "tokens_in": 0,
       "tokens_out": 0,
@@ -371,14 +385,14 @@
   "global_health": {
     "total_tokens_consumed": 108596,
     "estimated_cost_usd": 0.6975,
-    "cumulative_wall_time_s": 4471.8,
+    "cumulative_wall_time_s": 5111.4,
     "compliance_index": 80.0,
     "gate_passing_rate": 80.0,
     "human_rejection_rate": 0.0,
     "total_refinement_iterations": 0,
-    "agent_success_rate": 80.0,
-    "tasks_passed": 4,
-    "tasks_total": 5
+    "agent_success_rate": 83.3,
+    "tasks_passed": 5,
+    "tasks_total": 6
   },
   "artifact_edits": {
     "artifacts": [

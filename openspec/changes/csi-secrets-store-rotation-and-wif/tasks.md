@@ -201,6 +201,7 @@ graph TD
 - **Downstream handoff:** A named function/type for T2_3's hook factory to call.
 
 ### Task T2_2: `setArg` prefix-replace helper
+- **Status:** Completed — see `implementation/task-reports/T2_2.md`
 - **Objective:** Implement a small utility that finds a container-arg string by its `--flag=` prefix in a `[]string` and replaces it (or appends if absent), for use on the `csi-driver` container's `args` in `node.yaml`.
 - **Target file(s):** `pkg/operator/rotation.go` (same new file as T2_1, or a small separate file if preferred — no existing equivalent helper exists anywhere in this repo or its vendored dependencies per `repo-assessment.md` §7).
 - **Non-goals / forbidden edits:** Do not hardcode the `csi-driver` container name lookup here — that belongs in T2_3, which has access to the full `*appsv1.DaemonSet`.

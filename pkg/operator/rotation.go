@@ -1,11 +1,23 @@
 package operator
 
 import (
+	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
 	opv1 "github.com/openshift/api/operator/v1"
+	"github.com/openshift/library-go/pkg/operator/csi/csidrivernodeservicecontroller"
+	appsv1 "k8s.io/api/apps/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/cache"
 )
+
+// csiDriverContainerName is the name of the driver container in node.yaml
+// whose args carry the rotation flags this hook manages.
+const csiDriverContainerName = "csi-driver"
 
 const (
 	// defaultRotationEnabled and defaultRotationPollInterval match the
@@ -76,4 +88,62 @@ func setArg(args []string, prefix, value string) []string {
 		}
 	}
 	return append(args, newArg)
+}
+
+// WithSecretRotationDaemonSetHook returns a DaemonSetHookFunc that sets the
+// csi-driver container's "--enable-secret-rotation=" and
+// "--rotation-poll-interval=" args from the live ClusterCSIDriver named
+// driverName, read via clusterCSIDriverLister.
+//
+// Modeled directly on csidrivernodeservicecontroller.WithCABundleDaemonSetHook
+// (vendor/.../csidrivernodeservicecontroller/helpers.go): the hook closes
+// over its own lister rather than relying on its *opv1.OperatorSpec
+// parameter, which only carries the generic OperatorSpec fields, never
+// ClusterCSIDriverSpec.DriverConfig.
+//
+// clusterCSIDriverLister is a cache.GenericLister for the clustercsidrivers
+// resource (dynamicInformers.ForResource(gvr).Lister() in starter.go) rather
+// than a typed lister, because no typed ClusterCSIDriver informer/lister is
+// constructed elsewhere in this operator; reusing the existing dynamic
+// informer avoids adding a second, redundant informer for the same resource.
+func WithSecretRotationDaemonSetHook(
+	clusterCSIDriverLister cache.GenericLister,
+	driverName string,
+) csidrivernodeservicecontroller.DaemonSetHookFunc {
+	return func(_ *opv1.OperatorSpec, daemonSet *appsv1.DaemonSet) error {
+		uncastObj, err := clusterCSIDriverLister.Get(driverName)
+		if apierrors.IsNotFound(err) {
+			// The ClusterCSIDriver is not created yet: leave the
+			// DaemonSet's rotation args untouched (they already carry
+			// the static, pre-feature defaults from node.yaml).
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("failed to get ClusterCSIDriver %q: %w", driverName, err)
+		}
+
+		unstructuredObj, ok := uncastObj.(*unstructured.Unstructured)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for ClusterCSIDriver %q", uncastObj, driverName)
+		}
+
+		driver := &opv1.ClusterCSIDriver{}
+		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(unstructuredObj.Object, driver); err != nil {
+			return fmt.Errorf("unable to convert to ClusterCSIDriver: %w", err)
+		}
+
+		enabled, interval := getSecretRotationConfig(driver.Spec.DriverConfig)
+
+		containers := daemonSet.Spec.Template.Spec.Containers
+		for i := range containers {
+			if containers[i].Name != csiDriverContainerName {
+				continue
+			}
+			containers[i].Args = setArg(containers[i].Args, "--enable-secret-rotation=", strconv.FormatBool(enabled))
+			containers[i].Args = setArg(containers[i].Args, "--rotation-poll-interval=", interval.String())
+			return nil
+		}
+
+		return fmt.Errorf("container %q not found in DaemonSet %s/%s", csiDriverContainerName, daemonSet.Namespace, daemonSet.Name)
+	}
 }
