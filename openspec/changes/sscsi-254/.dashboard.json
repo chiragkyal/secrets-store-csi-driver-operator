@@ -2,6 +2,14 @@
   "run_id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
   "jira_key": "SSCSI-254",
   "change": "sscsi-254",
-  "phases": {},
+  "phases": {
+    "1": {
+      "id": "1f95541a-e173-448d-b99b-a5862047ab9c",
+      "name": "spec_understanding",
+      "ended": false,
+      "tokens_in": 10186,
+      "tokens_out": 764
+    }
+  },
   "tasks": {}
 }
