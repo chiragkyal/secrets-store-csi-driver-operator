@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-07-09T08:55:08.156007+00:00",
+  "exported_at": "2026-07-09T09:07:37.770738+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
@@ -9,8 +9,8 @@
     "status": "running",
     "started_at": "2026-07-09T08:31:03.056093+00:00",
     "completed_at": null,
-    "total_tokens_in": 21136,
-    "total_tokens_out": 4055
+    "total_tokens_in": 34637,
+    "total_tokens_out": 14723
   },
   "phases": [
     {
@@ -28,6 +28,22 @@
       "quality_label": "APPROVED",
       "iteration_count": 1,
       "duration_s": 1079.8
+    },
+    {
+      "id": "272776bf-bfab-4026-af31-9908a14ac96b",
+      "run_id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
+      "phase_number": 2,
+      "phase_name": "repo_assessment",
+      "model_id": "",
+      "status": "passed",
+      "started_at": "2026-07-09T08:58:40.205027+00:00",
+      "completed_at": "2026-07-09T09:07:37.763235+00:00",
+      "tokens_in": 13501,
+      "tokens_out": 10668,
+      "quality_score": 100.0,
+      "quality_label": "APPROVED",
+      "iteration_count": 1,
+      "duration_s": 537.6
     }
   ],
   "tasks": [],
@@ -111,12 +127,52 @@
       "event_type": "state_machine",
       "message": "Artifact 'specs' completed with status: passed",
       "metadata_json": null
+    },
+    {
+      "id": "d14a0bea-6fc8-475f-bc56-9c95e63ec4d2",
+      "ts": "2026-07-09T09:05:46.580469+00:00",
+      "run_id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Artifact 'repo-assessment' created \u2014 awaiting eval gate",
+      "metadata_json": null
+    },
+    {
+      "id": "d09bf35e-8376-4f4f-a7fd-19e675c49f68",
+      "ts": "2026-07-09T09:06:56.452319+00:00",
+      "run_id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Artifact 'repo-assessment' ready for approval (eval score: 100.0%) \u2014 waiting for human decision",
+      "metadata_json": null
+    },
+    {
+      "id": "453e9fb5-0598-47f5-9232-f18ff1d9306f",
+      "ts": "2026-07-09T09:07:37.762204+00:00",
+      "run_id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Human approved artifact 'repo-assessment'",
+      "metadata_json": null
+    },
+    {
+      "id": "b7960c41-9be7-4158-bab7-a0b7e772bdce",
+      "ts": "2026-07-09T09:07:37.762707+00:00",
+      "run_id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Artifact 'repo-assessment' completed with status: passed",
+      "metadata_json": null
     }
   ],
   "global_health": {
-    "total_tokens_consumed": 25191,
-    "estimated_cost_usd": 0.1242,
-    "cumulative_wall_time_s": 1445.1,
+    "total_tokens_consumed": 49360,
+    "estimated_cost_usd": 0.3248,
+    "cumulative_wall_time_s": 2194.7,
     "compliance_index": 100.0,
     "gate_passing_rate": 100.0,
     "human_rejection_rate": 0.0,
@@ -137,6 +193,13 @@
       {
         "artifact_id": "specs",
         "phase_name": "spec_understanding",
+        "eval_refinements": 0,
+        "feedback_rounds": 0,
+        "total_edits": 0
+      },
+      {
+        "artifact_id": "repo-assessment",
+        "phase_name": "repo_assessment",
         "eval_refinements": 0,
         "feedback_rounds": 0,
         "total_edits": 0

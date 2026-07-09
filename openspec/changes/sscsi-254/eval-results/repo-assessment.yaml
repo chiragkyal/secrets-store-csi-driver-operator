@@ -1,0 +1,59 @@
+artifact_id: repo-assessment
+artifact_path: openspec/changes/sscsi-254/repo-assessment.md
+stage: repo-assessment
+stage_eval_file: evals/repo-assessment_eval.yaml
+scored_at: 2026-07-09T09:05:00Z
+note: >-
+  The installed schema's evals/repo-assessment_eval.yaml has an empty `evals: []`
+  list (no case-based assertions shipped for this stage). Per stage-gate rules,
+  gate type is "stage_evals", but with zero cases there is nothing to average.
+  Scored instead against the repo-assessment-template.md's own embedded
+  "Quality Checklist (self-check before output — target >=90%)" (lines 388-410),
+  which is the closest available rubric.
+overall_score: 100
+overall_pass: true
+cases: []
+self_check_items:
+  - item: "COMPLETENESS: Document reaches Section 12 with no truncated tables/lists/mid-sentence cuts"
+    pass: true
+  - item: "Section 0 branch pin: repo URL, branch, commit, tooling_status, spec status recorded"
+    pass: true
+  - item: "Feature tailoring: Sections 1-4 reference the feature's CR/operand/controller path"
+    pass: true
+  - item: "Branch honesty: Section 11.1 lists branch-specific absences"
+    pass: true
+    evidence: "SecretsStore driver type absence in vendor/github.com/openshift/api documented in Section 0, 1.3, 2, 7, 11"
+  - item: "Section 1 comes before Section 2 and explains architecture without requiring source reads"
+    pass: true
+  - item: "Section 1.3 calls out dead-code/RBAC-placeholder traps; Section 2 repeats critical do-not-edit warnings"
+    pass: true
+    evidence: "pkg/dependencymagnet/dependencymagnet.go called out in both 1.3 and 2"
+  - item: "Section 4.1 lists configurable fields in a table"
+    pass: true
+  - item: "Section 4.2 is a numbered hook/pipeline table with error behavior, from reading code"
+    pass: true
+  - item: "Sections 5-6 present (Reusable Assets + Guardrails by category)"
+    pass: true
+  - item: "Section 7 has a concrete change cascade table with real verification commands"
+    pass: true
+  - item: "Section 8.2 has copy-paste-ready test commands using actual Makefile target names"
+    pass: true
+  - item: "Section 9.4 has at least one How-to-add walkthrough based on observed patterns"
+    pass: true
+  - item: "Section 11.1 honestly lists UNVERIFIED items and branch-specific absences"
+    pass: true
+  - item: "Section 12 has preflight checklist + quick-nav table"
+    pass: true
+  - item: "No file path asserted without evidence"
+    pass: true
+  - item: "No draft/meta sentences"
+    pass: true
+  - item: "Answers how to work in this repo, not just what files exist"
+    pass: true
+  - item: "Greenfield vs delta/hardening conclusion explicit when spec feature absent on branch"
+    pass: true
+    evidence: "Explicitly concludes greenfield API dependency + net-new read-path plumbing throughout Sections 0, 1.3, 2, 4.2, 11"
+  - item: "If AGENTS.md provided: project-specific Repo-Assessment Stage Hints satisfied"
+    pass: true
+    evidence: "Root AGENTS.md (resolved per lookup order) has no Repo-Assessment Stage Hints section for this repo, so no additional project-specific requirements apply beyond the generic template"
+failures: []
