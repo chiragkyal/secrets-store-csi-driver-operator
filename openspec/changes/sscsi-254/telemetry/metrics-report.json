@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-07-09T12:07:03.541357+00:00",
+  "exported_at": "2026-07-09T12:11:29.505981+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
@@ -242,8 +242,22 @@
       "task_id": "T4_3",
       "task_title": "Unit tests: hook arg replacement + error path",
       "agent_id": "Testing_Agent",
-      "status": "running",
+      "status": "passed",
       "started_at": "2026-07-09T12:07:03.534688+00:00",
+      "completed_at": "2026-07-09T12:10:27.147915+00:00",
+      "tokens_in": 30190,
+      "tokens_out": 659,
+      "self_correction_loops": 0
+    },
+    {
+      "id": "d13eb3b4-0cea-4fbe-a26b-d5c871f5ee40",
+      "run_id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
+      "phase_id": "163d9e96-dcc1-48e1-897e-4e0faaf7512d",
+      "task_id": "T3_4",
+      "task_title": "Unit tests: CSIDriver mapping + preservation cascade",
+      "agent_id": "Testing_Agent",
+      "status": "running",
+      "started_at": "2026-07-09T12:11:29.498964+00:00",
       "completed_at": null,
       "tokens_in": 0,
       "tokens_out": 0,
@@ -455,14 +469,14 @@
   "global_health": {
     "total_tokens_consumed": 109866,
     "estimated_cost_usd": 0.6953,
-    "cumulative_wall_time_s": 12960.5,
+    "cumulative_wall_time_s": 13226.4,
     "compliance_index": 80.0,
     "gate_passing_rate": 80.0,
     "human_rejection_rate": 0.0,
     "total_refinement_iterations": 0,
-    "agent_success_rate": 90.9,
-    "tasks_passed": 10,
-    "tasks_total": 11
+    "agent_success_rate": 91.7,
+    "tasks_passed": 11,
+    "tasks_total": 12
   },
   "artifact_edits": {
     "artifacts": [

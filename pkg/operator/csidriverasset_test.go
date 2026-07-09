@@ -305,6 +305,86 @@ func TestWithSecretsStoreCSIDriverAsset_ManagedOverridesLivePreservation(t *test
 	}
 }
 
+// TestWithSecretsStoreCSIDriverAsset_MultipleAudiences covers task T3_4: multiple
+// simultaneous audiences (e.g. AWS + Azure) must all be propagated to the CSIDriver
+// object (specs.md FR-004/FR-011), per the source EP's "Multi-cloud WIF scenarios"
+// Test Plan. The existing ManagedTokenRequests test only exercises a single audience.
+func TestWithSecretsStoreCSIDriverAsset_MultipleAudiences(t *testing.T) {
+	awsAudience := "sts.amazonaws.com"
+	azureAudience := "api://AzureADTokenExchange"
+	driverCR := &opv1.ClusterCSIDriver{
+		ObjectMeta: metav1.ObjectMeta{Name: providerName},
+		Spec: opv1.ClusterCSIDriverSpec{
+			DriverConfig: opv1.CSIDriverConfigSpec{
+				DriverType: opv1.SecretsStoreDriverType,
+				SecretsStore: opv1.SecretsStoreCSIDriverConfigSpec{
+					TokenRequests: opv1.SecretsStoreTokenRequests{
+						Type: opv1.TokenRequestsManaged,
+						Managed: opv1.ManagedTokenRequests{
+							Audiences: &[]opv1.SecretsStoreTokenRequest{
+								{Audience: &awsAudience, ExpirationSeconds: 3600},
+								{Audience: &azureAudience},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	wrapped := withSecretsStoreCSIDriverAsset(baseAssetFunc, &fakeClusterCSIDriverLister{driver: driverCR}, &fakeCSIDriverLister{})
+
+	got, err := wrapped(csidriverAssetName)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	driver := decodeTestCSIDriver(t, got)
+	if len(driver.Spec.TokenRequests) != 2 {
+		t.Fatalf("expected 2 tokenRequests, got %d: %v", len(driver.Spec.TokenRequests), driver.Spec.TokenRequests)
+	}
+	audiences := map[string]bool{driver.Spec.TokenRequests[0].Audience: true, driver.Spec.TokenRequests[1].Audience: true}
+	if !audiences[awsAudience] || !audiences[azureAudience] {
+		t.Errorf("expected both %q and %q present, got %v", awsAudience, azureAudience, audiences)
+	}
+}
+
+// TestWithSecretsStoreCSIDriverAsset_ManagedEmptyAudiencesClearsLiveData covers task
+// T3_4: an explicit empty audience list under "Managed" must clear tokenRequests
+// even when the live CSIDriver object has pre-existing audiences (specs.md FR-008) --
+// distinct from the "Unmanaged/omitted preserves live data" cascade.
+func TestWithSecretsStoreCSIDriverAsset_ManagedEmptyAudiencesClearsLiveData(t *testing.T) {
+	liveDriver := &storagev1.CSIDriver{
+		Spec: storagev1.CSIDriverSpec{
+			TokenRequests: []storagev1.TokenRequest{{Audience: "pre-existing-audience"}},
+		},
+	}
+	driverCR := &opv1.ClusterCSIDriver{
+		ObjectMeta: metav1.ObjectMeta{Name: providerName},
+		Spec: opv1.ClusterCSIDriverSpec{
+			DriverConfig: opv1.CSIDriverConfigSpec{
+				DriverType: opv1.SecretsStoreDriverType,
+				SecretsStore: opv1.SecretsStoreCSIDriverConfigSpec{
+					TokenRequests: opv1.SecretsStoreTokenRequests{
+						Type: opv1.TokenRequestsManaged,
+						Managed: opv1.ManagedTokenRequests{
+							Audiences: &[]opv1.SecretsStoreTokenRequest{}, // explicit empty list
+						},
+					},
+				},
+			},
+		},
+	}
+	wrapped := withSecretsStoreCSIDriverAsset(baseAssetFunc, &fakeClusterCSIDriverLister{driver: driverCR}, &fakeCSIDriverLister{driver: liveDriver})
+
+	got, err := wrapped(csidriverAssetName)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	driver := decodeTestCSIDriver(t, got)
+	if len(driver.Spec.TokenRequests) != 0 {
+		t.Errorf("expected tokenRequests to be cleared despite pre-existing live data, got %v", driver.Spec.TokenRequests)
+	}
+}
+
 func TestWithSecretsStoreCSIDriverAsset_LiveListerError(t *testing.T) {
 	wrapped := withSecretsStoreCSIDriverAsset(baseAssetFunc, &fakeClusterCSIDriverLister{}, &fakeCSIDriverLister{err: errors.New("live-boom")})
 

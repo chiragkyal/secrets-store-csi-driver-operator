@@ -1,0 +1,47 @@
+task_id: T3_4
+oape_command: manual
+stage: code-generation
+stage_eval_file: evals/code-generation_eval.yaml
+scored_at: 2026-07-09T14:30:00Z
+note: >-
+  evals/code-generation_eval.yaml has an empty case list (unresolved merge-conflict
+  markers, same defect as prior tasks). No cases matched.
+refinement_rounds: 0
+overall_score: null
+overall_pass: null
+verification:
+  commands:
+    - cmd: "go build ./pkg/operator/..."
+      exit_code: 0
+      pass: true
+    - cmd: "go vet ./pkg/operator/..."
+      exit_code: 0
+      pass: true
+    - cmd: "gofmt -s -l pkg/operator/csidriverasset_test.go"
+      exit_code: 0
+      pass: true
+    - cmd: "make verify"
+      exit_code: 0
+      pass: true
+  overall_pass: true
+test_execution:
+  strategy: co_generated_tests
+  commands:
+    - cmd: "go test ./pkg/operator/... -v -count=1 -run TestWithSecretsStoreCSIDriverAsset"
+      exit_code: 0
+      pass: true
+      tests_run: 15
+      tests_passed: 15
+      tests_failed: 0
+      note: "13 pre-existing (T3_1 + T3_2) + 2 new cases closing coverage gaps identified against the source EP's own Test Plan."
+    - cmd: "make test-unit"
+      exit_code: 0
+      pass: true
+      summary: "ok  github.com/openshift/secrets-store-csi-driver-operator/pkg/operator 2.125s"
+  overall_pass: true
+  test_files_generated: []
+  note: "Extended pkg/operator/csidriverasset_test.go rather than a new file, consistent with the T2_3/T3_2/T4_3 pattern."
+cases: []
+coverage_gap_closed:
+  - "Multiple simultaneous audiences (AWS + Azure) were only tested at the ResolveSecretsStoreConfig unit level (T2_1), not end-to-end through withSecretsStoreCSIDriverAsset"
+  - "Managed with an explicit empty audience list clearing pre-existing live data was not tested at the integration level (only the populated-overrides-live case was)"
