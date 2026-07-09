@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-07-09T15:42:15.660896+00:00",
+  "exported_at": "2026-07-09T15:44:15.049435+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "1f9581fb-2858-45cd-aa01-e6a49fa80d30",
@@ -107,6 +107,20 @@
       "completed_at": "2026-07-09T15:42:15.649811+00:00",
       "tokens_in": 30260,
       "tokens_out": 1012,
+      "self_correction_loops": 0
+    },
+    {
+      "id": "8cba5637-5e35-456b-9888-aa106436050b",
+      "run_id": "1f9581fb-2858-45cd-aa01-e6a49fa80d30",
+      "phase_id": "f4494877-4d0b-42a1-8afe-af0dfe9e1da0",
+      "task_id": "T1_2",
+      "task_title": "Vendor bump go.mod/vendor for new types",
+      "agent_id": "ControllerLogic_Agent",
+      "status": "running",
+      "started_at": "2026-07-09T15:44:15.044262+00:00",
+      "completed_at": null,
+      "tokens_in": 0,
+      "tokens_out": 0,
       "self_correction_loops": 0
     }
   ],
@@ -315,14 +329,14 @@
   "global_health": {
     "total_tokens_consumed": 108596,
     "estimated_cost_usd": 0.6975,
-    "cumulative_wall_time_s": 3024.0,
+    "cumulative_wall_time_s": 3143.4,
     "compliance_index": 80.0,
     "gate_passing_rate": 80.0,
     "human_rejection_rate": 0.0,
     "total_refinement_iterations": 0,
-    "agent_success_rate": 100.0,
+    "agent_success_rate": 50.0,
     "tasks_passed": 1,
-    "tasks_total": 1
+    "tasks_total": 2
   },
   "artifact_edits": {
     "artifacts": [
