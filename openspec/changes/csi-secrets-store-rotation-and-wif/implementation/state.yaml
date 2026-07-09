@@ -6,10 +6,10 @@
 machine:
   # direct mode states: IDLE | EXECUTING_TASK | RUNNING_TESTS | AWAITING_APPROVAL | COMPLETE
   state: AWAITING_APPROVAL
-  current_task_id: T3_4
-  current_task_index: 12
+  current_task_id: T4_1
+  current_task_index: 14
   total_tasks: 22
-  last_transition: "2026-07-09T17:28:00Z"
+  last_transition: "2026-07-09T17:46:00Z"
 
 mode: direct
 working_folder_mode: true
@@ -61,26 +61,31 @@ completed:
     test_result: PASS
     report: implementation/task-reports/T3_3.md
     approved_at: "2026-07-09T17:18:00Z"
+  - task_id: T3_4
+    test_result: PASS
+    report: implementation/task-reports/T3_4.md
+    approved_at: "2026-07-09T17:29:00Z"
+  - task_id: T3_5
+    test_result: PASS
+    report: implementation/task-reports/T3_5.md
+    approved_at: "2026-07-09T17:39:00Z"
 
 # Current task result — written during execution, cleared on advance
 current_task_result:
-  task_id: T3_4
-  files_changed:
-    - pkg/operator/starter.go
+  task_id: T4_1
+  files_changed: []
   verification_pass: true
-  test_command: "go build ./... && go vet ./... && make verify && make test-unit"
+  test_command: "make verify && make test-unit"
   test_result: PASS
   test_output_summary: >-
-    go build ./... clean. go vet clean. gofmt clean. make verify clean.
-    make test-unit: pkg/operator ok (2.640s). Sanity grep confirms
-    csidriver.yaml appears exactly once, in the new dedicated
-    "SecretsStoreDynamicCSIDriverController" call; the original shared
-    call now lists the remaining 7 files only.
-  design_note: >-
-    Both WithConditionalStaticResourcesController calls gate identically
-    on getOperatorSyncState (Managed/Removed), per Constitution Principle
-    IV and this task's Non-goals. Diff is minimal (30 insertions, 1
-    deletion) as instructed.
+    Review-only task, no gap found, no code changed. make verify clean.
+    make test-unit: pkg/operator ok (cached). Confirmed via code review
+    (starter.go) plus a grep across rotation.go/csidriver_asset.go for
+    kubeClient./dynamicClient./.Create(/.Update(/.Delete(/.Apply( -- zero
+    matches, confirming both new mechanisms are read-only (via listers)
+    plus in-memory mutation, with all actual cluster writes delegated to
+    the pre-existing, already-gated library-go controller machinery.
+  finding: "gating_inheritance_confirmed_no_gap"
 
 # Rejection history for current task (cleared on advance)
 rejections: []

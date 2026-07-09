@@ -264,6 +264,7 @@ graph TD
 - **Downstream handoff:** Passing tests as a precondition for T3_4.
 
 ### Task T3_4: Split `csidriver.yaml` into its own controller call
+- **Status:** Completed — see `implementation/task-reports/T3_4.md`
 - **Objective:** Modify `starter.go` to remove `"csidriver.yaml"` from the shared 8-file `WithConditionalStaticResourcesController` call's file list and register a **second**, dedicated `WithConditionalStaticResourcesController` call scoped to `["csidriver.yaml"]` using T3_2's dynamic `AssetFunc` — per `repo-assessment.md` §1.3 Option (b) / §11 risk #3, to avoid the blast-radius risk of branching inside the currently-shared `replaceNamespaceFunc`.
 - **Target file(s):** `pkg/operator/starter.go`.
 - **Non-goals / forbidden edits:** Do not change the `shouldCreateFn`/`shouldDeleteFn` gating semantics for the remaining 7 files in the original call — they must continue to gate on `getOperatorSyncState` exactly as before (Constitution Principle IV). The new `csidriver.yaml`-only call must **also** gate on `getOperatorSyncState` identically.
@@ -272,6 +273,7 @@ graph TD
 - **Downstream handoff:** A functioning dynamic-CSIDriver wiring for T4_1 to regression-check.
 
 ### Task T3_5: RBAC relevance verification (discovery)
+- **Status:** Completed — see `implementation/task-reports/T3_5.md`
 - **Objective:** Determine whether the pre-existing `serviceaccounts/token: create` RBAC grant (`assets/rbac/secretproviderclasses_role.yaml`, commented "for CSI driver token requests") is relevant to, sufficient for, or unrelated to the new kubelet-driven WIF `tokenRequests` mechanism (`repo-assessment.md` §3.3/§11.1; `plan.md` §8 Open Question #4).
 - **Target file(s):** None to start (discovery); potentially `assets/rbac/secretproviderclasses_role.yaml` if a gap is found (Constitution Principle VI — any RBAC change MUST be a YAML file in `assets/rbac/`, never inline/dynamic).
 - **Non-goals / forbidden edits:** Do not add or remove RBAC without a documented finding — no speculative RBAC edits.

@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-07-09T16:56:59.850231+00:00",
+  "exported_at": "2026-07-09T17:06:27.568459+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "1f9581fb-2858-45cd-aa01-e6a49fa80d30",
@@ -256,8 +256,36 @@
       "task_id": "T3_4",
       "task_title": "Split csidriver.yaml into its own controller call",
       "agent_id": "ControllerLogic_Agent",
-      "status": "running",
+      "status": "passed",
       "started_at": "2026-07-09T16:56:59.844833+00:00",
+      "completed_at": "2026-07-09T17:00:40.757996+00:00",
+      "tokens_in": 30447,
+      "tokens_out": 602,
+      "self_correction_loops": 0
+    },
+    {
+      "id": "bd7257eb-4570-4d79-a7e0-5e148e90b7ff",
+      "run_id": "1f9581fb-2858-45cd-aa01-e6a49fa80d30",
+      "phase_id": "f4494877-4d0b-42a1-8afe-af0dfe9e1da0",
+      "task_id": "T3_5",
+      "task_title": "RBAC relevance verification",
+      "agent_id": "RBACSecurity_Agent",
+      "status": "passed",
+      "started_at": "2026-07-09T17:02:02.675771+00:00",
+      "completed_at": "2026-07-09T17:05:30.880588+00:00",
+      "tokens_in": 30464,
+      "tokens_out": 861,
+      "self_correction_loops": 0
+    },
+    {
+      "id": "afc11ca5-0fb6-445d-b46b-e783dc70f636",
+      "run_id": "1f9581fb-2858-45cd-aa01-e6a49fa80d30",
+      "phase_id": "f4494877-4d0b-42a1-8afe-af0dfe9e1da0",
+      "task_id": "T4_1",
+      "task_title": "Management-state gating verification",
+      "agent_id": "ControllerLogic_Agent",
+      "status": "running",
+      "started_at": "2026-07-09T17:06:27.562921+00:00",
       "completed_at": null,
       "tokens_in": 0,
       "tokens_out": 0,
@@ -469,14 +497,14 @@
   "global_health": {
     "total_tokens_consumed": 108596,
     "estimated_cost_usd": 0.6975,
-    "cumulative_wall_time_s": 7508.2,
+    "cumulative_wall_time_s": 8075.9,
     "compliance_index": 80.0,
     "gate_passing_rate": 80.0,
     "human_rejection_rate": 0.0,
     "total_refinement_iterations": 0,
-    "agent_success_rate": 91.7,
-    "tasks_passed": 11,
-    "tasks_total": 12
+    "agent_success_rate": 92.9,
+    "tasks_passed": 13,
+    "tasks_total": 14
   },
   "artifact_edits": {
     "artifacts": [
