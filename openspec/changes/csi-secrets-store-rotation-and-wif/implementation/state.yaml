@@ -6,13 +6,13 @@
 machine:
   # direct mode states: IDLE | EXECUTING_TASK | RUNNING_TESTS | AWAITING_APPROVAL | COMPLETE
   state: AWAITING_APPROVAL
-  current_task_id: T5_1
-  current_task_index: 18
+  current_task_id: T5_2
+  current_task_index: 19
   total_tasks: 22
-  last_transition: "2026-07-09T18:44:00Z"
+  last_transition: "2026-07-09T18:55:00Z"
 
 current_task_result:
-  task_id: T5_1
+  task_id: T5_2
   files_changed:
     - hack/e2e.sh
   verification_pass: true
@@ -94,6 +94,10 @@ completed:
     test_result: PASS
     report: implementation/task-reports/T4_4.md
     approved_at: "2026-07-09T18:34:00Z"
+  - task_id: T5_1
+    test_result: PASS
+    report: implementation/task-reports/T5_1.md
+    approved_at: "2026-07-09T18:46:00Z"
 
 # Current task result — written during execution, cleared on advance
 current_task_result: null

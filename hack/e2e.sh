@@ -276,6 +276,132 @@ test_rotation_custom_interval() {
 	return 0
 }
 
+# --- Workload Identity Federation (WIF) token audience tests (US2/US4, SC-003/SC-004) ---
+#
+# Per this task's Non-goals, these tests verify the storage.k8s.io CSIDriver
+# object's spec.tokenRequests field and that a workload can still mount a
+# secret via the driver while tokenRequests is configured -- NOT a full
+# cloud-provider round-trip authentication (AWS STS / Azure AD), which is
+# outside this operator's scope (repo-assessment.md §10.3) and would require
+# test infrastructure this repo's e2e-provider does not provide.
+
+# test_wait_csidriver_audiences polls (up to ROTATION_WAIT_TIMEOUT seconds)
+# until CSIDriver ${PROVISIONER_NAME}'s spec.tokenRequests audiences exactly
+# match the given space-separated list (order-independent; pass "" to wait
+# for an empty list).
+test_wait_csidriver_audiences() {
+	local EXPECTED_SORTED
+	EXPECTED_SORTED=$(echo "$1" | tr ' ' '\n' | sort)
+	local ELAPSED=0
+	local INTERVAL=5
+	local ACTUAL=""
+	echo "Waiting (up to ${ROTATION_WAIT_TIMEOUT}s) for CSIDriver ${PROVISIONER_NAME} tokenRequests audiences to be: [$1]"
+	while [ ${ELAPSED} -lt ${ROTATION_WAIT_TIMEOUT} ]; do
+		ACTUAL=$(oc get csidriver ${PROVISIONER_NAME} -o jsonpath='{.spec.tokenRequests[*].audience}')
+		if [ "$(echo "${ACTUAL}" | tr ' ' '\n' | sort)" = "${EXPECTED_SORTED}" ]; then
+			echo "Confirmed CSIDriver tokenRequests audiences: [${ACTUAL}]"
+			return 0
+		fi
+		sleep ${INTERVAL}
+		ELAPSED=$((ELAPSED + INTERVAL))
+	done
+	echo "Timed out waiting for tokenRequests audiences [$1]; last observed: [${ACTUAL}]"
+	return 1
+}
+
+# test_wif_clear_audiences explicitly clears all operator-managed token
+# audiences by submitting an empty managed audiences list (FR-007). This is
+# the ONLY valid cleanup path once tokenRequests.type has been set to
+# "Managed": FR-006 makes that discriminator irreversible back to
+# "Unmanaged", so a plain driverConfig restore (as test_driver_config_restore
+# does for rotation) cannot, by design, un-set Managed status -- it can only
+# return the audience list to empty, which is functionally equivalent to "no
+# audiences configured".
+test_wif_clear_audiences() {
+	echo "Clearing operator-managed token audiences via ClusterCSIDriver ${PROVISIONER_NAME} (FR-007)"
+	oc patch clustercsidriver ${PROVISIONER_NAME} --type=merge -p '{"spec":{"driverConfig":{"driverType":"SecretsStore","secretsStore":{"tokenRequests":{"type":"Managed","managed":{"audiences":[]}}}}}}' || return 1
+	test_wait_csidriver_audiences ""
+	return $?
+}
+
+# test_wif_mount_check confirms a workload can still successfully mount a
+# secret via the driver while tokenRequests is configured -- i.e. that
+# configuring WIF audiences causes no disruption to the driver's core
+# mount path (reuses the same pod fixture as test_pod_with_secret).
+test_wif_mount_check() {
+	local TEST_POD_NAME=$1
+	test_pod_create ${TEST_POD_NAME} || return 1
+	test_pod_wait ${TEST_POD_NAME} || return 1
+	test_pod_log_check ${TEST_POD_NAME} || return 1
+	test_pod_delete ${TEST_POD_NAME} || return 1
+	return 0
+}
+
+# test_wif_single_audience covers US2/SC-003: configuring a single managed
+# token audience is reflected on the CSIDriver object, and a workload can
+# still mount a secret via the driver while it is configured.
+test_wif_single_audience() {
+	echo "Running test_wif_single_audience"
+	test_driver_config_save || return 1
+
+	echo "Configuring a single managed token audience via ClusterCSIDriver ${PROVISIONER_NAME}"
+	oc patch clustercsidriver ${PROVISIONER_NAME} --type=merge -p '{"spec":{"driverConfig":{"driverType":"SecretsStore","secretsStore":{"tokenRequests":{"type":"Managed","managed":{"audiences":[{"audience":"openshift-wif-e2e"}]}}}}}}' || {
+		test_wif_clear_audiences
+		test_driver_config_restore
+		return 1
+	}
+	test_wait_csidriver_audiences "openshift-wif-e2e" || {
+		test_wif_clear_audiences
+		test_driver_config_restore
+		return 1
+	}
+
+	echo "Confirming a workload can still mount a secret via the driver with a single tokenRequests audience configured"
+	test_wif_mount_check test-pod-wif-single || {
+		test_wif_clear_audiences
+		test_driver_config_restore
+		return 1
+	}
+
+	test_wif_clear_audiences || return 1
+	test_driver_config_restore || return 1
+	echo "test_wif_single_audience PASSED"
+	return 0
+}
+
+# test_wif_multi_audience covers US4/SC-004: configuring multiple managed
+# token audiences (e.g. AWS + Azure) is reflected on the CSIDriver object
+# with both audiences present simultaneously, and a workload can still mount
+# a secret via the driver while they are configured.
+test_wif_multi_audience() {
+	echo "Running test_wif_multi_audience"
+	test_driver_config_save || return 1
+
+	echo "Configuring multiple managed token audiences (AWS + Azure) via ClusterCSIDriver ${PROVISIONER_NAME}"
+	oc patch clustercsidriver ${PROVISIONER_NAME} --type=merge -p '{"spec":{"driverConfig":{"driverType":"SecretsStore","secretsStore":{"tokenRequests":{"type":"Managed","managed":{"audiences":[{"audience":"sts.amazonaws.com","expirationSeconds":3600},{"audience":"api://AzureADTokenExchange"}]}}}}}}' || {
+		test_wif_clear_audiences
+		test_driver_config_restore
+		return 1
+	}
+	test_wait_csidriver_audiences "sts.amazonaws.com api://AzureADTokenExchange" || {
+		test_wif_clear_audiences
+		test_driver_config_restore
+		return 1
+	}
+
+	echo "Confirming a workload can still mount a secret via the driver with multiple tokenRequests audiences configured"
+	test_wif_mount_check test-pod-wif-multi || {
+		test_wif_clear_audiences
+		test_driver_config_restore
+		return 1
+	}
+
+	test_wif_clear_audiences || return 1
+	test_driver_config_restore || return 1
+	echo "test_wif_multi_audience PASSED"
+	return 0
+}
+
 test_prechecks
 if [ $? -ne 0 ]; then
 	echo "test_prechecks FAILED"
@@ -308,6 +434,22 @@ fi
 test_rotation_custom_interval
 if [ $? -ne 0 ]; then
 	echo "test_rotation_custom_interval FAILED"
+	test_pods_dump
+	test_teardown
+	exit 1
+fi
+
+test_wif_single_audience
+if [ $? -ne 0 ]; then
+	echo "test_wif_single_audience FAILED"
+	test_pods_dump
+	test_teardown
+	exit 1
+fi
+
+test_wif_multi_audience
+if [ $? -ne 0 ]; then
+	echo "test_wif_multi_audience FAILED"
 	test_pods_dump
 	test_teardown
 	exit 1

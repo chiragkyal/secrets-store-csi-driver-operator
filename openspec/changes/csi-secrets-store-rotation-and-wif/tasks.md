@@ -318,6 +318,7 @@ graph TD
 - **Downstream handoff:** A verified, mergeable state as the precondition for Phase 5 (E2E, requires a real cluster build) and Phase 6 (docs).
 
 ### Task T5_1: E2E: rotation toggle/interval
+- **Status:** Completed — see `implementation/task-reports/T5_1.md` (verified via DaemonSet reconciliation args; provider-value mutation is out of scope, no such harness exists in this repo)
 - **Objective:** Extend `hack/e2e.sh` with test scenarios for US1/US3: rotation disable → no periodic refresh; rotation re-enable → refresh resumes; custom interval → refresh cadence matches; per `specs.md` SC-001/SC-002 and `openspec/inputs/ep.md`'s E2E scenario list ("Secret Rotation scenarios").
 - **Target file(s):** `hack/e2e.sh` (extend the existing `test_*` bash-function style — `test_prechecks`, `test_setup`, `test_pod_with_secret`, etc.; `repo-assessment.md` §8.4 confirms zero existing rotation assertions today).
 - **Non-goals / forbidden edits:** Do not remove or alter the existing `test_pod_with_secret` baseline scenario.
