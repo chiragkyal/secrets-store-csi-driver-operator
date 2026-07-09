@@ -228,6 +228,7 @@ graph TD
 - **Downstream handoff:** Passing tests as a precondition for T2_5's integration into `starter.go`.
 
 ### Task T2_5: Wire rotation hook into `starter.go`
+- **Status:** Completed — see `implementation/task-reports/T2_5.md`
 - **Objective:** Register T2_3's hook as an additional `optionalDaemonSetHooks` argument to the existing `WithCSIDriverNodeService(...)` call, alongside (never replacing) `WithCABundleDaemonSetHook` (Constitution Principle VIII). Decide whether to add a `ClusterCSIDriver`-derived informer to the currently-`nil` `optionalInformers` slice (`starter.go:110`) for event-driven resync, or accept the controller's existing 1-minute `ResyncEvery` (`repo-assessment.md` §1.3/§11 risk #2) — document the choice.
 - **Target file(s):** `pkg/operator/starter.go`.
 - **Non-goals / forbidden edits:** Do not touch the `WithConditionalStaticResourcesController` call (Phase 3's concern) in this task.

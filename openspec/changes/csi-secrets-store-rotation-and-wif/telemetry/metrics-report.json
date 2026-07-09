@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-07-09T16:27:25.478446+00:00",
+  "exported_at": "2026-07-09T16:38:44.091692+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "1f9581fb-2858-45cd-aa01-e6a49fa80d30",
@@ -200,8 +200,22 @@
       "task_id": "T2_5",
       "task_title": "Wire rotation hook into starter.go",
       "agent_id": "ControllerLogic_Agent",
-      "status": "running",
+      "status": "passed",
       "started_at": "2026-07-09T16:27:25.473174+00:00",
+      "completed_at": "2026-07-09T16:30:51.142674+00:00",
+      "tokens_in": 30379,
+      "tokens_out": 602,
+      "self_correction_loops": 0
+    },
+    {
+      "id": "5de57282-e5fd-41f1-b42f-ccbc25b2127f",
+      "run_id": "1f9581fb-2858-45cd-aa01-e6a49fa80d30",
+      "phase_id": "f4494877-4d0b-42a1-8afe-af0dfe9e1da0",
+      "task_id": "T3_1",
+      "task_title": "tokenRequests/requiresRepublish extraction",
+      "agent_id": "ControllerLogic_Agent",
+      "status": "running",
+      "started_at": "2026-07-09T16:38:44.086442+00:00",
       "completed_at": null,
       "tokens_in": 0,
       "tokens_out": 0,
@@ -413,14 +427,14 @@
   "global_health": {
     "total_tokens_consumed": 108596,
     "estimated_cost_usd": 0.6975,
-    "cumulative_wall_time_s": 5733.9,
+    "cumulative_wall_time_s": 6412.5,
     "compliance_index": 80.0,
     "gate_passing_rate": 80.0,
     "human_rejection_rate": 0.0,
     "total_refinement_iterations": 0,
-    "agent_success_rate": 87.5,
-    "tasks_passed": 7,
-    "tasks_total": 8
+    "agent_success_rate": 88.9,
+    "tasks_passed": 8,
+    "tasks_total": 9
   },
   "artifact_edits": {
     "artifacts": [
