@@ -1,16 +1,16 @@
 {
-  "exported_at": "2026-07-09T18:06:30.156467+00:00",
+  "exported_at": "2026-07-09T18:10:33.323225+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "1f9581fb-2858-45cd-aa01-e6a49fa80d30",
     "change_name": "SSCSI-254 \u2014 csi-secrets-store-rotation-and-wif",
     "jira_key": "SSCSI-254",
     "branch": "feature/csi-secrets-store-rotation-and-wif",
-    "status": "running",
+    "status": "completed",
     "started_at": "2026-07-09T14:51:51.616054+00:00",
-    "completed_at": null,
-    "total_tokens_in": 77618,
-    "total_tokens_out": 30978
+    "completed_at": "2026-07-09T18:10:33.317939+00:00",
+    "total_tokens_in": 754096,
+    "total_tokens_out": 45996
   },
   "phases": [
     {
@@ -83,15 +83,15 @@
       "phase_number": 5,
       "phase_name": "code_generation",
       "model_id": "",
-      "status": "running",
+      "status": "passed",
       "started_at": "2026-07-09T15:33:27.486856+00:00",
-      "completed_at": null,
-      "tokens_in": 0,
-      "tokens_out": 0,
+      "completed_at": "2026-07-09T18:10:33.317695+00:00",
+      "tokens_in": 676478,
+      "tokens_out": 15018,
       "quality_score": 0,
-      "quality_label": "",
+      "quality_label": "22/22 tasks approved",
       "iteration_count": 1,
-      "duration_s": 0.0
+      "duration_s": 9425.8
     }
   ],
   "tasks": [
@@ -396,11 +396,11 @@
       "task_id": "T6_2",
       "task_title": "Sample ClusterCSIDriver YAML (optional)",
       "agent_id": "Docs_Agent",
-      "status": "running",
+      "status": "passed",
       "started_at": "2026-07-09T18:06:30.151023+00:00",
-      "completed_at": null,
-      "tokens_in": 0,
-      "tokens_out": 0,
+      "completed_at": "2026-07-09T18:10:33.071081+00:00",
+      "tokens_in": 30749,
+      "tokens_out": 546,
       "self_correction_loops": 0
     }
   ],
@@ -607,15 +607,15 @@
     }
   ],
   "global_health": {
-    "total_tokens_consumed": 108596,
-    "estimated_cost_usd": 0.6975,
-    "cumulative_wall_time_s": 11678.5,
-    "compliance_index": 80.0,
-    "gate_passing_rate": 80.0,
+    "total_tokens_consumed": 800092,
+    "estimated_cost_usd": 2.9522,
+    "cumulative_wall_time_s": 11921.7,
+    "compliance_index": 100.0,
+    "gate_passing_rate": 100.0,
     "human_rejection_rate": 0.0,
     "total_refinement_iterations": 0,
-    "agent_success_rate": 95.5,
-    "tasks_passed": 21,
+    "agent_success_rate": 100.0,
+    "tasks_passed": 22,
     "tasks_total": 22
   },
   "artifact_edits": {

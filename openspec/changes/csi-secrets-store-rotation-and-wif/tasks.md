@@ -354,6 +354,7 @@ graph TD
 - **Downstream handoff:** N/A — terminal task.
 
 ### Task T6_2: Sample `ClusterCSIDriver` YAML (optional)
+- **Status:** Completed — see `implementation/task-reports/T6_2.md`
 - **Objective:** Add a new sample manifest demonstrating `driverConfig.secretsStore` configuration, following the existing pattern of `config/manifests/stable/sscsi-sample-secretproviderclass-*.yaml` (which currently only demonstrate `SecretProviderClass`, not `ClusterCSIDriver` — `repo-assessment.md` §10.5).
 - **Target file(s):** New `config/manifests/stable/sscsi-sample-clustercsidriver-secretsstore.yaml` (illustrative name — not required by any FR).
 - **Non-goals / forbidden edits:** Do not modify any existing sample YAML file; add a new one only.
