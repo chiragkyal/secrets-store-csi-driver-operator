@@ -1,0 +1,30 @@
+# implementation/state.yaml — Orchestrator state file
+# /opsx-apply MUST read this file FIRST on every invocation.
+# /opsx-apply MUST write this file after every state transition.
+# DO NOT manually edit unless recovering from a broken state.
+
+machine:
+  # ai-helpers mode states: IDLE | EXECUTING_TASK | RUNNING_TESTS | EVAL_GATE | AWAITING_APPROVAL | COMPLETE
+  state: IDLE
+  current_task_id: null
+  current_task_index: 1
+  total_tasks: 22
+  last_transition: "2026-07-09T15:42:00Z"
+
+mode: ai-helpers
+working_folder_mode: true
+repo_root: /Users/ckyal/go/src/github.com/chiragkyal/secrets-store-csi-driver-operator
+
+# Completed tasks — lightweight; details in task-reports/<task-id>.md
+completed:
+  - task_id: T1_1
+    oape_command: null
+    test_result: PASS
+    report: implementation/task-reports/T1_1.md
+    approved_at: "2026-07-09T15:42:00Z"
+
+# Current task result — written during execution, cleared on advance
+current_task_result: null
+
+# Rejection history for current task (cleared on advance)
+rejections: []

@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-07-09T15:31:05.899715+00:00",
+  "exported_at": "2026-07-09T15:42:15.660896+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "1f9581fb-2858-45cd-aa01-e6a49fa80d30",
@@ -76,9 +76,40 @@
       "quality_label": "excellent",
       "iteration_count": 1,
       "duration_s": 534.9
+    },
+    {
+      "id": "f4494877-4d0b-42a1-8afe-af0dfe9e1da0",
+      "run_id": "1f9581fb-2858-45cd-aa01-e6a49fa80d30",
+      "phase_number": 5,
+      "phase_name": "code_generation",
+      "model_id": "",
+      "status": "running",
+      "started_at": "2026-07-09T15:33:27.486856+00:00",
+      "completed_at": null,
+      "tokens_in": 0,
+      "tokens_out": 0,
+      "quality_score": 0,
+      "quality_label": "",
+      "iteration_count": 1,
+      "duration_s": 0.0
     }
   ],
-  "tasks": [],
+  "tasks": [
+    {
+      "id": "b17c65b5-a53a-496b-b06c-89356f854c84",
+      "run_id": "1f9581fb-2858-45cd-aa01-e6a49fa80d30",
+      "phase_id": "f4494877-4d0b-42a1-8afe-af0dfe9e1da0",
+      "task_id": "T1_1",
+      "task_title": "Track upstream openshift/api PR merge status",
+      "agent_id": "ControllerLogic_Agent",
+      "status": "passed",
+      "started_at": "2026-07-09T15:33:38.145372+00:00",
+      "completed_at": "2026-07-09T15:42:15.649811+00:00",
+      "tokens_in": 30260,
+      "tokens_out": 1012,
+      "self_correction_loops": 0
+    }
+  ],
   "events": [
     {
       "id": "5682f9bc-eda5-4f54-8c2c-a4b2def72cca",
@@ -284,14 +315,14 @@
   "global_health": {
     "total_tokens_consumed": 108596,
     "estimated_cost_usd": 0.6975,
-    "cumulative_wall_time_s": 2354.3,
-    "compliance_index": 100.0,
-    "gate_passing_rate": 100.0,
+    "cumulative_wall_time_s": 3024.0,
+    "compliance_index": 80.0,
+    "gate_passing_rate": 80.0,
     "human_rejection_rate": 0.0,
     "total_refinement_iterations": 0,
     "agent_success_rate": 100.0,
-    "tasks_passed": 0,
-    "tasks_total": 0
+    "tasks_passed": 1,
+    "tasks_total": 1
   },
   "artifact_edits": {
     "artifacts": [

@@ -165,6 +165,7 @@ graph TD
 ## 4. Task Specifications (Payloads)
 
 ### Task T1_1: Track upstream `openshift/api` PR merge status
+- **Status:** Completed — see `implementation/task-reports/T1_1.md`
 - **Objective:** Confirm whether the `openshift/api` PR implementing `SecretsStore`/`secretRotation`/`tokenRequests` (per `openspec/inputs/ep.md` §"API Extensions") has merged, and capture its exact merged type/field names and validation semantics.
 - **Target file(s):** None in this repo — this is an external-repository discovery task (`repo-assessment.md` §11 CRITICAL risk; `plan.md` §4/§8 Open Question #2).
 - **Non-goals / forbidden edits:** Do not hand-author or hand-edit any file under `vendor/github.com/openshift/api/` to simulate the merge — vendor changes must track a real upstream commit (Constitution Principle X).
