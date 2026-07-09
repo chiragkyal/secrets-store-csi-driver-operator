@@ -1,8 +1,18 @@
 package operator
 
 import (
+	"fmt"
+
 	opv1 "github.com/openshift/api/operator/v1"
+	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
+	"github.com/openshift/library-go/pkg/operator/resource/resourceread"
 	storagev1 "k8s.io/api/storage/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	storagelistersv1 "k8s.io/client-go/listers/storage/v1"
+	"k8s.io/client-go/tools/cache"
+	"sigs.k8s.io/yaml"
 )
 
 // getRequiresRepublish returns the desired CSIDriver.spec.requiresRepublish
@@ -79,4 +89,73 @@ func stringValue(s *string) string {
 		return ""
 	}
 	return *s
+}
+
+// NewDynamicCSIDriverAssetFunc returns a resourceapply.AssetFunc that renders
+// assets/csidriver.yaml with spec.requiresRepublish and spec.tokenRequests
+// computed from the live ClusterCSIDriver (via clusterCSIDriverLister) and
+// the live CSIDriver (via csiDriverLister, for tokenRequests preservation),
+// using getRequiresRepublish/getTokenRequests. namespaceAssetFunc supplies
+// the base ${NAMESPACE}-substituted manifest bytes -- reused from
+// replaceNamespaceFunc in starter.go rather than duplicated here, even
+// though csidriver.yaml itself has no ${NAMESPACE} token today.
+//
+// The returned bytes are produced by marshaling the mutated, typed
+// *storagev1.CSIDriver back to YAML (sigs.k8s.io/yaml, which round-trips
+// through the same json tags resourceread.ReadCSIDriverV1OrDie decodes),
+// preserving the apiVersion/kind carried over from the base manifest so the
+// result remains parseable by resourceread.ReadGenericWithUnstructured for
+// StaticResourceController/resourceapply.ApplyDirectly dispatch into the
+// existing, unmodified resourceapply.ApplyCSIDriver hash-recreate path.
+func NewDynamicCSIDriverAssetFunc(
+	namespaceAssetFunc resourceapply.AssetFunc,
+	clusterCSIDriverLister cache.GenericLister,
+	clusterCSIDriverName string,
+	csiDriverLister storagelistersv1.CSIDriverLister,
+	csiDriverName string,
+) resourceapply.AssetFunc {
+	return func(name string) ([]byte, error) {
+		manifest, err := namespaceAssetFunc(name)
+		if err != nil {
+			return nil, err
+		}
+
+		csiDriver := resourceread.ReadCSIDriverV1OrDie(manifest)
+
+		var existingTokenRequests []storagev1.TokenRequest
+		existing, err := csiDriverLister.Get(csiDriverName)
+		switch {
+		case apierrors.IsNotFound(err):
+			// No existing CSIDriver: nothing to preserve.
+		case err != nil:
+			return nil, fmt.Errorf("failed to get CSIDriver %q: %w", csiDriverName, err)
+		default:
+			existingTokenRequests = existing.Spec.TokenRequests
+		}
+
+		uncastObj, err := clusterCSIDriverLister.Get(clusterCSIDriverName)
+		switch {
+		case apierrors.IsNotFound(err):
+			// No ClusterCSIDriver yet: leave the static, pre-feature
+			// defaults from csidriver.yaml untouched (no
+			// requiresRepublish/tokenRequests set).
+			return yaml.Marshal(csiDriver)
+		case err != nil:
+			return nil, fmt.Errorf("failed to get ClusterCSIDriver %q: %w", clusterCSIDriverName, err)
+		}
+
+		unstructuredObj, ok := uncastObj.(*unstructured.Unstructured)
+		if !ok {
+			return nil, fmt.Errorf("unexpected type %T for ClusterCSIDriver %q", uncastObj, clusterCSIDriverName)
+		}
+		driver := &opv1.ClusterCSIDriver{}
+		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(unstructuredObj.Object, driver); err != nil {
+			return nil, fmt.Errorf("unable to convert to ClusterCSIDriver: %w", err)
+		}
+
+		csiDriver.Spec.RequiresRepublish = getRequiresRepublish(driver.Spec.DriverConfig)
+		csiDriver.Spec.TokenRequests = getTokenRequests(driver.Spec.DriverConfig, existingTokenRequests)
+
+		return yaml.Marshal(csiDriver)
+	}
 }

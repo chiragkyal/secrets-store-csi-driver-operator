@@ -237,6 +237,7 @@ graph TD
 - **Downstream handoff:** A functioning rotation-hook wiring for T4_1/T4_2 to regression-check.
 
 ### Task T3_1: `tokenRequests`/`requiresRepublish` extraction (nil-path preservation matrix)
+- **Status:** Completed — see `implementation/task-reports/T3_1.md`
 - **Objective:** Implement a function that computes the desired `CSIDriver.spec.requiresRepublish` (mirrors `secretRotation.type` per `specs.md` Edge Cases) and `CSIDriver.spec.tokenRequests` from a `ClusterCSIDriver`, implementing the **full preservation matrix** from `openspec/inputs/ep.md`'s Test Plan: `DriverType != SecretsStore` with existing live `CSIDriver` tokenRequests → return existing (not nil); `SecretsStore` nil with existing live tokenRequests → return existing; no `driverConfig`/no existing CSIDriver → nil, no error; `type: Managed` with `managed.audiences` → return exactly those; `type: Managed` with empty `managed.audiences` → return an explicit empty list (clears); `type: Unmanaged` (or omitted) → preserve existing live tokenRequests.
 - **Target file(s):** New `pkg/operator/csidriver_asset.go` (new file — `repo-assessment.md` §2 confirms no existing equivalent).
 - **Non-goals / forbidden edits:** Do **not** implement the "cannot revert from Managed" immutability check here — that is enforced by the upstream CRD's CEL rule (FR-006); this function only reads already-validated objects and must not duplicate that logic (`repo-assessment.md` §11 risk #4 / `plan.md` §7). Do not implement bounds validation (FR-008) — upstream CRD concern.

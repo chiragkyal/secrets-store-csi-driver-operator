@@ -6,10 +6,10 @@
 machine:
   # direct mode states: IDLE | EXECUTING_TASK | RUNNING_TESTS | AWAITING_APPROVAL | COMPLETE
   state: AWAITING_APPROVAL
-  current_task_id: T3_1
-  current_task_index: 9
+  current_task_id: T3_2
+  current_task_index: 10
   total_tasks: 22
-  last_transition: "2026-07-09T16:52:00Z"
+  last_transition: "2026-07-09T17:04:00Z"
 
 mode: direct
 working_folder_mode: true
@@ -49,26 +49,34 @@ completed:
     test_result: PASS
     report: implementation/task-reports/T2_5.md
     approved_at: "2026-07-09T16:43:00Z"
+  - task_id: T3_1
+    test_result: PASS
+    report: implementation/task-reports/T3_1.md
+    approved_at: "2026-07-09T16:53:00Z"
 
 # Current task result — written during execution, cleared on advance
 current_task_result:
-  task_id: T3_1
+  task_id: T3_2
   files_changed:
     - pkg/operator/csidriver_asset.go
   verification_pass: true
   test_command: "go build ./pkg/operator/... && go vet ./pkg/operator/... && make verify && make test-unit"
   test_result: PASS
   test_output_summary: >-
-    Build/vet/gofmt clean. make verify clean (FIPS warning only, expected).
-    make test-unit: pkg/operator ok (2.203s) -- no new tests added in this
-    task (deferred to T3_3 per approved backlog), existing suite unaffected.
-  design_note: >-
-    getRequiresRepublish reuses getSecretRotationConfig (T2_1) rather than
-    duplicating its nil-path logic, guaranteeing the rotation flag and
-    requiresRepublish can never disagree. getTokenRequests implements the
-    six-way preservation matrix exactly, relying on Audiences being a
-    *[]T (nil=omitted vs non-nil-empty=explicit-clear) to distinguish
-    FR-005 preservation from FR-007 clearing.
+    Build/vet/gofmt clean. make verify clean. make test-unit: pkg/operator
+    ok (2.163s). Acceptance-criteria-specific check performed via a
+    temporary (non-committed) standalone program: marshaled a
+    *storagev1.CSIDriver via sigs.k8s.io/yaml and successfully decoded it
+    back with resourceread.ReadGenericWithUnstructured (got *v1.CSIDriver),
+    confirming the exact round-trip StaticResourceController/
+    resourceapply.ApplyDirectly will perform. Temp files removed after
+    verification.
+  lister_mechanism_chosen: >-
+    storagelistersv1.CSIDriverLister for the live CSIDriver, sourced from
+    kubeInformersForNamespaces.InformersFor("") (already constructed in
+    starter.go with an empty-string namespace specifically to provide
+    cluster-scoped informers) -- resolves this task's Evidence:PARTIAL
+    note without adding any new informer factory.
 
 # Rejection history for current task (cleared on advance)
 rejections: []
