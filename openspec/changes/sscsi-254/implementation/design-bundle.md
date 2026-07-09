@@ -1,39 +1,29 @@
-# Design Bundle — Task T2_2
+# Design Bundle — Task T2_3
 
 **Change:** sscsi-254
-**Task:** T2_2 — Wire informer/typed-client access in `starter.go`
-**Assigned Agent:** ControllerLogic_Agent
+**Task:** T2_3 — Unit tests: read-path nil-safety branches
+**Assigned Agent:** Testing_Agent
 **Phase:** Phase 2: Shared Read Path
 
-## Constitution excerpts (binding)
+## Testing guidelines excerpts (binding)
 
-> **Principle I:** Any new operator capability MUST be expressed as either a new CSIControllerSet hook, a new static asset, or a new informer — never a separate reconciler loop.
-> **Performance guideline:** Scope informers to the specific namespaces/resources needed... avoid cluster-wide watches where unnecessary. (`ClusterCSIDriver` is a single named cluster-scoped singleton — a targeted informer for it is consistent with this guidance.)
+> Use table-driven tests with named test cases as the default pattern... Run subtests with `t.Run(tc.name, ...)`... Use `t.Errorf` when subsequent assertions may still provide useful diagnostic information... No third-party assertion libraries.
 
-## Plan / Open Question 2 (from plan.md §8)
+## Task T2_3 Payload (from tasks.md §4)
 
-> Exact mechanism: dedicated typed informer/lister vs. direct typed-client `Get` call. Default assumption: dedicated informer/lister for consistency with this operator's existing informer-driven design — but prototype before committing since this pattern is not yet proven in this specific operator.
+- **Objective:** Cover every nil-safety branch in `T2_1`'s helper with table-driven tests.
+- **Target file(s):** New `_test.go` file co-located with `T2_1`'s new file, following the `pkg/operator/starter_test.go` pattern.
+- **Implementation notes:** Cases: `driverConfig` absent; `driverType != SecretsStore`; `secretsStore` nil; `secretRotation` nil; `tokenRequests` nil; fully-populated happy path.
+- **Acceptance criteria:** `make test-unit` passes; every branch in `T2_1` has at least one covering case.
 
-## Decisive constraint discovered during T2_1
+## Existing coverage (from T2_1's smoke tests, `pkg/operator/secretsstoreconfig_test.go`)
 
-Both consumer signatures this helper must eventually feed are **synchronous and context-free**:
-- `resourceapply.AssetFunc`: `func(name string) ([]byte, error)`
-- `csidrivernodeservicecontroller.DaemonSetHookFunc`: `func(*opv1.OperatorSpec, *appsv1.DaemonSet) error`
+Already covered: nil spec; `DriverType` = AWS (not SecretsStore); `SecretsStore` fully zero-value (all sub-fields omitted); `secretRotation.Type: None`; `secretRotation.Type: Custom` (interval > 0 set); `tokenRequests.Type: Managed`; `tokenRequests.Type: Unmanaged`; managed-audiences nil/empty/populated.
 
-Neither accepts a `context.Context`, which rules out a live typed-client `Get` call (that would need a context and would hit the API server on every reconcile/hook invocation). This confirms Open Question 2's default assumption: **a lister-backed informer is the correct mechanism**, matching every existing hook in this codebase (`WithCABundleDaemonSetHook` takes a `configMapInformer corev1.ConfigMapInformer` and reads via `.Lister()`, never a live client `Get`).
+## Gap identified for this task to close
 
-## Repo-assessment excerpts (reusable pattern)
-
-> `WithCABundleDaemonSetHook(configMapNamespace, configMapName, configMapInformer)` — closure-captured lister, read via `.Lister().ConfigMaps(ns).Get(name)`. This is the exact structural precedent for how the new `ClusterCSIDriverLister` should be threaded into consumers in T3_1/T4_1.
-
-## Task T2_2 Payload (from tasks.md §4)
-
-- **Objective:** Instantiate and start whatever informer/lister `T2_1`'s helper needs, inside `RunOperator`.
-- **Target file(s):** `pkg/operator/starter.go` (informer-construction block, lines 40-71; informer-start block, lines 118-121).
-- **Non-goals / forbidden edits:** Do not remove or alter the existing generic operator client — this adds an additional, separate access path.
-- **Acceptance criteria:** The new informer is started alongside the existing three. `make verify && make test-unit` passes.
-- **Downstream handoff:** A working, started read path that `T3_1`, `T3_2`, and `T4_1` can call without additional wiring.
+Reviewing `ResolveSecretsStoreConfig`'s `switch secretsStore.SecretRotation.Type` branch: the `case opv1.SecretRotationCustom` path only sets `rotation.RotationPollIntervalSeconds` `if interval > 0`. **No existing test exercises `Type: Custom` with `RotationPollIntervalSeconds` omitted (zero value)** — this must fall back to the default 120s per FR-010, but it's untested. Also adding: an explicit `DriverType: ""` (true zero-value, "driverConfig absent" framing) case, and a combined "fully-populated happy path" case (custom rotation + managed multi-audience tokenRequests together) per this task's own payload language.
 
 ## Execution approach
 
-Add a typed `ClusterCSIDriver` informer (via `github.com/openshift/client-go/operator/{clientset/versioned,informers/externalversions}`), start it alongside the existing informers, and — since Go requires every declared variable to be used within its own task's compiling diff, and to give this wiring genuine, testable value now rather than leaving an inert unused variable — add a small startup-only goroutine that waits for the informer's cache to sync and logs the resolved `secretsStore` config once (using T2_1's `ResolveSecretsStoreConfig`). This is a real, useful diagnostic (mirrors the existing `klog.Info("Starting the informers")` pattern) and does not preempt T3_1/T4_1's actual mutation logic (CSIDriver `AssetFunc`, DaemonSet hook), which will consume the same informer/lister via their own constructor parameters in the next tasks.
+Extend the existing `pkg/operator/secretsstoreconfig_test.go` (rather than creating a second, redundant test file for the same production file — cleaner and avoids Go test-file fragmentation for one small package) with a new test function covering the identified gap plus the explicitly-named cases from the task payload.

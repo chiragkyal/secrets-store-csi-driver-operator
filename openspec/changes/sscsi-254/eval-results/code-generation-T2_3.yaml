@@ -1,0 +1,51 @@
+task_id: T2_3
+oape_command: manual
+stage: code-generation
+stage_eval_file: evals/code-generation_eval.yaml
+scored_at: 2026-07-09T12:25:00Z
+note: >-
+  evals/code-generation_eval.yaml has an empty case list (unresolved merge-conflict
+  markers, same defect as prior tasks). No cases matched.
+refinement_rounds: 0
+overall_score: null
+overall_pass: null
+verification:
+  commands:
+    - cmd: "go build ./pkg/operator/..."
+      exit_code: 0
+      pass: true
+    - cmd: "go vet ./pkg/operator/..."
+      exit_code: 0
+      pass: true
+    - cmd: "gofmt -s -l pkg/operator/secretsstoreconfig_test.go"
+      exit_code: 0
+      pass: true
+    - cmd: "make verify"
+      exit_code: 0
+      pass: true
+  overall_pass: true
+test_execution:
+  strategy: co_generated_tests
+  commands:
+    - cmd: "go test ./pkg/operator/... -v -count=1 -run TestResolveSecretsStoreConfig"
+      exit_code: 0
+      pass: true
+      tests_run: 13
+      tests_passed: 13
+      tests_failed: 0
+    - cmd: "make test-unit"
+      exit_code: 0
+      pass: true
+      summary: "ok  github.com/openshift/secrets-store-csi-driver-operator/pkg/operator 2.523s"
+  overall_pass: true
+  test_files_generated: []
+  note: >-
+    Extended the existing pkg/operator/secretsstoreconfig_test.go (from T2_1) rather
+    than creating a second file for the same production file. Added
+    TestResolveSecretsStoreConfig_NilSafetyCascade with 3 new cases, closing the gap
+    found: secretRotation type Custom with an omitted interval was previously untested.
+cases: []
+coverage_gap_closed:
+  - "secretRotation.Type == Custom with RotationPollIntervalSeconds == 0 (omitted) falls back to default 120s"
+  - "driverConfig entirely absent (zero-value DriverType, distinct from explicit AWS)"
+  - "fully-populated happy path: custom rotation interval + managed multi-audience tokenRequests combined"
