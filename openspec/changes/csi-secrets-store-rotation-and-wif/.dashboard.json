@@ -13,6 +13,11 @@
     "2": {
       "id": "c924884c-472d-4839-8c4c-8aed897faa7b",
       "name": "repo_assessment",
+      "ended": true
+    },
+    "3": {
+      "id": "c95b9126-1f1c-444f-b3ba-da897d0d70f4",
+      "name": "arch_planning",
       "ended": false
     }
   },

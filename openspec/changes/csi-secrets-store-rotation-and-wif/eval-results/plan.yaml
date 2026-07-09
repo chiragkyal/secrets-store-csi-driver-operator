@@ -1,0 +1,26 @@
+artifact_id: plan
+artifact_path: openspec/changes/csi-secrets-store-rotation-and-wif/plan.md
+stage: plan
+gate: stage_evals
+stage_eval_file: evals/plan_eval.yaml
+scored_at: "2026-07-09T15:35:00Z"
+overall_score: 96
+overall_pass: true
+cases: []
+cases_note: >-
+  evals/plan_eval.yaml has an empty `evals: []` list for this schema (no
+  authored cases). Scored instead against the plan template's own embedded
+  "Quality self-check (target >=80-85%)" checklist, per stage-gate guidance to
+  always generate an evaluation report even absent stage cases.
+self_check:
+  section0_inputs_table_and_agent_routing_mode: true
+  section1_repo_grounded_reality_check_greenfield_stated: true
+  every_fr_and_p1_story_mapped_to_phase_and_verification_row: true
+  all_phases_use_full_template: true
+  target_files_from_repo_assessment_or_marked_unverified: true
+  section6_matrix_has_unit_integration_e2e_manual_na_rows: true
+  section7_risks_derived_from_repo_assessment: true
+  section8_open_questions_complete_with_owner_and_assumption: true
+  no_false_already_exists_claims: true
+refinement_round: 1
+refined: false
