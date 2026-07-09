@@ -1,132 +1,120 @@
-<!-- Companion artifact: repo-assessment.md (target files, reusable assets, risks) -->
-# Cert Manager Operator Constitution
+# Secrets Store CSI Driver Operator — Architectural Constitution
 
-**AgentRoutingMode:** PROVIDED
-<!-- PROVIDED — AGENTS.md exists in repo and has been parsed -->
+**Version**: 1.0.0 | **Ratified**: 2026-07-02 | **Last Amended**: 2026-07-02
 
-**Version**: 1.0.0 | **Ratified**: 2025-07-15 | **Last Amended**: 2025-07-15
+This document defines non-negotiable architectural rules for the `secrets-store-csi-driver-operator` repository. Every rule is grounded in observable repo evidence. Any AI tool, workflow, or contributor working on this repo MUST follow these principles. When a proposed change contradicts a principle, escalate rather than silently override.
 
-<!--
-  QUALITY TARGET: ≥90% against Stage 2 constitution rubric.
-  Self-check (all must pass):
-  - Every principle cites observable repo evidence (file path or pattern), not generic best practices.
-  - No file inventories, hook tables, or risk analysis — those belong in repo-assessment.md only.
-  - No implementation sequencing — that belongs in plan.md (Stage 3).
-  - AgentRoutingMode matches whether AGENTS.md was found and parsed.
-  - Upstream operand vs Open: separate principles where the repo embeds upstream workloads.
-  - Addon controllers: note controller-runtime exception if repo uses library-go for core + runtime for addons.
--->
+<!-- openspec metadata — ignored by non-openspec tools -->
+<!-- AgentRoutingMode: PROVIDED -->
+<!-- Companion artifact: repo-assessment.md -->
 
 ## Core Principles
 
-### I. Upstream Operand Separation — Do Not Fork Upstream Logic
+### I. Single Controller Pattern — Library-go CSIControllerSet Only
 
-The operator deploys and manages upstream cert-manager (and addon operands like Istio CSR, trust-manager) via **embedded manifests in `bindata/`**. The operator **never** reimplements upstream controller logic (ACME, certificate issuance, trust bundle reconciliation). Operator packages reconcile CRs and deploy/configure operand workloads only. New operand integrations (e.g., trust-manager) MUST follow this boundary: operator deploys manifests, upstream operand provides domain behavior.
+This operator uses **only** the library-go `csicontrollerset.CSIControllerSet` pattern. There is no controller-runtime, no addon controller framework, no separate `ctrl.Manager`. All reconciliation is driven by the CSIControllerSet chain in `RunOperator`. Any new operator capability MUST be expressed as either a new `CSIControllerSet` hook, a new static asset in `assets/`, or a new informer — never a separate reconciler loop.
 
-**Evidence:** `bindata/cert-manager-deployment/`, `bindata/istio-csr/` — all operand YAML is vendored upstream manifests; `pkg/controller/deployment/` reconciles deployments but contains zero ACME/issuance logic. `README.md` explicitly states: "uses upstream deployment manifests."
+**Evidence:** `pkg/operator/starter.go` — single `csicontrollerset.NewCSIControllerSet` chain; no imports of `sigs.k8s.io/controller-runtime`; `go.mod` does not list `controller-runtime`.
 
-### II. Follow Existing Controller Patterns — library-go for Core, controller-runtime for Addons
+### II. Static Assets Are Embedded YAML — Never Hand-Regenerated
 
-The core cert-manager operand lifecycle uses **`library-go`** patterns: `controllercmd` entrypoint (`pkg/cmd/operator/cmd.go`), informer-based controllers wired in `pkg/operator/starter.go`, `OperatorClient` in `pkg/operator/operatorclient/`, and `ClusterOperator`-style status reporting. Addon controllers (Istio CSR, and by extension trust-manager) use **`sigs.k8s.io/controller-runtime`** (`pkg/operator/setup_manager.go`) with the manager pattern. New addon operand controllers MUST use the controller-runtime addon pattern, not the library-go core pattern.
+Operand manifests live in `assets/` and are embedded at compile time via `//go:embed *.yaml rbac/*.yaml network-policy/*.yaml` in `assets/assets.go`. They are applied via `ConditionalStaticResourcesController`. New assets MUST be plain YAML files added to `assets/` with `${NAMESPACE}` as the only runtime token. They are NOT generated from a script or Helm — edit them directly. Never add a bindata code-generation step.
 
-**Evidence:** `pkg/operator/starter.go` — library-go `controllercmd` wiring for core; `pkg/operator/setup_manager.go` — controller-runtime manager setup for addons; `pkg/controller/istiocsr/controller.go` — uses controller-runtime reconciler. `go.mod` imports both `github.com/openshift/library-go` and `sigs.k8s.io/controller-runtime v0.19.0`.
+**Evidence:** `assets/assets.go` — `//go:embed` directive; `pkg/operator/starter.go` — `replaceNamespaceFunc` replaces `${NAMESPACE}` at apply time; no `hack/update-*-manifests.sh` for assets.
 
-### III. Singleton CR Convention — Name `cluster`, One Per Kind
+### III. No Custom CRD Types — Use Standard `ClusterCSIDriver`
 
-All operator-level CRs are **singletons named `cluster`**. The operator auto-creates a default `CertManager` CR named `cluster` if missing. Addon CRs (IstioCSR, TrustManager) follow the same singleton pattern. Validation MUST reject duplicate instances. The `TargetNamespace` for the core operand is hardcoded to `cert-manager`; the operator runs in `cert-manager-operator`.
+This operator does NOT define its own CRD. The configuration surface is the standard OpenShift `operator.openshift.io/v1.ClusterCSIDriver` singleton named `secrets-store.csi.k8s.io`. No new `api/` directory, no new `v1alpha1` types, no `zz_generated.deepcopy.go`, no `make generate` needed for API changes. Spec-driven behavior changes MUST be expressed through existing `ClusterCSIDriver` fields (managementState, logLevel, operatorLogLevel) or new controller hooks — not new CRD types.
 
-**Evidence:** `README.md` — "automatically deploys a cluster-scoped CertManager object named cluster"; `pkg/operator/operatorclient/` — `TargetNamespace = cert-manager`; `api/operator/v1alpha1/certmanager_types.go` — singleton `cluster`; `deploy/examples/cluster-cert-manager.yaml`.
+**Evidence:** `pkg/operator/starter.go` — `gvr := opv1.SchemeGroupVersion.WithResource("clustercsidrivers")`; no `api/` directory in repo; `go.mod` imports `github.com/openshift/api` for `opv1` but defines no custom types.
 
-### IV. Feature Gate Discipline — TechPreview Gating via `features.go`
+### IV. Managed/Unmanaged/Removed States Are Mandatory
 
-Addon operands are gated behind **feature gates** defined in `api/operator/v1alpha1/features.go`. Each feature gate has an explicit default and release level (e.g., TechPreview). New features MUST be registered in `features.go` with appropriate gating. Feature gate checks determine whether addon CRs are accepted and whether addon controllers are started.
+The operator is **removable** (`WithManagementStateController(operandName, true)`). All resource-sync logic MUST respect the three management states returned by `getOperatorSyncState`:
+- `Managed`: apply/sync resources
+- `Unmanaged`: skip sync (leave resources as-is)
+- `Removed`: delete conditional static resources
 
-**Evidence:** `api/operator/v1alpha1/features.go` — defines `IstioCSR`, `TrustManager` feature gates with defaults and links to OpenShift enhancements. `AGENTS.md` confirms: "Always read features.go for current defaults and links to OpenShift enhancements."
+Any new controller logic that touches cluster resources MUST gate on the operator sync state. Never apply resources unconditionally.
 
-### V. Bindata / Manifest Regeneration — Never Hand-Edit, Always `make update`
+**Evidence:** `pkg/operator/starter.go` — `WithManagementStateController(..., true)`; `ConditionalStaticResourcesController` uses `getOperatorSyncState` predicates; `getOperatorSyncState` function handles `DeletionTimestamp` as `Removed`.
 
-Operand manifests under `bindata/` and generated code (`zz_generated.deepcopy.go`, client-gen output, CRD YAML under `config/crd/bases/`) are **generated artifacts**. They MUST NOT be hand-edited long-term. Changes to APIs or upstream operand versions require running `make update` (which chains `make manifests generate` plus `hack/update-*.sh` scripts). CI verification (`make verify`) will fail if generated outputs are stale.
+### V. Verification-First Development — `make check` Before Every PR
 
-**Evidence:** `bindata/` — generated from upstream via `hack/update-cert-manager-manifests.sh`, `hack/update-istio-csr-manifests.sh`; `api/operator/v1alpha1/zz_generated.deepcopy.go` — code-generated; `hack/verify-deepcopy.sh`, `hack/verify-crds.sh`, `hack/verify-clientgen.sh` — verify scripts detect drift; `AGENTS.md` — "Do not hand-edit vendor/ or long-term bindata/; use make update."
+All changes MUST pass: `make check` (chains `make verify` + `make test-unit`). E2E (`make test-e2e`) is run in CI and requires a live cluster. Do NOT skip `make check` for "trivial" changes. If the FIPS build (`GOEXPERIMENT=strictfipsruntime`) is available, the binary MUST compile with it — any `CGO_ENABLED=1` dependency must be respected.
 
-### VI. Verification-First Development — `make verify && make lint && make test`
+**Evidence:** `Makefile` — `check: | verify test-unit`; `GO_TEST_PACKAGES :=./pkg/... ./cmd/...`; FIPS conditional block in `Makefile`; `AGENTS.md` testing table.
 
-All changes MUST pass the pre-merge verification loop: `make verify` (runs `hack/verify-*.sh` scripts for CRDs, deepcopy, client-gen, deps, bundle, protobuf, swagger, types), `make lint` (golangci-lint with `.golangci.yaml`), and `make test` (which runs `make manifests generate vet test-apis test-unit`). E2E tests (`make test-e2e`, build tag `e2e`) require a running cluster with stable operands. Unit tests exclude `test/e2e`, `test/apis`, `test/utils` directories.
+### VI. RBAC Is Least-Privilege and Asset-Driven
 
-**Evidence:** `Makefile` — `verify`, `lint`, `test`, `test-unit`, `test-e2e` targets; `hack/verify-*.sh` — 10+ verification scripts; `.golangci.yaml` — linter config with `e2e` build tag; `AGENTS.md` Testing instructions — explicit pre-merge loop.
+All RBAC for the operand is defined as explicit YAML manifests in `assets/rbac/`. The operator applies privileged SCC binding (`rbac/node_privileged_binding.yaml`) and `SecretProviderClass` role/binding ONLY when in `Managed` state via `ConditionalStaticResourcesController`. New RBAC requirements MUST be added as YAML files in `assets/rbac/` and registered in the asset list — never granted inline or dynamically at runtime.
 
-### VII. RBAC Least Privilege — Scoped Permissions, Explicit Manifests
+**Evidence:** `assets/rbac/` — `privileged_role.yaml`, `node_privileged_binding.yaml`, `secretproviderclasses_role.yaml`, `secretproviderclasses_binding.yaml`; `pkg/operator/starter.go` — asset list in `ConditionalStaticResourcesController`.
 
-RBAC manifests are explicit and scoped. The operator's own RBAC is defined in `config/rbac/`. Operand RBAC (cert-manager controller, webhook, cainjector, Istio CSR) is defined in `bindata/` with separate ClusterRole/ClusterRoleBinding per component. New operand integrations MUST define explicit, minimal RBAC manifests rather than relying on broad cluster-admin grants. Dynamic RBAC for trust-manager bundle distribution aligns with FR-012 (minimum permissions for target namespaces).
+### VII. Namespace Isolation — Operator Namespace Is Runtime-Determined
 
-**Evidence:** `config/rbac/role.yaml`, `config/rbac/role_binding.yaml` — operator RBAC; `bindata/cert-manager-deployment/controller/cert-manager-controller-certificates-cr.yaml` — per-function ClusterRoles; `bindata/istio-csr/cert-manager-istio-csr-clusterrole.yaml` — addon-specific RBAC.
+The operator namespace is NOT hardcoded in Go code — it is passed via `controllerConfig.OperatorNamespace` at runtime. Assets use the `${NAMESPACE}` token which is replaced at apply time via `replaceNamespaceFunc`. Any new namespace-scoped asset MUST use `${NAMESPACE}` instead of a literal namespace string. The standard runtime namespace is `openshift-cluster-csi-drivers`.
 
-### VIII. OLM Bundle and Release Conventions
+**Evidence:** `pkg/operator/starter.go` — `operatorNamespace := controllerConfig.OperatorNamespace`; `replaceNamespaceFunc` replaces `${NAMESPACE}` in all assets; `README.md` — `--namespace openshift-cluster-csi-drivers`.
 
-The operator ships via OLM with bundle artifacts under `bundle/` and generation config under `config/manifests/`. The CSV (`bundle/manifests/cert-manager-operator.clusterserviceversion.yaml`) is generated via `make bundle`. Operand versions are pinned in the `Makefile` (`CERT_MANAGER_VERSION`, `ISTIO_CSR_VERSION`). Related images are managed via `RELATED_IMAGE_*` environment variables resolved in `pkg/controller/deployment/related_images.go`. New operands MUST add their version variable to `Makefile` and related image references to the CSV generation pipeline.
+### VIII. Trusted CA Bundle Propagation Is Mandatory for DaemonSet
 
-**Evidence:** `Makefile` — `BUNDLE_VERSION ?= 1.18.1`, `CERT_MANAGER_VERSION ?= "v1.18.4"`, `ISTIO_CSR_VERSION ?= "v0.14.2"`, `CHANNELS ?= "stable-v1,stable-v1.18"`; `bundle/manifests/cert-manager-operator.clusterserviceversion.yaml`; `pkg/controller/deployment/related_images.go`.
+The DaemonSet (`node.yaml`) MUST always be deployed with the CA bundle hook (`csidrivernodeservicecontroller.WithCABundleDaemonSetHook`). This injects the CNO-managed trusted CA ConfigMap (`secrets-store-csi-driver-trusted-ca-bundle`, generated from `cabundle_cm.yaml`) into the DaemonSet for FIPS/proxy compatibility. Any change to the DaemonSet configuration must preserve this hook.
 
-### IX. OpenShift API Integration — `operator.openshift.io` Group, OperatorSpec Embedding
+**Evidence:** `pkg/operator/starter.go` — `csidrivernodeservicecontroller.WithCABundleDaemonSetHook(operatorNamespace, trustedCAConfigMap, configMapInformer)`; `assets/cabundle_cm.yaml` — ConfigMap with `config.openshift.io/inject-trusted-cabundle: "true"`.
 
-Operator CRDs use the `operator.openshift.io` API group. The `CertManager` type embeds `github.com/openshift/api/operator/v1.OperatorSpec` which provides `managementState`, `unsupportedConfigOverrides`, and standard OpenShift operator lifecycle semantics (Managed/Unmanaged/Removed). Addon CRs live in `operator.openshift.io/v1alpha1`. New CRs MUST follow this API group and embed the appropriate OpenShift operator spec types.
+### IX. OLM Bundle and Version Conventions
 
-**Evidence:** `api/operator/v1alpha1/certmanager_types.go` — embeds `operatorv1.OperatorSpec`; `config/crd/bases/operator.openshift.io_certmanagers.yaml`, `operator.openshift.io_istiocsrs.yaml` — API group; `go.mod` — `github.com/openshift/api v0.0.0-20250710004639-926605d3338b`.
+The operator ships via OLM. Bundle artifacts live under `config/manifests/` and `config/metadata/`. OCP version bumps MUST go through `hack/update-metadata.sh VERSION=X.Y` which updates `package.yaml`, `*.clusterserviceversion.yaml`, `README.md`, and `Makefile`. Never manually edit version strings across these files — always use the script. The channel convention is `stable-v1` with the current OCP minor as suffix.
 
-### X. Network Policy Management — Default-Deny with Explicit Allow Rules
+**Evidence:** `Makefile` — `metadata: ensure-yq; ./hack/update-metadata.sh`; `hack/update-metadata.sh`; `config/manifests/secrets-store-csi-driver-operator.package.yaml`; `README.md` — bump-metadata section.
 
-The operator manages network policies for operand namespaces following a default-deny pattern with explicit ingress/egress allow rules per component. Network policy manifests are stored in `bindata/networkpolicies/`. Changes are reconciled through the deployment controller.
+### X. Vendor Mode — Dependencies Must Be Vendored
 
-**Evidence:** `bindata/networkpolicies/cert-manager-deny-all-networkpolicy.yaml` — default deny; `bindata/networkpolicies/cert-manager-allow-egress-to-api-server-networkpolicy.yaml` — explicit allow; `pkg/controller/deployment/cert_manager_networkpolicy.go` — reconciliation logic; git log `08326d92` — "Updates cert-manager NP support only for CoreController."
+Dependencies are vendored. Never add a dependency without running `go mod tidy && go mod vendor`. Do NOT modify `vendor/` directly. The `.snyk` file tracks security policy — do not remove it.
+
+**Evidence:** `vendor/modules.txt` present; `.snyk` file present; `build-machinery-go` include `targets/openshift/deps-gomod.mk` manages module hygiene.
 
 ## Additional Constraints
 
-- **Go version**: Match the `go.mod` directive — currently `go 1.24.4`. — **Evidence:** `go.mod` line `go 1.24.4`
-- **Vendor mode**: Dependencies are vendored; use `modules-download-mode: vendor`. Do not modify `vendor/` directly; use `make update-vendor`. — **Evidence:** `.golangci.yaml` `modules-download-mode: vendor`; `AGENTS.md` — "Do not hand-edit vendor/"
-- **Container base image**: Production images use `ubi9-minimal:9.2`; operator binary runs as non-root (`USER 65532:65532`). — **Evidence:** `Dockerfile` — `FROM registry.access.redhat.com/ubi9-minimal:9.2`, `USER 65532:65532`
-- **Import ordering**: Local imports (`github.com/openshift/cert-manager-operator`) placed after third-party imports. — **Evidence:** `.golangci.yaml` `goimports.local-prefixes: github.com/openshift/cert-manager-operator`
-- **Linter set**: Explicit allowlist — `errcheck`, `gofmt`, `goimports`, `gosec`, `gosimple`, `govet`, `ineffassign`, `misspell`, `staticcheck`, `typecheck`, `unused`. No additional linters without `.golangci.yaml` update. — **Evidence:** `.golangci.yaml` `linters.enable` list
-- **Namespace hardcoding**: Operator namespace = `cert-manager-operator`; operand namespace = `cert-manager`. Both are hardcoded. — **Evidence:** `README.md` — "Both those namespaces are hardcoded"; `pkg/controller/common/` constants
-- **Operand version pinning**: Operand versions are pinned in `Makefile` variables, not in Go code. Version bumps require updating `Makefile` and running `make update` to regenerate bindata and bundle. — **Evidence:** `Makefile` — `CERT_MANAGER_VERSION`, `ISTIO_CSR_VERSION`; git log `1b63525f` — "Updates operator, operand version to 1.18.1, 1.18.4"
-- **Test framework**: Ginkgo v2 + Gomega for e2e and API tests; standard `testing` + `testify` for unit tests. — **Evidence:** `go.mod` — `github.com/onsi/ginkgo/v2`, `github.com/onsi/gomega`, `github.com/stretchr/testify`; `test/e2e/suite_test.go`
-- **E2E build tag**: E2E tests are gated behind the `e2e` build tag. They are excluded from `make test-unit`. — **Evidence:** `.golangci.yaml` `build-tags: [e2e]`; `AGENTS.md` — "E2E (test/e2e/, tag e2e)"
-- **CI system**: Prow via `openshift/release`; this repo does not ship `.github/workflows`. — **Evidence:** `AGENTS.md` — "jobs often live in openshift/release (Prow); this repo may not ship .github/workflows"
+- **Go version**: Match `go.mod` directive — currently `go 1.25.0`. — **Evidence:** `go.mod` line `go 1.25.0`
+- **Module path**: `github.com/openshift/secrets-store-csi-driver-operator`. Local imports placed after third-party imports. — **Evidence:** `go.mod`
+- **Container base image**: UBI-based; operator binary runs as non-root. — **Evidence:** `Dockerfile.openshift`
+- **Build tags**: FIPS-capable builds require `strictfipsruntime,openssl` tags and `CGO_ENABLED=1`. — **Evidence:** `Makefile` FIPS block
+- **CI system**: Prow via `openshift/release`; no `.github/workflows` in this repo. — **Evidence:** `.ci-operator.yaml`; `AGENTS.md`
+- **E2E script**: `hack/e2e.sh` is the e2e entry point (not a Makefile pattern match). — **Evidence:** `Makefile` `test-e2e` target
+- **Image registry**: CI uses `registry.svc.ci.openshift.org/ocp/4.22:secrets-store-csi-driver-operator`. — **Evidence:** `Makefile` `IMAGE_REGISTRY`
+- **No feature gates**: This operator has no `features.go` or operator-level feature gate framework. — **Evidence:** No `features.go` in repo; no `FeatureGate` imports in `go.mod`
 
 ## Development Workflow
 
-| Activity | Requirement | Evidence |
-|----------|-------------|----------|
-| Local unit tests | `make test` (chains `manifests`, `generate`, `vet`, `test-apis`, `test-unit`) | `Makefile` `test` target |
-| Full verify | `make verify` (runs all `hack/verify-*.sh` scripts) | `hack/verify-*.sh` (10+ scripts) |
-| Lint | `make lint` (golangci-lint with `.golangci.yaml`) | `Makefile` `lint` target, `.golangci.yaml` |
-| Codegen refresh | `make update` after any API type change, operand version bump, or dependency update | `hack/update-*.sh`, `AGENTS.md` "After API edits" |
-| E2E tests | `make test-e2e` (requires running cluster with stable operands); narrow with `TEST=` or `E2E_GINKGO_LABEL_FILTER=` | `Makefile` `test-e2e` target |
-| Bundle generation | `make bundle` after CSV or CRD changes | `Makefile` `bundle` target, `hack/verify-bundle.sh` |
-| Image build | `make image-build image-push` with `IMG`, `CONTAINER_ENGINE` env vars | `Makefile`, `Dockerfile` |
-| Local dev run | `make deploy && oc scale --replicas=0 deploy --all -n cert-manager-operator && make local-run` | `README.md`, `hack/local-run-config.yaml` |
-| PR pre-merge | `make verify && make lint && make test`; commit all generated outputs | `AGENTS.md` PR instructions |
-| PR scope | Small diffs; follow existing library-go / controller-runtime patterns; update docs for user-visible changes | `AGENTS.md` PR instructions |
+| Activity           | Requirement                                                         | Evidence                              |
+| ------------------ | ------------------------------------------------------------------- | ------------------------------------- |
+| Local unit tests   | `make test-unit` (`go test ./pkg/... ./cmd/...`)                    | `Makefile` `GO_TEST_PACKAGES`         |
+| Full verify + unit | `make check`                                                        | `Makefile` `check` target             |
+| E2E tests          | `make test-e2e` (requires live cluster + `openshift-tests` in PATH) | `Makefile` `test-e2e`, `hack/e2e.sh`  |
+| OCP version bump   | `make metadata VERSION=4.X`                                         | `hack/update-metadata.sh`             |
+| Bundle generation  | Manual via `hack/create-bundle` script                              | `hack/create-bundle`                  |
+| Image build        | `make image-build image-push`                                       | `Makefile` build-machinery-go targets |
+| PR pre-merge       | `make check`; commit all changes                                    | `AGENTS.md`                           |
+| PR scope           | Small diffs; follow existing CSIControllerSet pattern               | `AGENTS.md`                           |
 
-## Agent Routing
+## Code Ownership
 
-| Agent ID | Scope | When to route |
-|----------|-------|---------------|
-| Tier 1 Hub (openshift/enhancements ai-docs) | Generic OpenShift operator patterns, testing guidance, security practices | Cross-cutting platform questions not specific to cert-manager-operator |
-| This repo AGENTS.md | Component-specific controller map, Make targets, test tags, PR hygiene | All cert-manager-operator development tasks |
-| README.md | Human quick-start, install, upgrade, local run | Setup and onboarding tasks |
-| docs/ (proxy.md, operand_metrics.md, cloud_credentials.md) | Platform integration details | Proxy, metrics, or cloud credential tasks |
-| api/operator/v1alpha1/ | API types, feature gates, conditions | API design, feature gating, status reporting tasks |
-| pkg/controller/{deployment,istiocsr,trustmanager}/ | Controller implementation patterns | New controller or reconciliation tasks — follow existing sibling pattern |
+| Area             | Scope                                                  | Key paths                                           |
+| ---------------- | ------------------------------------------------------ | --------------------------------------------------- |
+| Controller logic | CSIControllerSet wiring, operator bootstrap, informers | `pkg/operator/starter.go`                           |
+| Static assets    | YAML manifests, RBAC, NetworkPolicy                    | `assets/`, `assets/rbac/`, `assets/network-policy/` |
+| OLM / release    | Bundle, CSV, OCP version bumps                         | `config/manifests/`, `hack/update-metadata.sh`      |
+| Tests            | E2E and unit tests                                     | `pkg/operator/*_test.go`, `hack/e2e.sh`             |
+| Docs             | User-facing documentation                              | `README.md`, `must-gather/`                         |
 
 ## Governance
 
-- This constitution supersedes ad-hoc conventions for downstream Planning, Task Creation, and Code Generation agents.
-- **Amendments:** require documented evidence of repo change; bump Version and Last Amended date.
-- **Conflicts:** if spec contradicts constitution, escalate in plan.md §8 — do not silently override. For example, if the spec requests behavior that would require forking upstream cert-manager logic into the operator, this must be flagged as a constitution violation.
-- **Companion docs:**
-  - **AGENTS.md** takes precedence for agent routing, controller map, Make target documentation, and PR/testing instructions.
-  - **README.md** takes precedence for human-facing install/upgrade/local-run procedures.
-  - **This constitution** takes precedence for architectural principles and non-negotiable guardrails that downstream agents must follow.
-  - **docs/** takes precedence for domain-specific platform integration details (proxy, metrics, cloud credentials).
-- **Complexity:** new patterns must justify deviation from existing repo conventions with explicit rationale. Adding a new controller framework (beyond library-go for core or controller-runtime for addons) requires constitution amendment.
-- **Addon operand pattern:** Trust-manager integration MUST follow the established Istio CSR addon pattern: feature gate in `features.go`, CR in `api/operator/v1alpha1/`, controller under `pkg/controller/trustmanager/`, manifests under `bindata/`, controller-runtime reconciler wired via `setup_manager.go`. Deviation from this pattern requires explicit justification.
+- **Amendments**: any principle change requires documented repo evidence and a Version + Last Amended date bump.
+- **Conflicts**: when a proposed change contradicts a principle, surface the conflict explicitly — do not silently override. Flag it in design review, PR comments, or planning artifacts before proceeding.
+- **Companion docs**:
+  - **AGENTS.md** is authoritative for architecture, build commands, controller map, and test instructions.
+  - **README.md** is authoritative for human-facing install and local-run procedures.
+  - **This constitution** is authoritative for non-negotiable architectural guardrails.
+- **New patterns**: any deviation from the existing CSIControllerSet model (e.g. adding controller-runtime, a new CRD type, a separate manager) requires explicit justification and a constitution amendment before implementation.
