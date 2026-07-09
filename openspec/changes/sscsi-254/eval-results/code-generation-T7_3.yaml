@@ -1,0 +1,54 @@
+task_id: T7_3
+oape_command: manual
+stage: code-generation
+stage_eval_file: evals/code-generation_eval.yaml
+scored_at: 2026-07-09T16:20:00Z
+note: >-
+  evals/code-generation_eval.yaml has an empty case list (unresolved merge-conflict
+  markers, same defect as prior tasks). No cases matched.
+refinement_rounds: 0
+overall_score: null
+overall_pass: null
+verification:
+  commands:
+    - cmd: "bash -n hack/e2e.sh"
+      exit_code: 0
+      pass: true
+    - cmd: "make verify"
+      exit_code: 0
+      pass: true
+      note: "Sanity check -- no Go code touched by this task."
+  overall_pass: true
+test_execution:
+  strategy: build_only
+  commands:
+    - cmd: "make test-unit"
+      exit_code: 0
+      pass: true
+      summary: "no regression; no Go code touched by this task"
+  overall_pass: true
+  test_files_generated: []
+  note: >-
+    Full e2e execution (make test-e2e) requires a live OpenShift cluster and
+    cannot run in this environment, per docs/testing-guidelines.md and this
+    repo's own AGENTS.md ("E2E tests are not expected to pass locally"). Only
+    static syntax verification was performed; scenarios themselves are unexecuted
+    pending a live cluster.
+cases: []
+scenarios_added:
+  - test_wif_managed_single_audience
+  - test_wif_managed_multiple_audiences
+  - test_wif_managed_clear_audiences
+design_finding: >-
+  tokenRequests.type is a one-way, CEL-enforced transition on the singleton
+  ClusterCSIDriver -- once "Managed" it can never revert to "Unmanaged" for the
+  rest of the e2e run. This means T7_3 and T7_4 are NOT actually safely
+  parallel/order-independent for the "Unmanaged"-dependent scenarios, contrary
+  to the "Parallel OK: Yes" annotation in tasks.md/plan.md. Resolved by wiring
+  T7_3's Managed-audience calls after an explicit comment marker in hack/e2e.sh,
+  flagging that T7_4's Unmanaged-preservation scenarios must be inserted BEFORE
+  this block (requiring a reorder, not just an append, when T7_4 lands).
+api_shape_confirmation: >-
+  tokenRequests API shape (type/managed.audiences[].audience+expirationSeconds)
+  matches the EP's original proposal exactly, per T1_1's findings -- no field-name
+  corrections were needed here (unlike secretRotation in T7_2).

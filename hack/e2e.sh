@@ -269,6 +269,99 @@ test_rotation_cleanup() {
 	return 0
 }
 
+# --- SSCSI-254: Workload Identity Federation (WIF) token audience e2e scenarios ---
+#
+# IMPORTANT: tokenRequests.type is a one-way, CEL-enforced transition on the
+# ClusterCSIDriver singleton -- once set to "Managed" it can NEVER revert to
+# "Unmanaged" for the lifetime of this e2e run. Any scenario that depends on
+# "Unmanaged" behavior (preserving pre-existing/externally-configured audiences,
+# or an Unmanaged->Managed transition) MUST run and complete BEFORE the functions
+# below. Do not insert new "Unmanaged"-dependent test calls after this block in
+# the execution order at the bottom of this script.
+
+get_token_requests_audiences() {
+	oc get csidriver ${PROVISIONER_NAME} -o jsonpath='{.spec.tokenRequests[*].audience}'
+}
+
+get_token_request_expiration() {
+	local AUDIENCE=$1
+	oc get csidriver ${PROVISIONER_NAME} -o jsonpath="{.spec.tokenRequests[?(@.audience==\"${AUDIENCE}\")].expirationSeconds}"
+}
+
+# wait_for_csidriver_audiences polls until the CSIDriver's tokenRequests audiences
+# match the expected space-separated list, tolerating the brief delete+recreate
+# window from ApplyCSIDriver's spec-hash-based reconciliation.
+wait_for_csidriver_audiences() {
+	local EXPECTED="$1"
+	local ATTEMPTS=0
+	local CURRENT=""
+	while [ ${ATTEMPTS} -lt 12 ]; do
+		CURRENT=$(get_token_requests_audiences)
+		if [ "${CURRENT}" == "${EXPECTED}" ]; then
+			return 0
+		fi
+		sleep 5
+		ATTEMPTS=$((ATTEMPTS + 1))
+	done
+	echo "Timed out waiting for tokenRequests audiences to become '${EXPECTED}', last saw '${CURRENT}'"
+	return 1
+}
+
+# test_wif_managed_single_audience verifies a single Managed audience with a
+# custom expirationSeconds propagates to CSIDriver.spec.tokenRequests
+# (specs.md FR-003, SC-003).
+test_wif_managed_single_audience() {
+	local AWS_AUDIENCE="sts.amazonaws.com"
+	echo "Configuring Managed tokenRequests with a single audience"
+	oc patch clustercsidriver ${PROVISIONER_NAME} --type=merge -p \
+		"{\"spec\":{\"driverConfig\":{\"driverType\":\"SecretsStore\",\"secretsStore\":{\"tokenRequests\":{\"type\":\"Managed\",\"managed\":{\"audiences\":[{\"audience\":\"${AWS_AUDIENCE}\",\"expirationSeconds\":3600}]}}}}}}" || return 1
+
+	wait_for_csidriver_audiences "${AWS_AUDIENCE}" || return 1
+	local EXP=$(get_token_request_expiration ${AWS_AUDIENCE})
+	if [ "${EXP}" != "3600" ]; then
+		echo "Expected expirationSeconds=3600 for ${AWS_AUDIENCE}, got '${EXP}'"
+		return 1
+	fi
+	echo "test_wif_managed_single_audience PASSED"
+	return 0
+}
+
+# test_wif_managed_multiple_audiences verifies multiple simultaneous audiences
+# (e.g. AWS + Azure) are all propagated together (specs.md FR-004/FR-011, SC-004).
+test_wif_managed_multiple_audiences() {
+	local AWS_AUDIENCE="sts.amazonaws.com"
+	local AZURE_AUDIENCE="api://AzureADTokenExchange"
+	echo "Configuring Managed tokenRequests with multiple audiences (AWS + Azure)"
+	oc patch clustercsidriver ${PROVISIONER_NAME} --type=merge -p \
+		"{\"spec\":{\"driverConfig\":{\"driverType\":\"SecretsStore\",\"secretsStore\":{\"tokenRequests\":{\"type\":\"Managed\",\"managed\":{\"audiences\":[{\"audience\":\"${AWS_AUDIENCE}\",\"expirationSeconds\":3600},{\"audience\":\"${AZURE_AUDIENCE}\"}]}}}}}}" || return 1
+
+	local ATTEMPTS=0
+	local CURRENT=""
+	while [ ${ATTEMPTS} -lt 12 ]; do
+		CURRENT=$(get_token_requests_audiences)
+		if [[ "${CURRENT}" == *"${AWS_AUDIENCE}"* ]] && [[ "${CURRENT}" == *"${AZURE_AUDIENCE}"* ]]; then
+			echo "test_wif_managed_multiple_audiences PASSED"
+			return 0
+		fi
+		sleep 5
+		ATTEMPTS=$((ATTEMPTS + 1))
+	done
+	echo "Expected both '${AWS_AUDIENCE}' and '${AZURE_AUDIENCE}' present, last saw '${CURRENT}'"
+	return 1
+}
+
+# test_wif_managed_clear_audiences verifies an explicit empty audience list
+# clears all managed tokenRequests (specs.md FR-008, SC-007).
+test_wif_managed_clear_audiences() {
+	echo "Clearing Managed tokenRequests audiences (empty list)"
+	oc patch clustercsidriver ${PROVISIONER_NAME} --type=merge -p \
+		'{"spec":{"driverConfig":{"driverType":"SecretsStore","secretsStore":{"tokenRequests":{"type":"Managed","managed":{"audiences":[]}}}}}}' || return 1
+
+	wait_for_csidriver_audiences "" || return 1
+	echo "test_wif_managed_clear_audiences PASSED"
+	return 0
+}
+
 test_prechecks
 if [ $? -ne 0 ]; then
 	echo "test_prechecks FAILED"
@@ -327,6 +420,29 @@ if [ $? -ne 0 ]; then
 fi
 
 test_rotation_cleanup
+
+# NOTE (SSCSI-254): this is the LAST safe point to insert any e2e scenario that
+# depends on tokenRequests.type == "Unmanaged" (e.g. preservation-on-upgrade
+# scenarios). The WIF tests below permanently transition tokenRequests to
+# "Managed" for the rest of this run (one-way CEL-enforced transition) -- any
+# "Unmanaged"-dependent scenario added after this point would be unable to run.
+test_wif_managed_single_audience
+if [ $? -ne 0 ]; then
+	echo "test_wif_managed_single_audience FAILED"
+	exit 1
+fi
+
+test_wif_managed_multiple_audiences
+if [ $? -ne 0 ]; then
+	echo "test_wif_managed_multiple_audiences FAILED"
+	exit 1
+fi
+
+test_wif_managed_clear_audiences
+if [ $? -ne 0 ]; then
+	echo "test_wif_managed_clear_audiences FAILED"
+	exit 1
+fi
 
 echo "All tests PASSED"
 exit 0

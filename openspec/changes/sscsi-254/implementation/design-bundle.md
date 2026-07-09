@@ -1,27 +1,28 @@
-# Design Bundle — Task T7_2
+# Design Bundle — Task T7_3
 
 **Change:** sscsi-254
-**Task:** T7_2 — E2E rotation scenarios (enable/disable/custom-interval)
+**Task:** T7_3 — E2E WIF scenarios (single/multi-audience)
 **Assigned Agent:** Testing_Agent
 **Phase:** Phase 7: E2E Scenarios
 
-## Task T7_2 Payload (from tasks.md §4)
+## Task T7_3 Payload (from tasks.md §4)
 
-- **Objective:** Implement the source EP's e2e rotation scenarios: no-`driverConfig` defaults; custom interval; `"None"` disables; toggle back to `"Custom"`.
+- **Objective:** Implement the source EP's e2e WIF scenarios: single audience; multiple audiences (AWS + Azure); custom `expirationSeconds`; clearing via empty list; Unmanaged→Managed transition.
 - **Target file(s):** Per `T7_1`'s discovery output — new bash functions in `hack/e2e.sh`.
-- **Implementation notes:** Verify via `oc get csidriver .../oc get ds ...` commands per `repo-assessment.md` §12.
-- **Acceptance criteria:** `make test-e2e` (requires live cluster) passes these scenarios; traces to `specs.md` SC-001/SC-002, User Story 1.
+- **Acceptance criteria:** `make test-e2e` (requires live cluster) passes these scenarios; traces to `specs.md` SC-003/SC-004/SC-007, User Story 2.
 
-## T7_1 discovery constraints (binding on this task)
+## ⚠️ Critical sequencing constraint discovered during design (worth flagging as a deviation)
 
-> New scenarios must be added as bash functions following the `test_xxx() { ...; return $?; }` convention, wired into the sequential execution block — not Go test files.
+`tokenRequests.type` is a **one-way, CEL-enforced transition**: once set to `"Managed"` on the singleton `ClusterCSIDriver`, it can **never** revert to `"Unmanaged"` — confirmed both in the source EP and in the actual merged API's CEL rule (`T1_2`'s vendored types). Since there is only **one** `ClusterCSIDriver` object per cluster (singleton, `secrets-store.csi.k8s.io`), **any e2e scenario that needs `Unmanaged` behavior (preservation of pre-existing/externally-configured audiences — this task payload's own "Unmanaged→Managed transition" case, and all of `T7_4`'s preservation scenarios) MUST run and complete before this task's `Managed`-audience scenarios execute**, or they become permanently untestable for the remainder of the e2e run.
 
-## CORRECTED field names/formats (per T1_1's actual merged API finding — supersedes the EP's original assumptions)
+`plan.md`/`tasks.md` marked `T7_2`/`T7_3`/`T7_4` `Parallel OK: Yes` based on the assumption they were independent — this is **not actually true** for `T7_3` vs. `T7_4` specifically, due to this shared-singleton, one-way-transition constraint. This was not visible until actually implementing the e2e scenarios against the real CEL semantics.
 
-- Field is `rotationPollIntervalSeconds` (not the EP's `minimumRefreshAge`).
-- This repo's hook (`T4_1`) formats the interval arg as `"<N>s"` (e.g. `--rotation-poll-interval=300s`), not `"5m0s"` — e2e assertions must match the ACTUAL implementation's output format, not the EP's original assumption.
-- `requiresRepublish` mirrors `secretRotation.type` exactly as implemented in `T3_1` (`false` only when explicitly `"None"`).
+**Resolution for this task**: implement `T7_3`'s `Managed`-audience functions now (single/multiple/clear/custom-expiration), but insert their execution-block wiring **after** a clearly-commented placeholder marker, so that `T7_4` (next task) can insert its `Unmanaged`-preservation scenario calls **before** this block when it lands — `T7_4` will need to reorder the execution block, not just append to it. This is flagged explicitly in this task's Deviations for `T7_4` to act on.
+
+## API shape (confirmed unchanged from EP assumptions — per T1_1)
+
+`tokenRequests` API shape matches the EP's original proposal exactly (unlike `secretRotation`'s field-name difference) — `type: Managed|Unmanaged`, `managed.audiences: [{audience, expirationSeconds}]`.
 
 ## Execution approach
 
-Add 4 new bash functions to `hack/e2e.sh` (`test_rotation_defaults`, `test_rotation_custom_interval`, `test_rotation_disabled`, `test_rotation_toggle_back_to_custom`) plus a `test_rotation_cleanup` helper, each patching `ClusterCSIDriver` via `oc patch --type=merge` and verifying via the exact `oc get csidriver`/`oc get ds ... jsonpath` commands from `repo-assessment.md` §12. Use `oc rollout status daemonset/... --timeout=60s` to wait for the DaemonSet rollout robustly (rather than a fixed `sleep`). Wire into the sequential execution block after the existing `test_pod_with_secret`/`test_teardown` steps (rotation config changes trigger a DaemonSet rollout that could disrupt a concurrently-running pod-mount test if run earlier).
+Add `test_wif_managed_single_audience`, `test_wif_managed_multiple_audiences`, `test_wif_managed_clear_audiences` to `hack/e2e.sh`, using `oc get csidriver ... -o jsonpath='{.spec.tokenRequests[*].audience}'` (and per-audience `expirationSeconds` lookups) for verification, following `repo-assessment.md` §12's command style. Wire into the execution block after `T7_2`'s rotation block, with an explicit comment marking this as the **last** safe insertion point for any future `Unmanaged`-dependent scenario.
