@@ -1,16 +1,16 @@
 {
-  "exported_at": "2026-07-09T12:53:42.617235+00:00",
+  "exported_at": "2026-07-09T12:54:08.140112+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
     "change_name": "SSCSI-254 \u2014 sscsi-254",
     "jira_key": "SSCSI-254",
     "branch": "feature/sscsi-254",
-    "status": "running",
+    "status": "completed",
     "started_at": "2026-07-09T08:31:03.056093+00:00",
-    "completed_at": null,
-    "total_tokens_in": 79395,
-    "total_tokens_out": 30471
+    "completed_at": "2026-07-09T12:54:08.133272+00:00",
+    "total_tokens_in": 652891,
+    "total_tokens_out": 44368
   },
   "phases": [
     {
@@ -83,15 +83,15 @@
       "phase_number": 5,
       "phase_name": "code_generation",
       "model_id": "",
-      "status": "running",
+      "status": "passed",
       "started_at": "2026-07-09T09:59:10.529838+00:00",
-      "completed_at": null,
-      "tokens_in": 0,
-      "tokens_out": 0,
+      "completed_at": "2026-07-09T12:54:08.132995+00:00",
+      "tokens_in": 573496,
+      "tokens_out": 13897,
       "quality_score": 0,
-      "quality_label": "",
-      "iteration_count": 1,
-      "duration_s": 0.0
+      "quality_label": "19/19 tasks approved",
+      "iteration_count": 2,
+      "duration_s": 10497.6
     }
   ],
   "tasks": [
@@ -565,13 +565,13 @@
     }
   ],
   "global_health": {
-    "total_tokens_consumed": 109866,
-    "estimated_cost_usd": 0.6953,
-    "cumulative_wall_time_s": 15759.6,
+    "total_tokens_consumed": 697259,
+    "estimated_cost_usd": 2.6242,
+    "cumulative_wall_time_s": 15785.1,
     "compliance_index": 80.0,
     "gate_passing_rate": 80.0,
-    "human_rejection_rate": 0.0,
-    "total_refinement_iterations": 0,
+    "human_rejection_rate": 20.0,
+    "total_refinement_iterations": 1,
     "agent_success_rate": 100.0,
     "tasks_passed": 19,
     "tasks_total": 19
