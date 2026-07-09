@@ -128,6 +128,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 			trustedCAConfigMap,
 			configMapInformer,
 		),
+		withSecretsStoreRotationDaemonSetHook(clusterCSIDriverInformer.Lister()),
 	)
 
 	klog.Info("Starting the informers")
