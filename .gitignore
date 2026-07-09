@@ -27,7 +27,8 @@ eval-generation/eval-generation-workflow/rounds/
 eval-generation/eval-generation-workflow/template-gaps/
 eval-generation/eval-generation-workflow/refined-templates/
 eval-generation/eval-generation-workflow/round-state.yaml
-openspec/changes/
+# openspec/changes/
+**/__pycache__/**
 # ─── Dashboard runtime artifacts ───
 dashboard/data/
 dashboard/.venv/
