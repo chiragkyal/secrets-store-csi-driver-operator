@@ -111,7 +111,7 @@ graph TD
 4. [x] `T2_2` — Wire the new informer/typed-client access into `starter.go`
 5. [x] `T2_3` — Unit tests for the read-path helper's nil-safety branches
 6. [x] `T3_1` — Implement dynamic `AssetFunc` for `csidriver.yaml`
-7. `T4_1` — Implement the rotation-args `DaemonSetHookFunc`
+7. [x] `T4_1` — Implement the rotation-args `DaemonSetHookFunc`
 8. `T3_2` — Implement `tokenRequests` preservation-on-upgrade logic
 9. `T4_2` — Register the new hook alongside the existing CA-bundle hook
 10. `T3_3` — Register the new `AssetFunc` in `WithConditionalStaticResourcesController`

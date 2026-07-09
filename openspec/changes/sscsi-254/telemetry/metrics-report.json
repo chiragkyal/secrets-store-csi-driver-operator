@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-07-09T11:45:16.450607+00:00",
+  "exported_at": "2026-07-09T11:52:36.314246+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
@@ -186,8 +186,22 @@
       "task_id": "T4_1",
       "task_title": "Implement rotation-args DaemonSetHookFunc",
       "agent_id": "ControllerLogic_Agent",
-      "status": "running",
+      "status": "passed",
       "started_at": "2026-07-09T11:45:16.439843+00:00",
+      "completed_at": "2026-07-09T11:51:27.566302+00:00",
+      "tokens_in": 30521,
+      "tokens_out": 769,
+      "self_correction_loops": 1
+    },
+    {
+      "id": "a2a2d0c6-2459-406b-b92d-d50f0036d027",
+      "run_id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
+      "phase_id": "163d9e96-dcc1-48e1-897e-4e0faaf7512d",
+      "task_id": "T3_2",
+      "task_title": "tokenRequests preservation-on-upgrade logic",
+      "agent_id": "ControllerLogic_Agent",
+      "status": "running",
+      "started_at": "2026-07-09T11:52:36.307186+00:00",
       "completed_at": null,
       "tokens_in": 0,
       "tokens_out": 0,
@@ -399,14 +413,14 @@
   "global_health": {
     "total_tokens_consumed": 109866,
     "estimated_cost_usd": 0.6953,
-    "cumulative_wall_time_s": 11653.4,
+    "cumulative_wall_time_s": 12093.3,
     "compliance_index": 80.0,
     "gate_passing_rate": 80.0,
     "human_rejection_rate": 0.0,
     "total_refinement_iterations": 0,
-    "agent_success_rate": 85.7,
-    "tasks_passed": 6,
-    "tasks_total": 7
+    "agent_success_rate": 87.5,
+    "tasks_passed": 7,
+    "tasks_total": 8
   },
   "artifact_edits": {
     "artifacts": [

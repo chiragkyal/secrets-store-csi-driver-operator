@@ -9,6 +9,7 @@ import (
 	"github.com/openshift/library-go/pkg/operator/resource/resourceread"
 	storagev1 "k8s.io/api/storage/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	storagev1listers "k8s.io/client-go/listers/storage/v1"
 	"sigs.k8s.io/yaml"
 )
 
@@ -21,11 +22,13 @@ const csidriverAssetName = "csidriver.yaml"
 // tokenRequests configuration read from the live ClusterCSIDriver, instead of the
 // fully-static base manifest. All other asset names pass through unchanged.
 //
-// This only sets spec.tokenRequests when the resolved configuration is "Managed".
-// When it is "Unmanaged" or omitted, tokenRequests is left as decoded from the
-// static base manifest (i.e. unset) -- preserving any tokenRequests already present
-// on the live CSIDriver object is implemented on top of this function in T3_2.
-func withSecretsStoreCSIDriverAsset(base resourceapply.AssetFunc, clusterCSIDriverLister operatorv1listers.ClusterCSIDriverLister) resourceapply.AssetFunc {
+// When the resolved tokenRequests configuration is "Managed", spec.tokenRequests is
+// set from the resolved audiences. When it is "Unmanaged" or omitted, this preserves
+// whatever tokenRequests already exist on the live CSIDriver object (read via
+// liveCSIDriverLister) instead of wiping them -- this is the upgrade-safety guarantee
+// for clusters with pre-existing, externally-configured tokenRequests (specs.md
+// FR-006, User Story 3).
+func withSecretsStoreCSIDriverAsset(base resourceapply.AssetFunc, clusterCSIDriverLister operatorv1listers.ClusterCSIDriverLister, liveCSIDriverLister storagev1listers.CSIDriverLister) resourceapply.AssetFunc {
 	return func(name string) ([]byte, error) {
 		objBytes, err := base(name)
 		if err != nil {
@@ -48,6 +51,12 @@ func withSecretsStoreCSIDriverAsset(base resourceapply.AssetFunc, clusterCSIDriv
 
 		if tokenRequests.Managed {
 			driver.Spec.TokenRequests = toStorageTokenRequests(tokenRequests.Audiences)
+		} else {
+			preserved, err := getLiveTokenRequests(liveCSIDriverLister)
+			if err != nil {
+				return nil, fmt.Errorf("unable to get live CSIDriver %q for tokenRequests preservation: %w", providerName, err)
+			}
+			driver.Spec.TokenRequests = preserved
 		}
 
 		mutated, err := yaml.Marshal(driver)
@@ -56,6 +65,20 @@ func withSecretsStoreCSIDriverAsset(base resourceapply.AssetFunc, clusterCSIDriv
 		}
 		return mutated, nil
 	}
+}
+
+// getLiveTokenRequests returns the tokenRequests currently present on the live
+// storage.k8s.io/v1 CSIDriver object (the same singleton name as the operator's own
+// ClusterCSIDriver, providerName), or nil if the object has not been created yet.
+func getLiveTokenRequests(lister storagev1listers.CSIDriverLister) ([]storagev1.TokenRequest, error) {
+	live, err := lister.Get(providerName)
+	if apierrors.IsNotFound(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return live.Spec.TokenRequests, nil
 }
 
 // getClusterCSIDriverSpec returns the live ClusterCSIDriver spec via the lister, or

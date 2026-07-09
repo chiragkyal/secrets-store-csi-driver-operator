@@ -42,6 +42,34 @@ func (f *fakeClusterCSIDriverLister) Get(name string) (*opv1.ClusterCSIDriver, e
 	return f.driver, nil
 }
 
+// fakeCSIDriverLister is a minimal hand-written fake for
+// storagev1listers.CSIDriverLister, representing the live storage.k8s.io/v1
+// CSIDriver object (distinct from the ClusterCSIDriver operator CR above).
+type fakeCSIDriverLister struct {
+	driver *storagev1.CSIDriver
+	err    error
+}
+
+func (f *fakeCSIDriverLister) List(selector labels.Selector) ([]*storagev1.CSIDriver, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	if f.driver == nil {
+		return nil, nil
+	}
+	return []*storagev1.CSIDriver{f.driver}, nil
+}
+
+func (f *fakeCSIDriverLister) Get(name string) (*storagev1.CSIDriver, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	if f.driver == nil {
+		return nil, apierrors.NewNotFound(schema.GroupResource{Resource: "csidrivers"}, name)
+	}
+	return f.driver, nil
+}
+
 const testCSIDriverYAML = `apiVersion: storage.k8s.io/v1
 kind: CSIDriver
 metadata:
@@ -65,7 +93,7 @@ func TestWithSecretsStoreCSIDriverAsset_PassThrough(t *testing.T) {
 	base := func(name string) ([]byte, error) {
 		return []byte("unrelated content for " + name), nil
 	}
-	wrapped := withSecretsStoreCSIDriverAsset(base, &fakeClusterCSIDriverLister{})
+	wrapped := withSecretsStoreCSIDriverAsset(base, &fakeClusterCSIDriverLister{}, &fakeCSIDriverLister{})
 
 	got, err := wrapped("node_sa.yaml")
 	if err != nil {
@@ -77,7 +105,7 @@ func TestWithSecretsStoreCSIDriverAsset_PassThrough(t *testing.T) {
 }
 
 func TestWithSecretsStoreCSIDriverAsset_NoClusterCSIDriverYet(t *testing.T) {
-	wrapped := withSecretsStoreCSIDriverAsset(baseAssetFunc, &fakeClusterCSIDriverLister{})
+	wrapped := withSecretsStoreCSIDriverAsset(baseAssetFunc, &fakeClusterCSIDriverLister{}, &fakeCSIDriverLister{})
 
 	got, err := wrapped(csidriverAssetName)
 	if err != nil {
@@ -116,7 +144,7 @@ func TestWithSecretsStoreCSIDriverAsset_RotationMirroring(t *testing.T) {
 					},
 				},
 			}
-			wrapped := withSecretsStoreCSIDriverAsset(baseAssetFunc, &fakeClusterCSIDriverLister{driver: driverCR})
+			wrapped := withSecretsStoreCSIDriverAsset(baseAssetFunc, &fakeClusterCSIDriverLister{driver: driverCR}, &fakeCSIDriverLister{})
 
 			got, err := wrapped(csidriverAssetName)
 			if err != nil {
@@ -150,7 +178,7 @@ func TestWithSecretsStoreCSIDriverAsset_ManagedTokenRequests(t *testing.T) {
 			},
 		},
 	}
-	wrapped := withSecretsStoreCSIDriverAsset(baseAssetFunc, &fakeClusterCSIDriverLister{driver: driverCR})
+	wrapped := withSecretsStoreCSIDriverAsset(baseAssetFunc, &fakeClusterCSIDriverLister{driver: driverCR}, &fakeCSIDriverLister{})
 
 	got, err := wrapped(csidriverAssetName)
 	if err != nil {
@@ -169,11 +197,120 @@ func TestWithSecretsStoreCSIDriverAsset_ManagedTokenRequests(t *testing.T) {
 }
 
 func TestWithSecretsStoreCSIDriverAsset_ListerError(t *testing.T) {
-	wrapped := withSecretsStoreCSIDriverAsset(baseAssetFunc, &fakeClusterCSIDriverLister{err: errors.New("boom")})
+	wrapped := withSecretsStoreCSIDriverAsset(baseAssetFunc, &fakeClusterCSIDriverLister{err: errors.New("boom")}, &fakeCSIDriverLister{})
 
 	_, err := wrapped(csidriverAssetName)
 	if err == nil || !strings.Contains(err.Error(), "boom") {
 		t.Errorf("expected error wrapping lister failure, got %v", err)
+	}
+}
+
+// TestWithSecretsStoreCSIDriverAsset_PreservationOnUpgrade covers task T3_2: when
+// the resolved tokenRequests configuration is Unmanaged/omitted, existing
+// tokenRequests on the live CSIDriver object must be preserved rather than wiped
+// (specs.md FR-006, User Story 3).
+func TestWithSecretsStoreCSIDriverAsset_PreservationOnUpgrade(t *testing.T) {
+	azureAudience := "api://AzureADTokenExchange"
+	liveDriver := &storagev1.CSIDriver{
+		Spec: storagev1.CSIDriverSpec{
+			TokenRequests: []storagev1.TokenRequest{{Audience: azureAudience}},
+		},
+	}
+
+	cases := []struct {
+		name             string
+		clusterCSIDriver *fakeClusterCSIDriverLister
+	}{
+		{
+			name:             "no driverConfig set (upgrade scenario) preserves live tokenRequests",
+			clusterCSIDriver: &fakeClusterCSIDriverLister{},
+		},
+		{
+			name: "tokenRequests type Unmanaged preserves live tokenRequests",
+			clusterCSIDriver: &fakeClusterCSIDriverLister{driver: &opv1.ClusterCSIDriver{
+				ObjectMeta: metav1.ObjectMeta{Name: providerName},
+				Spec: opv1.ClusterCSIDriverSpec{
+					DriverConfig: opv1.CSIDriverConfigSpec{
+						DriverType: opv1.SecretsStoreDriverType,
+						SecretsStore: opv1.SecretsStoreCSIDriverConfigSpec{
+							TokenRequests: opv1.SecretsStoreTokenRequests{Type: opv1.TokenRequestsUnmanaged},
+						},
+					},
+				},
+			}},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			wrapped := withSecretsStoreCSIDriverAsset(baseAssetFunc, tc.clusterCSIDriver, &fakeCSIDriverLister{driver: liveDriver})
+
+			got, err := wrapped(csidriverAssetName)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			driver := decodeTestCSIDriver(t, got)
+			if len(driver.Spec.TokenRequests) != 1 || driver.Spec.TokenRequests[0].Audience != azureAudience {
+				t.Errorf("expected preserved live tokenRequests [%q], got %v", azureAudience, driver.Spec.TokenRequests)
+			}
+		})
+	}
+}
+
+func TestWithSecretsStoreCSIDriverAsset_PreservationLiveNotFound(t *testing.T) {
+	wrapped := withSecretsStoreCSIDriverAsset(baseAssetFunc, &fakeClusterCSIDriverLister{}, &fakeCSIDriverLister{})
+
+	got, err := wrapped(csidriverAssetName)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	driver := decodeTestCSIDriver(t, got)
+	if len(driver.Spec.TokenRequests) != 0 {
+		t.Errorf("expected no tokenRequests when live CSIDriver does not exist yet, got %v", driver.Spec.TokenRequests)
+	}
+}
+
+func TestWithSecretsStoreCSIDriverAsset_ManagedOverridesLivePreservation(t *testing.T) {
+	audience := "sts.amazonaws.com"
+	liveDriver := &storagev1.CSIDriver{
+		Spec: storagev1.CSIDriverSpec{
+			TokenRequests: []storagev1.TokenRequest{{Audience: "old-unmanaged-audience"}},
+		},
+	}
+	driverCR := &opv1.ClusterCSIDriver{
+		ObjectMeta: metav1.ObjectMeta{Name: providerName},
+		Spec: opv1.ClusterCSIDriverSpec{
+			DriverConfig: opv1.CSIDriverConfigSpec{
+				DriverType: opv1.SecretsStoreDriverType,
+				SecretsStore: opv1.SecretsStoreCSIDriverConfigSpec{
+					TokenRequests: opv1.SecretsStoreTokenRequests{
+						Type: opv1.TokenRequestsManaged,
+						Managed: opv1.ManagedTokenRequests{
+							Audiences: &[]opv1.SecretsStoreTokenRequest{{Audience: &audience}},
+						},
+					},
+				},
+			},
+		},
+	}
+	wrapped := withSecretsStoreCSIDriverAsset(baseAssetFunc, &fakeClusterCSIDriverLister{driver: driverCR}, &fakeCSIDriverLister{driver: liveDriver})
+
+	got, err := wrapped(csidriverAssetName)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	driver := decodeTestCSIDriver(t, got)
+	if len(driver.Spec.TokenRequests) != 1 || driver.Spec.TokenRequests[0].Audience != audience {
+		t.Errorf("expected Managed config (%q) to override live preservation, got %v", audience, driver.Spec.TokenRequests)
+	}
+}
+
+func TestWithSecretsStoreCSIDriverAsset_LiveListerError(t *testing.T) {
+	wrapped := withSecretsStoreCSIDriverAsset(baseAssetFunc, &fakeClusterCSIDriverLister{}, &fakeCSIDriverLister{err: errors.New("live-boom")})
+
+	_, err := wrapped(csidriverAssetName)
+	if err == nil || !strings.Contains(err.Error(), "live-boom") {
+		t.Errorf("expected error wrapping live lister failure, got %v", err)
 	}
 }
 
