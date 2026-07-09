@@ -1,49 +1,46 @@
-# Design Bundle — Task T3_1
+# Design Bundle — Task T4_1
 
 **Change:** sscsi-254
-**Task:** T3_1 — Dynamic `AssetFunc` for `csidriver.yaml`
+**Task:** T4_1 — Implement rotation-args `DaemonSetHookFunc`
 **Assigned Agent:** ControllerLogic_Agent
-**Phase:** Phase 3: Dynamic `CSIDriver` Object Generation (Rotation + WIF Fields)
+**Phase:** Phase 4: DaemonSet Rotation Hook
 
-## Constitution excerpts (binding)
+## Repo-assessment / reusable asset (structural precedent)
 
-> **Principle II:** New assets MUST be plain YAML files added to `assets/` with `${NAMESPACE}` as the only runtime token... Never add a bindata code-generation step.
-> **Principle X:** Never modify `vendor/` directly.
+> `csidrivernodeservicecontroller.WithCABundleDaemonSetHook` (`vendor/.../csidrivernodeservicecontroller/helpers.go:32-75`) — closure-captured lister/informer, mutates `daemonSet.Spec.Template.Spec`, returns error on failure. Exact pattern to follow.
+> `DaemonSetHookFunc` signature: `func(*opv1.OperatorSpec, *appsv1.DaemonSet) error` — synchronous, context-free (confirmed in `T2_2`'s design bundle).
 
-## Specs excerpts
+## Current hardcoded args (`assets/node.yaml:37-48`)
 
-> FR-003/FR-004/FR-011: configure one or more token audiences; support multiple simultaneous audiences with independent validity durations.
-> Edge case (resolved Open Question 1 from the source EP, carried via specs.md): `requiresRepublish` mirrors `secretRotation.type` — false only when explicitly `"None"`.
-
-## Task T3_1 Payload (from tasks.md §4)
-
-- **Objective:** Replace the byte-level-only application of `assets/csidriver.yaml` with a dynamic `AssetFunc` that additionally sets `spec.requiresRepublish` and `spec.tokenRequests` based on `T2_1`'s resolved config.
-- **Target file(s):** `assets/csidriver.yaml` (base template, content otherwise unchanged); new/extended file in `pkg/operator/`.
-- **Non-goals / forbidden edits:** Do not touch `podInfoOnMount`/`attachRequired`/`fsGroupPolicy`/`volumeLifecycleModes`. **Do not implement live-tokenRequests preservation here — that is T3_2's job** (Unmanaged/omitted case just leaves `tokenRequests` unset from this AssetFunc; T3_2 layers the preservation read on top).
-- **Implementation notes:** Follow `replaceNamespaceFunc`'s closure shape but decode via `resourceread.ReadCSIDriverV1OrDie`, mutate, re-serialize via `sigs.k8s.io/yaml.Marshal` (already vendored). `requiresRepublish` = `rotation.Enabled` directly (T2_1's resolver already encodes the "false only when explicitly None" rule).
-- **Acceptance criteria:** Traces to FR-003, FR-004, FR-011. Verified by `T3_4` (not this task).
-- **Downstream handoff:** A working `AssetFunc` that `T3_2` extends with preservation logic and `T3_3` registers into `starter.go`.
-
-## Reusable assets confirmed
-
-- `resourceread.ReadCSIDriverV1OrDie(objBytes []byte) *storagev1.CSIDriver` — vendored decoder, exact library-go precedent for this pattern.
-- `sigs.k8s.io/yaml` — vendored, used for `Marshal` to re-serialize the mutated typed object back to bytes for the `AssetFunc` return value.
-- `T2_2`'s `operatorv1listers.ClusterCSIDriverLister` (via the informer wired in `starter.go`) — the read path this `AssetFunc` will use to get the live `ClusterCSIDriver` spec (passed as a constructor parameter, matching `WithCABundleDaemonSetHook`'s pattern of accepting the lister/informer directly rather than a closure).
-
-## storagev1.CSIDriverSpec field types confirmed
-
-```go
-type CSIDriverSpec struct {
-    // ...
-    TokenRequests     []TokenRequest `json:"tokenRequests,omitempty"`
-    RequiresRepublish *bool          `json:"requiresRepublish,omitempty"`
-}
-type TokenRequest struct {
-    Audience          string `json:"audience"`
-    ExpirationSeconds *int64 `json:"expirationSeconds,omitempty"`
-}
+```yaml
+args:
+  - "--endpoint=$(CSI_ENDPOINT)"
+  - "--logtostderr"
+  - "--v=${LOG_LEVEL}"
+  - "--nodeid=$(KUBE_NODE_NAME)"
+  - "--provider-volume=/var/run/secrets-store-csi-providers"
+  - "--additional-provider-volume-paths=/etc/kubernetes/secrets-store-csi-providers"
+  - "--metrics-addr=:8095"
+  - "--enable-secret-rotation=true"
+  - "--rotation-poll-interval=2m"
+  - "--provider-health-check=false"
+  - "--provider-health-check-interval=2m"
 ```
+Container name: `csi-driver`.
+
+## Task T4_1 Payload (from tasks.md §4)
+
+- **Objective:** Implement a new `DaemonSetHookFunc` that sets `--enable-secret-rotation=`/`--rotation-poll-interval=` on the `csi-driver` container based on `T2_1`'s resolved rotation config.
+- **Target file(s):** New file under `pkg/operator/`, structurally following `WithCABundleDaemonSetHook`.
+- **Non-goals / forbidden edits:** Do not modify the existing `WithCABundleDaemonSetHook` registration or `assets/cabundle_cm.yaml` — purely additive hook.
+- **Implementation notes:** Find/replace args by `--flag=` prefix match on the `csi-driver` container; when config is unset, preserve the existing hardcoded defaults (`true`, `2m`-equivalent) baked into `assets/node.yaml:45-46` today (FR-010, upgrade safety).
+- **Acceptance criteria:** Traces to FR-001, FR-002. Verified by `T4_3` (not this task, but a smoke test is added here per mandatory verification).
+- **Downstream handoff:** A working hook function ready for registration in `T4_2`.
+
+## Design decision: interval string format
+
+`RotationPollIntervalSeconds` (`T2_1`) is an `int32` seconds count. Rather than using Go's `time.Duration.String()` (which renders exactly 120s as `"2m0s"`, not the hardcoded `"2m"` in `assets/node.yaml`), this hook formats the interval as `"<N>s"` (e.g. `"120s"`) — a valid Go duration string the driver's flag parser accepts identically to `"2m"` (both parse to the same 120-second `time.Duration`). This is a **functionally identical, not byte-identical** default per FR-010 — the resolved behavior is unchanged, but the literal flag string differs from today's hardcoded `"2m"`. Documented here for `T5_1`'s regression-parity tests, which should assert parsed-duration/resolved-config equivalence rather than exact string match.
 
 ## Execution approach
 
-New file `pkg/operator/csidriverasset.go`: `withSecretsStoreCSIDriverAsset(base resourceapply.AssetFunc, clusterCSIDriverLister operatorv1listers.ClusterCSIDriverLister) resourceapply.AssetFunc` — a wrapping `AssetFunc` that special-cases `csidriver.yaml` only, passing every other asset name through unchanged. Not yet registered in `starter.go` (that's T3_3).
+New file `pkg/operator/daemonsethook.go`: `withSecretsStoreRotationDaemonSetHook(lister) csidrivernodeservicecontroller.DaemonSetHookFunc`, plus small `findContainer`/`setArgPrefix` helpers. Not yet registered in `starter.go` (that's `T4_2`).

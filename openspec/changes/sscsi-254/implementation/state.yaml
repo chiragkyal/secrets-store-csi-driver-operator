@@ -1,9 +1,9 @@
 machine:
   state: AWAITING_APPROVAL
-  current_task_id: T3_1
-  current_task_index: 6
+  current_task_id: T4_1
+  current_task_index: 7
   total_tasks: 19
-  last_transition: "2026-07-09T12:50:00Z"
+  last_transition: "2026-07-09T13:12:00Z"
 
 completed:
   - task_id: T1_1
@@ -26,15 +26,19 @@ completed:
     oape_command: manual
     test_result: PASS
     eval_score: null
+  - task_id: T3_1
+    oape_command: manual
+    test_result: PASS
+    eval_score: null
 
 current_task_result:
-  task_id: T3_1
+  task_id: T4_1
   oape_command: manual
-  files_changed: [pkg/operator/csidriverasset.go, pkg/operator/csidriverasset_test.go]
+  files_changed: [pkg/operator/daemonsethook.go, pkg/operator/daemonsethook_test.go]
   verification_pass: true
-  test_command: "go test ./pkg/operator/... -v -count=1 -run TestWithSecretsStoreCSIDriverAsset"
+  test_command: "go test ./pkg/operator/... -v -count=1 -run TestWithSecretsStoreRotationDaemonSetHook"
   test_result: PASS
-  test_output_summary: "8/8 tests passed (5 test functions, table-driven)"
+  test_output_summary: "5/5 tests passed"
   eval_score: null
   eval_cases_pass: 0
   eval_cases_total: 0

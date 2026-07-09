@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-07-09T11:39:06.437248+00:00",
+  "exported_at": "2026-07-09T11:45:16.450607+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
@@ -172,8 +172,22 @@
       "task_id": "T3_1",
       "task_title": "Dynamic AssetFunc for csidriver.yaml",
       "agent_id": "ControllerLogic_Agent",
-      "status": "running",
+      "status": "passed",
       "started_at": "2026-07-09T11:39:06.426167+00:00",
+      "completed_at": "2026-07-09T11:44:27.388644+00:00",
+      "tokens_in": 30588,
+      "tokens_out": 742,
+      "self_correction_loops": 1
+    },
+    {
+      "id": "b5a3264d-6d47-40d6-be79-d91c9a916493",
+      "run_id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
+      "phase_id": "163d9e96-dcc1-48e1-897e-4e0faaf7512d",
+      "task_id": "T4_1",
+      "task_title": "Implement rotation-args DaemonSetHookFunc",
+      "agent_id": "ControllerLogic_Agent",
+      "status": "running",
+      "started_at": "2026-07-09T11:45:16.439843+00:00",
       "completed_at": null,
       "tokens_in": 0,
       "tokens_out": 0,
@@ -385,14 +399,14 @@
   "global_health": {
     "total_tokens_consumed": 109866,
     "estimated_cost_usd": 0.6953,
-    "cumulative_wall_time_s": 11283.4,
+    "cumulative_wall_time_s": 11653.4,
     "compliance_index": 80.0,
     "gate_passing_rate": 80.0,
     "human_rejection_rate": 0.0,
     "total_refinement_iterations": 0,
-    "agent_success_rate": 83.3,
-    "tasks_passed": 5,
-    "tasks_total": 6
+    "agent_success_rate": 85.7,
+    "tasks_passed": 6,
+    "tasks_total": 7
   },
   "artifact_edits": {
     "artifacts": [

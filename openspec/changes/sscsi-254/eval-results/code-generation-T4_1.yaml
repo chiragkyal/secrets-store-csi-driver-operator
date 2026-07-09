@@ -1,0 +1,57 @@
+task_id: T4_1
+oape_command: manual
+stage: code-generation
+stage_eval_file: evals/code-generation_eval.yaml
+scored_at: 2026-07-09T13:12:00Z
+note: >-
+  evals/code-generation_eval.yaml has an empty case list (unresolved merge-conflict
+  markers, same defect as prior tasks). No cases matched.
+refinement_rounds: 1
+overall_score: null
+overall_pass: null
+verification:
+  commands:
+    - cmd: "go build ./pkg/operator/..."
+      exit_code: 0
+      pass: true
+    - cmd: "go vet ./pkg/operator/..."
+      exit_code: 0
+      pass: true
+    - cmd: "gofmt -s -l pkg/operator/daemonsethook.go pkg/operator/daemonsethook_test.go"
+      exit_code: 0
+      pass: false
+      refinement_round: 1
+      note: "daemonsethook.go initially failed formatting (const block alignment); fixed with gofmt -s -w."
+    - cmd: "gofmt -s -l (retry)"
+      exit_code: 0
+      pass: true
+      refinement_round: 1
+    - cmd: "make verify"
+      exit_code: 0
+      pass: true
+  overall_pass: true
+test_execution:
+  strategy: co_generated_tests
+  commands:
+    - cmd: "go test ./pkg/operator/... -v -count=1 -run TestWithSecretsStoreRotationDaemonSetHook"
+      exit_code: 0
+      pass: true
+      tests_run: 5
+      tests_passed: 5
+      tests_failed: 0
+    - cmd: "make test-unit"
+      exit_code: 0
+      pass: true
+      summary: "ok  github.com/openshift/secrets-store-csi-driver-operator/pkg/operator 2.524s"
+  overall_pass: true
+  test_files_generated:
+    - pkg/operator/daemonsethook_test.go
+cases: []
+design_decision:
+  choice: "interval formatted as '<seconds>s' rather than time.Duration.String()"
+  rationale: >-
+    time.Duration.String() renders exactly 120s as '2m0s', not the hardcoded '2m'
+    in assets/node.yaml. '<N>s' parses identically to '2m' via Go's duration
+    parser, so this is functionally identical but not byte-identical to today's
+    default. Documented for T5_1's regression tests to assert resolved-duration
+    equivalence rather than exact string match.
