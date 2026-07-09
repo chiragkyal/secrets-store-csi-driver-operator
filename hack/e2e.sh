@@ -154,6 +154,63 @@ test_pod_with_secret() {
 	return 0
 }
 
+# --- MANUAL VERIFICATION RUNBOOK: Upgrade preservation (SC-005) ---
+#
+# This scenario is intentionally NOT automated here. It requires swapping
+# the operator's own binary/image mid-test (installing an old operator
+# version, then upgrading it in place) -- this repo has no upgrade-testing
+# mechanism today (confirmed: no reference to "upgrade" anywhere under this
+# repo's YAML, no upgrade Prow-job scaffolding, no local script that swaps
+# operator versions), and building one is out of scope for this task's
+# payload (extend hack/e2e.sh in its existing single-version style; per this
+# task's Non-goals, reuse an existing upgrade-test mechanism if one exists --
+# none does). Per this task's own Implementation notes, this acceptance
+# criterion is explicitly narrowed to a documented manual runbook rather than
+# silently dropped. This runbook should be carried into README.md if/when
+# T6_1 (optional docs task) is executed.
+#
+# Steps to manually verify SC-005 (zero-disruption upgrade preservation)
+# against a real cluster:
+#
+#   1. On a cluster running an operator version WITHOUT this feature (or one
+#      WITH this feature but with driverConfig.secretsStore left unset):
+#        - Manually configure a token audience the "old" way, i.e. by
+#          editing the CSIDriver object's spec.tokenRequests directly (the
+#          pre-feature administrator workflow this feature's FR-005 exists
+#          to protect):
+#            oc patch csidriver ${PROVISIONER_NAME:-secrets-store.csi.k8s.io} --type=merge \
+#              -p '{"spec":{"tokenRequests":[{"audience":"pre-existing-manual-audience"}]}}'
+#        - Record the current rotation cadence for later comparison:
+#            oc get ds -n ${E2E_PROVIDER_NAMESPACE:-openshift-cluster-csi-drivers} secrets-store-csi-driver-node \
+#              -o jsonpath='{.spec.template.spec.containers[?(@.name=="csi-driver")].args}'
+#          (expect: --enable-secret-rotation=true --rotation-poll-interval=2m,
+#          the pre-feature baseline per repo-assessment.md §3.2)
+#        - Confirm ClusterCSIDriver.spec.driverConfig.secretsStore is unset:
+#            oc get clustercsidriver ${PROVISIONER_NAME:-secrets-store.csi.k8s.io} \
+#              -o jsonpath='{.spec.driverConfig}'
+#
+#   2. Upgrade the operator to a version that includes this feature (via the
+#      normal OLM channel upgrade path), WITHOUT touching driverConfig.
+#
+#   3. After the upgrade completes and the operator has reconciled at least
+#      once, re-run the same three `oc get`/`oc patch` read commands from
+#      step 1 and confirm:
+#        - CSIDriver.spec.tokenRequests STILL contains
+#          "pre-existing-manual-audience" (FR-005/FR-010 -- preserved,
+#          untouched by the upgrade).
+#        - The DaemonSet's --enable-secret-rotation=/--rotation-poll-interval=
+#          args are UNCHANGED from step 1 (FR-003/FR-012/SC-005 -- zero
+#          behavior change for a cluster that never opted into
+#          driverConfig.secretsStore).
+#        - No pod using an existing SecretProviderClass mount needed to be
+#          restarted for either check above to hold (FR-009).
+#
+# This exact matrix is already covered at the unit level by
+# TestDefaultPathMatchesPreFeatureBaseline (pkg/operator/rotation_test.go,
+# added in T4_3) and the tokenRequests preservation-matrix tests in
+# pkg/operator/csidriver_asset_test.go (added in T3_3) -- this runbook is the
+# real-cluster confirmation of that same guarantee, not a substitute for it.
+
 # --- Secret rotation configuration tests (US1/US3, SC-001/SC-002) ---
 #
 # These tests drive rotation behavior by patching the cluster-scoped

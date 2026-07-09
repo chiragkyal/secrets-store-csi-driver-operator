@@ -327,6 +327,7 @@ graph TD
 - **Downstream handoff:** Extended `hack/e2e.sh` for T5_2/T5_3 to build on (same file — sequence to avoid merge conflicts, see §5).
 
 ### Task T5_2: E2E: WIF single/multi audience
+- **Status:** Completed — see `implementation/task-reports/T5_2.md` (verified via CSIDriver.spec.tokenRequests + mount continuity; identified FR-006 irreversibility and added FR-007-based cleanup)
 - **Objective:** Extend `hack/e2e.sh` with scenarios for US2/US4: configure a single token audience and confirm the driver receives/uses it; configure multiple audiences (e.g., AWS + Azure per ep.md) and confirm both are independently usable; per `specs.md` SC-003/SC-004.
 - **Target file(s):** `hack/e2e.sh`.
 - **Non-goals / forbidden edits:** Do not implement actual cloud-provider authentication test infrastructure (AWS STS, Azure AD) — that is outside this operator's/repo's scope (`repo-assessment.md` §10.3); scenarios should verify the `CSIDriver.spec.tokenRequests` field and the token being made available to the driver via `NodePublishVolume`, not full cloud-provider round-trip auth unless the existing `e2e-provider` test fixture already supports it.
