@@ -18,6 +18,11 @@
     "3": {
       "id": "c95b9126-1f1c-444f-b3ba-da897d0d70f4",
       "name": "arch_planning",
+      "ended": true
+    },
+    "4": {
+      "id": "a3303d1a-e37c-4ed5-992e-bd007bbf9811",
+      "name": "subtask_creation",
       "ended": false
     }
   },

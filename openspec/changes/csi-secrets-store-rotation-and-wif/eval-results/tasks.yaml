@@ -1,0 +1,29 @@
+artifact_id: tasks
+artifact_path: openspec/changes/csi-secrets-store-rotation-and-wif/tasks.md
+stage: tasks
+gate: stage_evals
+stage_eval_file: evals/tasks_eval.yaml
+scored_at: "2026-07-09T15:50:00Z"
+overall_score: 95
+overall_pass: true
+cases: []
+cases_note: >-
+  evals/tasks_eval.yaml has an empty `evals: []` list for this schema (no
+  authored cases). Scored instead against the tasks template's own embedded
+  "Quality self-check (target >=75%)" checklist.
+self_check:
+  section0_covers_every_fr_sc_and_phase: true
+  agent_routing_mode_matches_constitution: true
+  manifest_row_count_equals_payload_count: true
+  total_tasks: 22
+  section2_linear_order_is_valid_topological_sort: true
+  assigned_agent_values_justified: true
+  agent_roster_deviation_explicitly_flagged: true
+  target_files_traced_to_repo_assessment_or_plan: true
+  partial_evidence_markers_used_appropriately: true
+  section5_present_with_all_three_subsections: true
+  no_truncated_mid_task_payloads: true
+  complexity_points_total: 52
+  high_risk_task_count: 3
+refinement_round: 1
+refined: false
