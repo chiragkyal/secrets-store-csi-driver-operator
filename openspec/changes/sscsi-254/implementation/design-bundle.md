@@ -1,27 +1,27 @@
-# Design Bundle — Task T4_2
+# Design Bundle — Task T3_3
 
 **Change:** sscsi-254
-**Task:** T4_2 — Register hook alongside existing CA-bundle hook
+**Task:** T3_3 — Register the new `AssetFunc` in `WithConditionalStaticResourcesController`
 **Assigned Agent:** ControllerLogic_Agent
-**Phase:** Phase 4: DaemonSet Rotation Hook
+**Phase:** Phase 3: Dynamic `CSIDriver` Object Generation (Rotation + WIF Fields)
 
-## Constitution excerpts (binding)
+## Task T3_3 Payload (from tasks.md §4)
 
-> **Principle VIII — Trusted CA Bundle Propagation Is Mandatory for DaemonSet:** The DaemonSet MUST always be deployed with the CA bundle hook. Any change to the DaemonSet configuration must preserve this hook.
+- **Objective:** Swap the current generic `AssetFunc` reference for `csidriver.yaml` with the new dynamic one from `T3_1`/`T3_2`, in the existing controller-set wiring.
+- **Target file(s):** `pkg/operator/starter.go` (`WithConditionalStaticResourcesController` call).
+- **Non-goals / forbidden edits:** Do not alter the other 7 files in that call's file list — they remain on the existing generic `replaceNamespaceFunc`.
+- **Implementation notes:** Per-file `AssetFunc` override may require restructuring — verify the vendored signature and adapt with a dispatcher `AssetFunc` that special-cases `csidriver.yaml`.
+- **Acceptance criteria:** `make verify && make test-unit` passes; manual verification: `oc get csidriver secrets-store.csi.k8s.io -o yaml`.
+- **Downstream handoff:** Feature-complete `CSIDriver` reconciliation ready for `T7_3`/`T7_4` e2e coverage.
 
-## Task T4_2 Payload (from tasks.md §4)
+## Confirmed mechanism (from repo-assessment.md §4.2 / vendored source)
 
-- **Objective:** Add `T4_1`'s hook as an additional variadic argument to `WithCSIDriverNodeService(...)`.
-- **Target file(s):** `pkg/operator/starter.go:104-116` (this is the pre-T2_2 line reference from `repo-assessment.md`; the actual call has since shifted down due to `T2_2`'s informer wiring).
-- **Non-goals / forbidden edits:** Must not remove or reorder the existing `csidrivernodeservicecontroller.WithCABundleDaemonSetHook(...)` argument (Constitution Principle VIII).
-- **Implementation notes:** Simple additive change — append the new hook to the existing call's variadic hook list.
-- **Acceptance criteria:** `make verify && make test-unit` passes; manual verification: `oc get ds ... -o jsonpath='{...args}'`. Traces to `plan.md` Phase 4.
-- **Downstream handoff:** Feature-complete DaemonSet reconciliation ready for `T7_2` e2e coverage.
+`csicontrollerset.WithConditionalStaticResourcesController` takes a single `manifests resourceapply.AssetFunc` parameter and passes it to **both** the base `staticresourcecontroller.NewStaticResourceController(...)` call and the subsequent `.WithConditionalResources(manifests, files, ...)` call — meaning our call site only needs to swap **one** argument. `withSecretsStoreCSIDriverAsset` (from `T3_1`/`T3_2`) is already exactly the "dispatcher AssetFunc that special-cases csidriver.yaml, passes everything else through" the task anticipated — no additional restructuring needed.
 
-## Current `starter.go` state (post `T2_2`, `T3_1`, `T3_2`, `T4_1`)
+## New read path for T3_2's live-CSIDriver preservation lister
 
-The `WithCSIDriverNodeService(...)` call currently registers only `csidrivernodeservicecontroller.WithCABundleDaemonSetHook(operatorNamespace, trustedCAConfigMap, configMapInformer)`. `T2_2` already constructed `clusterCSIDriverInformer` (typed `ClusterCSIDriver` informer) in the same function — `T4_1`'s `withSecretsStoreRotationDaemonSetHook` needs `clusterCSIDriverInformer.Lister()` as its argument.
+`T3_2` added a `liveCSIDriverLister storagev1listers.CSIDriverLister` parameter but did not wire an actual instance (target files excluded `starter.go`). This task supplies it via `kubeInformersForNamespaces.InformersFor("").Storage().V1().CSIDrivers()` — the same cluster-scoped (`""`) factory access pattern library-go's own `AddKubeInformers` uses internally for cluster-scoped kinds like `CSIDriver` (confirmed in `repo-assessment.md` §4.2: `informer = kubeInformersByNamespace.InformersFor(metadata.GetNamespace())`, which resolves to `""` for cluster-scoped objects). No new informer factory is needed — `kubeInformersForNamespaces` already exists and is already started.
 
 ## Execution approach
 
-Add `withSecretsStoreRotationDaemonSetHook(clusterCSIDriverInformer.Lister())` as an additional variadic argument to the existing `WithCSIDriverNodeService(...)` call, after the CA-bundle hook (order doesn't matter functionally — both hooks mutate different, non-overlapping parts of the container spec — but preserving the CA-bundle hook first, unmodified, satisfies Principle VIII literally).
+In `starter.go`: obtain `kubeInformersForNamespaces.InformersFor("").Storage().V1().CSIDrivers()`, then change the `WithConditionalStaticResourcesController(...)` call's manifests argument from `replaceNamespaceFunc(operatorNamespace)` to `withSecretsStoreCSIDriverAsset(replaceNamespaceFunc(operatorNamespace), clusterCSIDriverInformer.Lister(), csiDriverInformer.Lister())`. No other files in the conditional-resources list are affected — `withSecretsStoreCSIDriverAsset` passes them through unchanged.

@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-07-09T11:59:01.298179+00:00",
+  "exported_at": "2026-07-09T12:03:05.284016+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
@@ -214,8 +214,22 @@
       "task_id": "T4_2",
       "task_title": "Register hook alongside existing CA-bundle hook",
       "agent_id": "ControllerLogic_Agent",
-      "status": "running",
+      "status": "passed",
       "started_at": "2026-07-09T11:59:01.290638+00:00",
+      "completed_at": "2026-07-09T12:02:05.161867+00:00",
+      "tokens_in": 30275,
+      "tokens_out": 643,
+      "self_correction_loops": 0
+    },
+    {
+      "id": "b8ffc18a-fdcd-433c-939d-4efda546eb1d",
+      "run_id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
+      "phase_id": "163d9e96-dcc1-48e1-897e-4e0faaf7512d",
+      "task_id": "T3_3",
+      "task_title": "Register AssetFunc in WithConditionalStaticResourcesController",
+      "agent_id": "ControllerLogic_Agent",
+      "status": "running",
+      "started_at": "2026-07-09T12:03:05.276844+00:00",
       "completed_at": null,
       "tokens_in": 0,
       "tokens_out": 0,
@@ -427,14 +441,14 @@
   "global_health": {
     "total_tokens_consumed": 109866,
     "estimated_cost_usd": 0.6953,
-    "cumulative_wall_time_s": 12478.2,
+    "cumulative_wall_time_s": 12722.2,
     "compliance_index": 80.0,
     "gate_passing_rate": 80.0,
     "human_rejection_rate": 0.0,
     "total_refinement_iterations": 0,
-    "agent_success_rate": 88.9,
-    "tasks_passed": 8,
-    "tasks_total": 9
+    "agent_success_rate": 90.0,
+    "tasks_passed": 9,
+    "tasks_total": 10
   },
   "artifact_edits": {
     "artifacts": [

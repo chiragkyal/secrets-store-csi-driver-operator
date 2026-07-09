@@ -85,6 +85,13 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 	clusterCSIDriverInformers := operatorv1informers.NewSharedInformerFactory(clusterCSIDriverClient, resync)
 	clusterCSIDriverInformer := clusterCSIDriverInformers.Operator().V1().ClusterCSIDrivers()
 
+	// Live storage.k8s.io/v1 CSIDriver informer/lister, used to preserve any
+	// pre-existing tokenRequests on upgrade (see withSecretsStoreCSIDriverAsset).
+	// CSIDriver is cluster-scoped, so it lives in the "" (cluster-scoped) factory --
+	// the same access pattern library-go's own static-resource controller uses
+	// internally for this kind.
+	csiDriverInformer := kubeInformersForNamespaces.InformersFor("").Storage().V1().CSIDrivers()
+
 	csiControllerSet := csicontrollerset.NewCSIControllerSet(
 		operatorClient,
 		controllerConfig.EventRecorder,
@@ -96,7 +103,11 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		kubeClient,
 		dynamicClient,
 		kubeInformersForNamespaces,
-		replaceNamespaceFunc(operatorNamespace),
+		withSecretsStoreCSIDriverAsset(
+			replaceNamespaceFunc(operatorNamespace),
+			clusterCSIDriverInformer.Lister(),
+			csiDriverInformer.Lister(),
+		),
 		[]string{
 			"node_sa.yaml",
 			"csidriver.yaml",
