@@ -1,0 +1,52 @@
+task_id: T2_2
+oape_command: manual
+stage: code-generation
+stage_eval_file: evals/code-generation_eval.yaml
+scored_at: 2026-07-09T12:02:00Z
+note: >-
+  evals/code-generation_eval.yaml has an empty case list (unresolved merge-conflict
+  markers, same defect as T1_1/T1_2/T2_1). No cases matched.
+refinement_rounds: 0
+overall_score: null
+overall_pass: null
+verification:
+  commands:
+    - cmd: "go build ./pkg/operator/..."
+      exit_code: 0
+      pass: true
+    - cmd: "go vet ./pkg/operator/..."
+      exit_code: 0
+      pass: true
+    - cmd: "gofmt -s -l pkg/operator/starter.go"
+      exit_code: 0
+      pass: true
+      note: "No files listed — already correctly formatted, no fix needed."
+    - cmd: "make verify"
+      exit_code: 0
+      pass: true
+  overall_pass: true
+test_execution:
+  strategy: existing_tests
+  commands:
+    - cmd: "make test-unit"
+      exit_code: 0
+      pass: true
+      summary: "ok  github.com/openshift/secrets-store-csi-driver-operator/pkg/operator 2.669s"
+  overall_pass: true
+  test_files_generated: []
+  note: >-
+    No new test file added for this task — the change is a startup-time informer
+    wiring + diagnostic log, not independently unit-testable business logic (the
+    business logic it calls, ResolveSecretsStoreConfig, is already tested by T2_1
+    and will get full branch coverage in T2_3). Existing pkg/operator tests continue
+    to pass, confirming no regression.
+cases: []
+design_decision:
+  open_question_resolved: "plan.md Open Question 2"
+  choice: "dedicated typed informer/lister (not a live typed-client Get)"
+  rationale: >-
+    Both downstream consumer signatures (resourceapply.AssetFunc and
+    csidrivernodeservicecontroller.DaemonSetHookFunc) are synchronous and
+    context-free, ruling out a live API call per invocation. This matches every
+    existing hook in this codebase (e.g. WithCABundleDaemonSetHook), which reads
+    via a closure-captured lister.

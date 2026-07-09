@@ -11,6 +11,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	kubeclient "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/clock"
 
@@ -18,6 +19,9 @@ import (
 	configclient "github.com/openshift/client-go/config/clientset/versioned"
 	configinformers "github.com/openshift/client-go/config/informers/externalversions"
 	applyoperatorv1 "github.com/openshift/client-go/operator/applyconfigurations/operator/v1"
+	operatorv1client "github.com/openshift/client-go/operator/clientset/versioned"
+	operatorv1informers "github.com/openshift/client-go/operator/informers/externalversions"
+	operatorv1listers "github.com/openshift/client-go/operator/listers/operator/v1"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"github.com/openshift/library-go/pkg/operator/csi/csicontrollerset"
 	"github.com/openshift/library-go/pkg/operator/csi/csidrivernodeservicecontroller"
@@ -70,6 +74,17 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		return err
 	}
 
+	// Typed ClusterCSIDriver informer/lister. This is a separate, additional read path
+	// from the generic operatorClient above: the generic client's extractOperatorSpec
+	// only surfaces the embedded OperatorSpec (managementState, logLevel, etc.) and
+	// discards driverConfig. Consumers that need driverConfig.secretsStore (the CSIDriver
+	// AssetFunc and the DaemonSet rotation hook, wired in subsequent tasks) read the live
+	// object through this lister instead, since both consumer signatures are synchronous
+	// and context-free and therefore cannot make a live API call per invocation.
+	clusterCSIDriverClient := operatorv1client.NewForConfigOrDie(rest.AddUserAgent(controllerConfig.KubeConfig, operatorName))
+	clusterCSIDriverInformers := operatorv1informers.NewSharedInformerFactory(clusterCSIDriverClient, resync)
+	clusterCSIDriverInformer := clusterCSIDriverInformers.Operator().V1().ClusterCSIDrivers()
+
 	csiControllerSet := csicontrollerset.NewCSIControllerSet(
 		operatorClient,
 		controllerConfig.EventRecorder,
@@ -119,6 +134,12 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 	go kubeInformersForNamespaces.Start(ctx.Done())
 	go dynamicInformers.Start(ctx.Done())
 	go configInformers.Start(ctx.Done())
+	go clusterCSIDriverInformers.Start(ctx.Done())
+
+	// Log the resolved secretsStore configuration once at startup, for operational
+	// visibility. The real consumers of this informer/lister (CSIDriver AssetFunc and
+	// DaemonSet rotation hook) are wired in subsequent controller-set calls.
+	go logInitialSecretsStoreConfig(ctx, clusterCSIDriverInformer.Informer(), clusterCSIDriverInformer.Lister())
 
 	klog.Info("Starting controllerset")
 	go csiControllerSet.Run(ctx, 1)
@@ -126,6 +147,25 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 	<-ctx.Done()
 
 	return nil
+}
+
+// logInitialSecretsStoreConfig waits for the ClusterCSIDriver informer cache to sync,
+// then logs the resolved secretsStore rotation/tokenRequests configuration once. It
+// returns early and logs a warning if the cache never syncs (e.g. context cancelled
+// during startup) or the singleton object is not found.
+func logInitialSecretsStoreConfig(ctx context.Context, informer cache.SharedIndexInformer, lister operatorv1listers.ClusterCSIDriverLister) {
+	if !cache.WaitForCacheSync(ctx.Done(), informer.HasSynced) {
+		klog.Warning("secretsStore config: informer cache did not sync before context was cancelled")
+		return
+	}
+	driver, err := lister.Get(providerName)
+	if err != nil {
+		klog.Warningf("secretsStore config: unable to get initial ClusterCSIDriver %q: %v", providerName, err)
+		return
+	}
+	rotation, tokenRequests := ResolveSecretsStoreConfig(&driver.Spec)
+	klog.Infof("resolved secretsStore config at startup: rotation enabled=%v pollIntervalSeconds=%d tokenRequests managed=%v audienceCount=%d",
+		rotation.Enabled, rotation.RotationPollIntervalSeconds, tokenRequests.Managed, len(tokenRequests.Audiences))
 }
 
 func replaceNamespaceFunc(namespace string) resourceapply.AssetFunc {

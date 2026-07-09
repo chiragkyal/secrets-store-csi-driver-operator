@@ -1,9 +1,9 @@
 machine:
   state: AWAITING_APPROVAL
-  current_task_id: T2_1
-  current_task_index: 3
+  current_task_id: T2_2
+  current_task_index: 4
   total_tasks: 19
-  last_transition: "2026-07-09T11:28:00Z"
+  last_transition: "2026-07-09T12:02:00Z"
 
 completed:
   - task_id: T1_1
@@ -14,15 +14,19 @@ completed:
     oape_command: manual
     test_result: PASS
     eval_score: null
+  - task_id: T2_1
+    oape_command: manual
+    test_result: PASS
+    eval_score: null
 
 current_task_result:
-  task_id: T2_1
+  task_id: T2_2
   oape_command: manual
-  files_changed: [pkg/operator/secretsstoreconfig.go, pkg/operator/secretsstoreconfig_test.go]
+  files_changed: [pkg/operator/starter.go]
   verification_pass: true
-  test_command: "go test ./pkg/operator/... -v -count=1 -run TestResolveSecretsStoreConfig"
+  test_command: "make test-unit"
   test_result: PASS
-  test_output_summary: "10/10 tests passed (2 test functions, table-driven)"
+  test_output_summary: "ok  github.com/openshift/secrets-store-csi-driver-operator/pkg/operator 2.669s"
   eval_score: null
   eval_cases_pass: 0
   eval_cases_total: 0

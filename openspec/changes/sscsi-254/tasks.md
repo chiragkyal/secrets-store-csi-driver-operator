@@ -107,7 +107,7 @@ graph TD
 
 1. [x] `T1_1` — Track upstream `openshift/api` PR status for `SecretsStore`
 2. [x] `T1_2` — Bump `go.mod`/`go.sum`/`vendor/` once the upstream PR merges
-3. `T2_1` — Implement shared `ClusterCSIDriver.Spec.DriverConfig` read-path helper
+3. [x] `T2_1` — Implement shared `ClusterCSIDriver.Spec.DriverConfig` read-path helper
 4. `T2_2` — Wire the new informer/typed-client access into `starter.go`
 5. `T2_3` — Unit tests for the read-path helper's nil-safety branches
 6. `T3_1` — Implement dynamic `AssetFunc` for `csidriver.yaml`
