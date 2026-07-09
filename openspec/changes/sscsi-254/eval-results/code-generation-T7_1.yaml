@@ -1,0 +1,31 @@
+task_id: T7_1
+oape_command: manual
+stage: code-generation
+stage_eval_file: evals/code-generation_eval.yaml
+scored_at: 2026-07-09T15:10:00Z
+note: >-
+  evals/code-generation_eval.yaml has an empty case list (unresolved merge-conflict
+  markers, same defect as prior tasks). No cases matched. This task is discovery
+  only -- no code changes were made.
+refinement_rounds: 0
+overall_score: null
+overall_pass: null
+verification:
+  commands:
+    - cmd: "bash -n hack/e2e.sh"
+      exit_code: 0
+      pass: true
+      note: "Syntax check confirms file untouched/valid; this task is read-only per its own payload."
+  overall_pass: true
+test_execution:
+  strategy: manual_investigation_no_code
+  commands: []
+  overall_pass: null
+  test_files_generated: []
+  note: "N/A -- discovery/documentation task only, per tasks.md's own framing."
+cases: []
+discovery_outcome:
+  finding: "hack/e2e.sh is a single monolithic bash script (183 lines), oc-CLI-driven, no Go/Ginkgo framework, no test/e2e/ directory exists anywhere in the repo"
+  existing_scenario: "test_pod_with_secret -- basic CSI volume mount + secret value verification only"
+  implication_for_T7_2_T7_3_T7_4: "New scenarios must be added as bash functions following the test_xxx() convention, wired into the sequential execution block at the bottom of the script -- not as Go test files"
+  closes: "repo-assessment.md Section 11.1 UNVERIFIED item"

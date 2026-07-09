@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-07-09T12:20:19.881949+00:00",
+  "exported_at": "2026-07-09T12:25:08.454105+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
@@ -284,8 +284,22 @@
       "task_id": "T5_1",
       "task_title": "Upgrade-default-parity regression tests",
       "agent_id": "Testing_Agent",
-      "status": "running",
+      "status": "passed",
       "started_at": "2026-07-09T12:20:19.875346+00:00",
+      "completed_at": "2026-07-09T12:24:22.535350+00:00",
+      "tokens_in": 30294,
+      "tokens_out": 646,
+      "self_correction_loops": 0
+    },
+    {
+      "id": "35e92d29-66c2-47d9-a996-b27590763665",
+      "run_id": "65eb3a4f-a7b5-4846-939d-d905bdee9381",
+      "phase_id": "163d9e96-dcc1-48e1-897e-4e0faaf7512d",
+      "task_id": "T7_1",
+      "task_title": "Discovery: enumerate hack/e2e.sh structure",
+      "agent_id": "Testing_Agent",
+      "status": "running",
+      "started_at": "2026-07-09T12:25:08.447298+00:00",
       "completed_at": null,
       "tokens_in": 0,
       "tokens_out": 0,
@@ -497,14 +511,14 @@
   "global_health": {
     "total_tokens_consumed": 109866,
     "estimated_cost_usd": 0.6953,
-    "cumulative_wall_time_s": 13756.8,
+    "cumulative_wall_time_s": 14045.4,
     "compliance_index": 80.0,
     "gate_passing_rate": 80.0,
     "human_rejection_rate": 0.0,
     "total_refinement_iterations": 0,
-    "agent_success_rate": 92.9,
-    "tasks_passed": 13,
-    "tasks_total": 14
+    "agent_success_rate": 93.3,
+    "tasks_passed": 14,
+    "tasks_total": 15
   },
   "artifact_edits": {
     "artifacts": [

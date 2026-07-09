@@ -118,7 +118,7 @@ graph TD
 11. [x] `T4_3` — Unit tests for the DaemonSet hook + container-not-found error path
 12. [x] `T3_4` — Unit tests for `CSIDriver` field mapping + preservation cascade
 13. [x] `T6_1` — Verify/close RBAC gaps against the finalized read-path mechanism
-14. `T5_1` — Upgrade-default-parity regression tests (no-`driverConfig` / nil-`SecretsStore` paths)
+14. [x] `T5_1` — Upgrade-default-parity regression tests (no-`driverConfig` / nil-`SecretsStore` paths)
 15. `T7_1` — Discovery: read `hack/e2e.sh` in full, enumerate existing e2e structure
 16. `T7_2` — E2E rotation scenarios (enable/disable/custom-interval)
 17. `T7_3` — E2E WIF scenarios (single/multi-audience)
