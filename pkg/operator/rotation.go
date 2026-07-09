@@ -73,6 +73,24 @@ func getSecretRotationConfig(driverConfig opv1.CSIDriverConfigSpec) (enabled boo
 	}
 }
 
+// formatRotationInterval renders d as a --rotation-poll-interval value.
+// time.Duration.String() always includes a trailing zero-valued unit for
+// whole-minute/hour durations (e.g. "2m0s" for exactly two minutes), which
+// does not match the literal "2m" string historically hardcoded in
+// assets/node.yaml and, left unfixed, would cause a needless DaemonSet
+// diff/rollout for every cluster that has not configured
+// driverConfig.secretsStore -- a regression against FR-003/FR-012/SC-005's
+// "zero behavior change for unconfigured clusters" requirement. Whole-minute
+// durations are rendered as "Nm"; anything else falls back to the standard
+// time.Duration.String() (e.g. "1m30s"), which is a valid Go duration string
+// but simply doesn't have a historical literal to preserve.
+func formatRotationInterval(d time.Duration) string {
+	if d > 0 && d%time.Minute == 0 {
+		return fmt.Sprintf("%dm", int64(d/time.Minute))
+	}
+	return d.String()
+}
+
 // setArg finds the element of args whose value starts with prefix and
 // replaces it with prefix+value, in place. If no element matches, prefix+value
 // is appended. All other elements are left unchanged and in their original
@@ -140,7 +158,7 @@ func WithSecretRotationDaemonSetHook(
 				continue
 			}
 			containers[i].Args = setArg(containers[i].Args, "--enable-secret-rotation=", strconv.FormatBool(enabled))
-			containers[i].Args = setArg(containers[i].Args, "--rotation-poll-interval=", interval.String())
+			containers[i].Args = setArg(containers[i].Args, "--rotation-poll-interval=", formatRotationInterval(interval))
 			return nil
 		}
 

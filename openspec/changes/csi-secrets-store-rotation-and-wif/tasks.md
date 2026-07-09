@@ -291,6 +291,7 @@ graph TD
 - **Downstream handoff:** Confirmation feeding into T4_3's regression test.
 
 ### Task T4_2: CA-bundle hook regression check
+- **Status:** Completed — see `implementation/task-reports/T4_2.md`
 - **Objective:** Confirm `WithCABundleDaemonSetHook` remains registered and functionally unchanged after T2_5's edit added the new rotation hook to the same variadic argument list (Constitution Principle VIII — mandatory, must not regress).
 - **Target file(s):** `pkg/operator/starter.go` (review); `pkg/operator/rotation_test.go` or a new small test if a gap is found.
 - **Non-goals / forbidden edits:** Do not modify `WithCABundleDaemonSetHook` itself.

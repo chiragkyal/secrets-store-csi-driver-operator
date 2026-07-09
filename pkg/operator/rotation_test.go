@@ -226,7 +226,7 @@ func TestWithSecretRotationDaemonSetHook(t *testing.T) {
 			},
 			expectedArgs: []string{
 				"--enable-secret-rotation=true",
-				"--rotation-poll-interval=2m0s",
+				"--rotation-poll-interval=2m",
 			},
 		},
 		{
@@ -246,7 +246,7 @@ func TestWithSecretRotationDaemonSetHook(t *testing.T) {
 			},
 			expectedArgs: []string{
 				"--enable-secret-rotation=false",
-				"--rotation-poll-interval=2m0s",
+				"--rotation-poll-interval=2m",
 			},
 		},
 		{
@@ -269,7 +269,7 @@ func TestWithSecretRotationDaemonSetHook(t *testing.T) {
 			},
 			expectedArgs: []string{
 				"--enable-secret-rotation=true",
-				"--rotation-poll-interval=5m0s",
+				"--rotation-poll-interval=5m",
 			},
 		},
 	}
@@ -404,9 +404,66 @@ func TestCABundleAndRotationHooksCoexist(t *testing.T) {
 	// not have been undone by (or interfere with) the CA bundle hook.
 	expectedArgs := []string{
 		"--enable-secret-rotation=true",
-		"--rotation-poll-interval=5m0s",
+		"--rotation-poll-interval=5m",
 	}
 	if !reflect.DeepEqual(container.Args, expectedArgs) {
 		t.Errorf("expected rotation args to be %v after both hooks ran, got %v", expectedArgs, container.Args)
+	}
+}
+
+// TestDefaultPathMatchesPreFeatureBaseline is a dedicated regression anchor
+// for FR-003/FR-012/specs.md SC-005: for any cluster that has not
+// configured driverConfig.secretsStore (whether the ClusterCSIDriver does
+// not exist yet, or exists with driverConfig entirely absent), the rendered
+// DaemonSet args MUST be byte-for-byte identical to the pre-feature
+// baseline documented in repo-assessment.md §3.2 (assets/node.yaml's
+// historically hardcoded values) -- not merely "no error" or "semantically
+// equivalent". This test previously caught a real defect: computing the
+// default interval via time.Duration.String() rendered "2m0s" instead of
+// the baseline literal "2m", which would have triggered an unintended
+// DaemonSet rollout on every cluster upgrading into this feature. See
+// formatRotationInterval for the fix.
+func TestDefaultPathMatchesPreFeatureBaseline(t *testing.T) {
+	const (
+		baselineEnableRotationArg = "--enable-secret-rotation=true"
+		baselinePollIntervalArg   = "--rotation-poll-interval=2m"
+		driverName                = "secrets-store.csi.k8s.io"
+	)
+
+	cases := []struct {
+		name   string
+		driver *opv1.ClusterCSIDriver
+	}{
+		{
+			name:   "ClusterCSIDriver does not exist yet",
+			driver: nil,
+		},
+		{
+			name: "ClusterCSIDriver exists with driverConfig entirely absent",
+			driver: &opv1.ClusterCSIDriver{
+				ObjectMeta: metav1.ObjectMeta{Name: driverName},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			lister := newFakeClusterCSIDriverLister(t, tc.driver)
+			hook := WithSecretRotationDaemonSetHook(lister, driverName)
+
+			daemonSet := newTestDaemonSet()
+			if err := hook(&opv1.OperatorSpec{}, daemonSet); err != nil {
+				t.Fatalf("unexpected error from hook: %v", err)
+			}
+
+			gotArgs := daemonSet.Spec.Template.Spec.Containers[0].Args
+			expectedArgs := []string{baselineEnableRotationArg, baselinePollIntervalArg}
+			if !reflect.DeepEqual(gotArgs, expectedArgs) {
+				t.Fatalf(
+					"rendered DaemonSet args diverge from the documented pre-feature baseline (repo-assessment.md §3.2): expected %v, got %v -- this would trigger an unintended DaemonSet rollout for every cluster that has not configured driverConfig.secretsStore",
+					expectedArgs, gotArgs,
+				)
+			}
+		})
 	}
 }
