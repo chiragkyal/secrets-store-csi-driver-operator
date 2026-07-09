@@ -1,0 +1,37 @@
+artifact_id: plan
+artifact_path: openspec/changes/sscsi-254/plan.md
+stage: plan
+stage_eval_file: evals/plan_eval.yaml
+scored_at: 2026-07-09T09:20:00Z
+note: >-
+  evals/plan_eval.yaml ships with an empty `evals: []` list in this schema
+  installation. Scored instead against the plan template's own embedded
+  "Quality self-check (target >=80-85%)" checklist.
+overall_score: 100
+overall_pass: true
+cases: []
+self_check_items:
+  - item: "Section 0 inputs table complete; AgentRoutingMode matches constitution.md"
+    pass: true
+    evidence: "Section 0 states AgentRoutingMode: PROVIDED per constitution.md, and explicitly documents the AGENTS.md capability-taxonomy gap + substitution used"
+  - item: "Section 1 includes Repo-grounded reality check (greenfield/delta/mix) citing repo_assessment"
+    pass: true
+    evidence: "Section 1 explicitly concludes mixed greenfield-with-external-blocker, citing repo-assessment.md Sections 0/1.3/2/11/4.2/8.4"
+  - item: "Every spec FR and P1 user story maps to >=1 phase and >=1 verification matrix row"
+    pass: true
+    evidence: "Story 1 -> Phase 4 + verification row 1; Story 2 -> Phase 3 + verification row 1/2; Story 3 -> Phase 2/3 + verification row 2; FR-001..FR-011 distributed across Phases 2-5"
+  - item: "All phases use the full phase template (Goal, Dependencies, Target files, Capabilities, Verification hooks)"
+    pass: true
+  - item: "Target files come only from repo_assessment.md or are marked UNVERIFIED + discovery step"
+    pass: true
+    evidence: "Phase 2 and Phase 7 explicitly marked UNVERIFIED with a discovery step, per repo-assessment.md 11.1"
+  - item: "Section 6 verification matrix has rows for Unit, Integration, E2E, Manual (or N/A with reason)"
+    pass: true
+  - item: "Section 7 risks derived from repo_assessment Section 5 and Section 11.1 UNVERIFIED items"
+    pass: true
+  - item: "Section 8 complete - every open question has owner + default assumption; no truncated rows"
+    pass: true
+  - item: "No false already-exists claims contradicted by repo_assessment branch verification"
+    pass: true
+    evidence: "Plan explicitly treats the SecretsStore API and the read-path helper as net-new/absent, matching repo-assessment's branch-verified findings"
+failures: []
