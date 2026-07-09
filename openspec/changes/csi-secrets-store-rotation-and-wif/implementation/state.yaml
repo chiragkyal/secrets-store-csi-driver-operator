@@ -6,10 +6,18 @@
 machine:
   # direct mode states: IDLE | EXECUTING_TASK | RUNNING_TESTS | AWAITING_APPROVAL | COMPLETE
   state: AWAITING_APPROVAL
-  current_task_id: T4_3
-  current_task_index: 16
+  current_task_id: T4_4
+  current_task_index: 17
   total_tasks: 22
-  last_transition: "2026-07-09T18:13:00Z"
+  last_transition: "2026-07-09T18:19:00Z"
+
+current_task_result:
+  task_id: T4_4
+  files_changed: []
+  verification_pass: true
+  test_command: "make check"
+  test_result: PASS
+  test_output_summary: "gofmt -s -l clean (10 files, no diffs); go vet -mod=vendor ./... clean; go test -mod=vendor -race ./pkg/... ./cmd/... all pass (pkg/operator ok, version/cmd no test files). Exit code 0."
 
 mode: direct
 working_folder_mode: true
@@ -77,31 +85,13 @@ completed:
     test_result: PASS
     report: implementation/task-reports/T4_2.md
     approved_at: "2026-07-09T18:00:00Z"
+  - task_id: T4_3
+    test_result: PASS
+    report: implementation/task-reports/T4_3.md
+    approved_at: "2026-07-09T18:14:00Z"
 
 # Current task result — written during execution, cleared on advance
-current_task_result:
-  task_id: T4_3
-  files_changed:
-    - pkg/operator/rotation.go
-    - pkg/operator/rotation_test.go
-  verification_pass: true
-  test_command: "go test ./pkg/operator/... -v && make verify && make test-unit"
-  test_result: PASS
-  test_output_summary: >-
-    All 10 test functions in pkg/operator pass, including the new
-    TestDefaultPathMatchesPreFeatureBaseline (2/2 subtests). make verify
-    clean. make test-unit: pkg/operator ok (2.313s).
-  real_defect_found_and_fixed: >-
-    time.Duration.String() renders exactly-2-minutes (and exactly-5-minutes)
-    as "2m0s"/"5m0s", not the historical baseline literal "2m" hardcoded in
-    assets/node.yaml. This would have caused an unintended DaemonSet
-    rollout for every cluster with a ClusterCSIDriver but no
-    driverConfig.secretsStore configured -- a real regression against
-    FR-003/FR-012/SC-005. Fixed by adding formatRotationInterval() in
-    rotation.go, which renders whole-minute durations as "Nm" (matching the
-    "2m" convention) and falls back to the standard formatting otherwise.
-    Updated 4 existing test expectations (T2_4, T4_2) that had encoded the
-    buggy "2m0s"/"5m0s" values as if they were correct.
+current_task_result: null
 
 # Rejection history for current task (cleared on advance)
 rejections: []

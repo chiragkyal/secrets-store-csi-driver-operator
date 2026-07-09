@@ -300,6 +300,7 @@ graph TD
 - **Downstream handoff:** Confirmation feeding into T4_3.
 
 ### Task T4_3: Default-path regression test
+- **Status:** Completed — see `implementation/task-reports/T4_3.md` (found and fixed a real defect: `time.Duration.String()` producing `"2m0s"` instead of the baseline `"2m"`)
 - **Objective:** Add a regression test asserting that when `ClusterCSIDriver.spec.driverConfig` is absent (the pre-feature, still-most-common state), the rendered DaemonSet args and `CSIDriver` spec are **identical** to the documented pre-feature baseline (`repo-assessment.md` §3.2: `--enable-secret-rotation=true`, `--rotation-poll-interval=2m`, no `requiresRepublish`/`tokenRequests` set) — implementing FR-003/FR-010/FR-012's "zero behavior change for unconfigured clusters" requirement.
 - **Target file(s):** `pkg/operator/rotation_test.go` and/or `pkg/operator/csidriver_asset_test.go` (extend, do not duplicate T2_4/T3_3's existing nil-path cases if already covered — this task's distinguishing value is asserting the **exact literal values** match the historical baseline, not just "no error").
 - **Non-goals / forbidden edits:** No production code changes in this task unless the regression test reveals an actual defect (in which case, fix and note the finding — do not silently adjust the test to match wrong behavior).
