@@ -170,10 +170,19 @@ func getOperatorSyncState(operatorClient v1helpers.OperatorClientWithFinalizers)
 	return opv1.Managed
 }
 
-func extractOperatorSpec(obj *unstructured.Unstructured, fieldManager string) (*applyoperatorv1.OperatorSpecApplyConfiguration, error) {
+func clusterCSIDriverFromUnstructured(obj *unstructured.Unstructured) (*opv1.ClusterCSIDriver, error) {
 	castObj := &opv1.ClusterCSIDriver{}
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, castObj); err != nil {
 		return nil, fmt.Errorf("unable to convert to ClusterCSIDriver: %w", err)
+	}
+
+	return castObj, nil
+}
+
+func extractOperatorSpec(obj *unstructured.Unstructured, fieldManager string) (*applyoperatorv1.OperatorSpecApplyConfiguration, error) {
+	castObj, err := clusterCSIDriverFromUnstructured(obj)
+	if err != nil {
+		return nil, err
 	}
 	ret, err := applyoperatorv1.ExtractClusterCSIDriver(castObj, fieldManager)
 	if err != nil {
@@ -185,9 +194,9 @@ func extractOperatorSpec(obj *unstructured.Unstructured, fieldManager string) (*
 	return &ret.Spec.OperatorSpecApplyConfiguration, nil
 }
 func extractOperatorStatus(obj *unstructured.Unstructured, fieldManager string) (*applyoperatorv1.OperatorStatusApplyConfiguration, error) {
-	castObj := &opv1.ClusterCSIDriver{}
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, castObj); err != nil {
-		return nil, fmt.Errorf("unable to convert to ClusterCSIDriver: %w", err)
+	castObj, err := clusterCSIDriverFromUnstructured(obj)
+	if err != nil {
+		return nil, err
 	}
 	ret, err := applyoperatorv1.ExtractClusterCSIDriverStatus(castObj, fieldManager)
 	if err != nil {

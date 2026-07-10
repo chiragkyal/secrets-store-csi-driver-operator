@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-07-10T06:56:30.194614+00:00",
+  "exported_at": "2026-07-10T07:32:37.712652+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "6337a450-d561-4a5b-8ca0-f05129fc89ca",
@@ -60,9 +60,54 @@
       "quality_label": "approved",
       "iteration_count": 1,
       "duration_s": 193.3
+    },
+    {
+      "id": "b1cab235-c79f-4853-bb7c-4f4e8c4af022",
+      "run_id": "6337a450-d561-4a5b-8ca0-f05129fc89ca",
+      "phase_number": 5,
+      "phase_name": "code_generation",
+      "model_id": "",
+      "status": "running",
+      "started_at": "2026-07-10T07:23:37.756053+00:00",
+      "completed_at": null,
+      "tokens_in": 0,
+      "tokens_out": 0,
+      "quality_score": 0,
+      "quality_label": "",
+      "iteration_count": 1,
+      "duration_s": 0.0
     }
   ],
-  "tasks": [],
+  "tasks": [
+    {
+      "id": "a3bb9f35-f2d8-4558-8d68-6a56ac2e3968",
+      "run_id": "6337a450-d561-4a5b-8ca0-f05129fc89ca",
+      "phase_id": "b1cab235-c79f-4853-bb7c-4f4e8c4af022",
+      "task_id": "T1_1",
+      "task_title": "Confirm upstream API pin and vendor strategy",
+      "agent_id": "DependencyVendoring",
+      "status": "passed",
+      "started_at": "2026-07-10T07:24:04.262570+00:00",
+      "completed_at": "2026-07-10T07:29:47.985569+00:00",
+      "tokens_in": 22462,
+      "tokens_out": 525,
+      "self_correction_loops": 0
+    },
+    {
+      "id": "6738d13f-0a92-4271-829e-7077d2b9a8da",
+      "run_id": "6337a450-d561-4a5b-8ca0-f05129fc89ca",
+      "phase_id": "b1cab235-c79f-4853-bb7c-4f4e8c4af022",
+      "task_id": "T1_2",
+      "task_title": "Align repo-local config entrypoints to new API surface",
+      "agent_id": "OperatorController",
+      "status": "running",
+      "started_at": "2026-07-10T07:32:37.704995+00:00",
+      "completed_at": null,
+      "tokens_in": 0,
+      "tokens_out": 0,
+      "self_correction_loops": 0
+    }
+  ],
   "events": [
     {
       "id": "007feb4e-09d8-4218-bfc2-206de34b97f0",
@@ -248,14 +293,14 @@
   "global_health": {
     "total_tokens_consumed": 70157,
     "estimated_cost_usd": 0.428,
-    "cumulative_wall_time_s": 2251.5,
-    "compliance_index": 100.0,
-    "gate_passing_rate": 100.0,
+    "cumulative_wall_time_s": 4419.0,
+    "compliance_index": 75.0,
+    "gate_passing_rate": 75.0,
     "human_rejection_rate": 0.0,
     "total_refinement_iterations": 0,
-    "agent_success_rate": 100.0,
-    "tasks_passed": 0,
-    "tasks_total": 0
+    "agent_success_rate": 50.0,
+    "tasks_passed": 1,
+    "tasks_total": 2
   },
   "artifact_edits": {
     "artifacts": [
