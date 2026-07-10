@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-07-10T08:42:23.534314+00:00",
+  "exported_at": "2026-07-10T08:45:51.568608+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "6337a450-d561-4a5b-8ca0-f05129fc89ca",
@@ -156,8 +156,22 @@
       "task_id": "T3_2",
       "task_title": "Wire rotation DaemonSet hook and informer flow",
       "agent_id": "OperatorController",
-      "status": "running",
+      "status": "passed",
       "started_at": "2026-07-10T08:42:23.526388+00:00",
+      "completed_at": "2026-07-10T08:44:02.028358+00:00",
+      "tokens_in": 22467,
+      "tokens_out": 542,
+      "self_correction_loops": 0
+    },
+    {
+      "id": "e31f0d0c-9413-42ac-8f5e-3907fc74bb23",
+      "run_id": "6337a450-d561-4a5b-8ca0-f05129fc89ca",
+      "phase_id": "b1cab235-c79f-4853-bb7c-4f4e8c4af022",
+      "task_id": "T3_3",
+      "task_title": "Extend unit coverage for rendering and hook wiring",
+      "agent_id": "Testing",
+      "status": "running",
+      "started_at": "2026-07-10T08:45:51.560204+00:00",
       "completed_at": null,
       "tokens_in": 0,
       "tokens_out": 0,
@@ -349,14 +363,14 @@
   "global_health": {
     "total_tokens_consumed": 70157,
     "estimated_cost_usd": 0.428,
-    "cumulative_wall_time_s": 8604.8,
+    "cumulative_wall_time_s": 8812.8,
     "compliance_index": 75.0,
     "gate_passing_rate": 75.0,
     "human_rejection_rate": 0.0,
     "total_refinement_iterations": 0,
-    "agent_success_rate": 83.3,
-    "tasks_passed": 5,
-    "tasks_total": 6
+    "agent_success_rate": 85.7,
+    "tasks_passed": 6,
+    "tasks_total": 7
   },
   "artifact_edits": {
     "artifacts": [

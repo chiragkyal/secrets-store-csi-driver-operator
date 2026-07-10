@@ -65,7 +65,7 @@ graph TD
 3. [x] T2_1 — Implement effective config derivation and preserve-existing behavior
 4. [x] T2_2 — Add unit coverage for config derivation and ownership rules
 5. [x] T3_1 — Add dynamic CSIDriver desired-state rendering
-6. T3_2 — Wire rotation DaemonSet hook and informer flow
+6. [x] T3_2 — Wire rotation DaemonSet hook and informer flow
 7. T3_3 — Extend unit coverage for rendering and hook wiring
 8. T4_1 — Review RBAC and packaging surfaces for feature alignment
 9. T5_1 — Extend e2e coverage for rotation and WIF behavior
