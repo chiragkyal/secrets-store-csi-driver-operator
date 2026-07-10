@@ -1,0 +1,27 @@
+artifact_id: validation
+artifact_path: openspec/changes/csi-secrets-store-rotation-and-wif/validation.json
+stage: validation
+stage_eval_file: null
+gate: rubric_only
+scored_at: 2026-07-10T06:21:00Z
+overall_score: 91
+overall_pass: true
+refinement_applied: false
+refinement_round: 1
+rubric:
+  pass_threshold: 80
+  completeness_score: 94
+  quality_score: 86
+  overall_status: PASS
+dimensions:
+  - id: rubric-completeness
+    score: 94
+    pass: true
+    failures: []
+  - id: rubric-quality
+    score: 86
+    pass: true
+    failures:
+      - "Default semantics remain slightly ambiguous around whether the current 120-second omitted-field behavior is contractual or implementation-defined."
+      - "Risk mitigation references documentation without a concrete acceptance artifact."
+      - "Upgrade safety claims would be stronger with an explicit verification target for the CSIDriver recreate window."

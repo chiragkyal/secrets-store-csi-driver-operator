@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-07-10T06:18:58.730390+00:00",
+  "exported_at": "2026-07-10T06:20:52.967589+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "6337a450-d561-4a5b-8ca0-f05129fc89ca",
@@ -12,15 +12,53 @@
     "total_tokens_in": 0,
     "total_tokens_out": 0
   },
-  "phases": [],
+  "phases": [
+    {
+      "id": "5baca8e8-becc-48b1-a63d-036dbe400fdf",
+      "run_id": "6337a450-d561-4a5b-8ca0-f05129fc89ca",
+      "phase_number": 1,
+      "phase_name": "spec_understanding",
+      "model_id": "",
+      "status": "running",
+      "started_at": "2026-07-10T06:20:12.354313+00:00",
+      "completed_at": null,
+      "tokens_in": 0,
+      "tokens_out": 0,
+      "quality_score": 0,
+      "quality_label": "",
+      "iteration_count": 1,
+      "duration_s": 0.0
+    }
+  ],
   "tasks": [],
-  "events": [],
+  "events": [
+    {
+      "id": "007feb4e-09d8-4218-bfc2-206de34b97f0",
+      "ts": "2026-07-10T06:20:52.880006+00:00",
+      "run_id": "6337a450-d561-4a5b-8ca0-f05129fc89ca",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Artifact 'validation' created \u2014 awaiting eval gate",
+      "metadata_json": null
+    },
+    {
+      "id": "ec12af18-bff5-464f-b656-15e1d38840d9",
+      "ts": "2026-07-10T06:20:52.962414+00:00",
+      "run_id": "6337a450-d561-4a5b-8ca0-f05129fc89ca",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Artifact 'validation' ready for approval (eval score: 91.0%) \u2014 waiting for human decision",
+      "metadata_json": null
+    }
+  ],
   "global_health": {
     "total_tokens_consumed": 0,
     "estimated_cost_usd": 0.0,
-    "cumulative_wall_time_s": 0.0,
-    "compliance_index": 100.0,
-    "gate_passing_rate": 100.0,
+    "cumulative_wall_time_s": 114.2,
+    "compliance_index": 0.0,
+    "gate_passing_rate": 0.0,
     "human_rejection_rate": 0.0,
     "total_refinement_iterations": 0,
     "agent_success_rate": 100.0,
@@ -28,7 +66,15 @@
     "tasks_total": 0
   },
   "artifact_edits": {
-    "artifacts": [],
+    "artifacts": [
+      {
+        "artifact_id": "validation",
+        "phase_name": "spec_understanding",
+        "eval_refinements": 0,
+        "feedback_rounds": 0,
+        "total_edits": 0
+      }
+    ],
     "total_edits": 0
   }
 }

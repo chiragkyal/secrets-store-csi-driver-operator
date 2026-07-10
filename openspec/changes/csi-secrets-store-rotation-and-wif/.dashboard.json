@@ -2,6 +2,12 @@
   "run_id": "6337a450-d561-4a5b-8ca0-f05129fc89ca",
   "jira_key": "SSCSI-254",
   "change": "csi-secrets-store-rotation-and-wif",
-  "phases": {},
+  "phases": {
+    "1": {
+      "id": "5baca8e8-becc-48b1-a63d-036dbe400fdf",
+      "name": "spec_understanding",
+      "ended": false
+    }
+  },
   "tasks": {}
 }
