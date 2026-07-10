@@ -13,7 +13,7 @@
     "2": {
       "id": "f2f303d4-ca2b-428c-bc87-87ba8a26f1d9",
       "name": "repo_assessment",
-      "ended": false
+      "ended": true
     }
   },
   "tasks": {}
