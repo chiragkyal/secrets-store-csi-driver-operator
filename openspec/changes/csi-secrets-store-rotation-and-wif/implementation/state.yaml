@@ -1,9 +1,9 @@
 machine:
   state: AWAITING_APPROVAL
-  current_task_id: T3_1
-  current_task_index: 5
+  current_task_id: T3_2
+  current_task_index: 6
   total_tasks: 12
-  last_transition: "2026-07-10T14:06:00+05:30"
+  last_transition: "2026-07-10T14:11:00+05:30"
 
 completed:
   - task_id: T1_1
@@ -14,14 +14,16 @@ completed:
     test_result: PASS
   - task_id: T2_2
     test_result: PASS
+  - task_id: T3_1
+    test_result: PASS
 
 current_task_result:
-  task_id: T3_1
+  task_id: T3_2
   files_changed:
     - pkg/operator/starter.go
   verification_pass: true
   test_command: "make verify && make test-unit"
   test_result: PASS
-  test_output_summary: "Wrapped the conditional static resource asset function so csidriver.yaml is rendered dynamically from the embedded base manifest plus effective Secrets Store config and any existing live CSIDriver token requests. This task leaves DaemonSet arg wiring untouched for T3_2. Verification passed with make verify and make test-unit; local Makefile emitted the same non-fatal FIPS warnings and xargs sysconf warning seen in prior tasks."
+  test_output_summary: "Added a Secrets Store-specific DaemonSet hook that updates the csi-driver container's --enable-secret-rotation and --rotation-poll-interval arguments from the effective ClusterCSIDriver config while preserving the existing CA bundle hook chain and node-service controller model. Verification passed with make verify and make test-unit; local Makefile emitted the same non-fatal FIPS warnings and xargs sysconf warning seen in prior tasks."
 
 rejections: []

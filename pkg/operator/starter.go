@@ -5,8 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
+	appsv1 "k8s.io/api/apps/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -115,6 +117,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		kubeClient,
 		kubeInformersForNamespaces.InformersFor(operatorNamespace),
 		nil,
+		withSecretRotationDaemonSetHook(dynamicClient),
 		csidrivernodeservicecontroller.WithCABundleDaemonSetHook(
 			operatorNamespace,
 			trustedCAConfigMap,
@@ -223,6 +226,56 @@ func currentCSIDriverTokenRequests(
 
 func boolPtr(value bool) *bool {
 	return &value
+}
+
+func withSecretRotationDaemonSetHook(dynamicClient dynamic.Interface) csidrivernodeservicecontroller.DaemonSetHookFunc {
+	return func(_ *opv1.OperatorSpec, daemonSet *appsv1.DaemonSet) error {
+		clusterDriver, err := currentClusterCSIDriver(dynamicClient)
+		if err != nil {
+			return err
+		}
+
+		rotationEnabled, rotationPollInterval, err := effectiveSecretRotation(clusterDriver)
+		if err != nil {
+			return err
+		}
+
+		containerIndex := -1
+		for i := range daemonSet.Spec.Template.Spec.Containers {
+			if daemonSet.Spec.Template.Spec.Containers[i].Name == "csi-driver" {
+				containerIndex = i
+				break
+			}
+		}
+		if containerIndex == -1 {
+			return fmt.Errorf("csi-driver container not found in DaemonSet %s/%s", daemonSet.Namespace, daemonSet.Name)
+		}
+
+		container := &daemonSet.Spec.Template.Spec.Containers[containerIndex]
+		container.Args = setArg(container.Args, "--enable-secret-rotation=", fmt.Sprintf("--enable-secret-rotation=%t", rotationEnabled))
+		container.Args = setArg(container.Args, "--rotation-poll-interval=", fmt.Sprintf("--rotation-poll-interval=%s", formatRotationPollInterval(rotationPollInterval)))
+
+		return nil
+	}
+}
+
+func setArg(args []string, prefix string, value string) []string {
+	for i, arg := range args {
+		if strings.HasPrefix(arg, prefix) {
+			args[i] = value
+			return args
+		}
+	}
+
+	return append(args, value)
+}
+
+func formatRotationPollInterval(interval time.Duration) string {
+	if interval == defaultSecretRotationPollInterval {
+		return "2m"
+	}
+
+	return interval.String()
 }
 
 // getOperatorSyncState returns the management state of the operator to determine
