@@ -1,0 +1,22 @@
+artifact_id: plan
+artifact_path: openspec/changes/csi-secrets-store-rotation-and-wif/plan.md
+stage: plan
+gate: stage_evals
+stage_eval_file: evals/plan_eval.yaml
+scored_at: "2026-07-10T06:16:00Z"
+overall_score: 95
+overall_pass: true
+pass_threshold: 85
+cases: []
+note: evals/plan_eval.yaml has evals:[] — scored via template self-check checklist
+self_check:
+  section_0_complete: pass
+  section_1_delta_reality_check: pass
+  fr_p1_phase_mapping: pass
+  phase_template_complete: pass
+  section_6_verification_matrix: pass
+  section_7_risks_from_repo_assessment: pass
+  section_8_open_questions_complete: pass
+  no_false_greenfield_claims: pass
+refinement_round: 1
+refined: false

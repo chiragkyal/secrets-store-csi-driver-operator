@@ -1,0 +1,21 @@
+artifact_id: validation
+artifact_path: openspec/changes/csi-secrets-store-rotation-and-wif/validation.json
+stage: validation
+gate: rubric_only
+stage_eval_file: null
+scored_at: "2026-07-10T06:03:00Z"
+overall_score: 87
+overall_pass: true
+pass_threshold: 80
+rubric:
+  completeness_score: 90
+  quality_score: 82
+  overall_score: 87
+  overall_status: PASS
+  weights_applied:
+    completeness: 0.6
+    quality: 0.4
+blockers: []
+non_blockers_count: 4
+refinement_round: 1
+refined: false

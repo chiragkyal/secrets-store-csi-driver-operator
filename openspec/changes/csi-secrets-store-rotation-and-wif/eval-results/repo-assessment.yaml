@@ -1,0 +1,26 @@
+artifact_id: repo-assessment
+artifact_path: openspec/changes/csi-secrets-store-rotation-and-wif/repo-assessment.md
+stage: repo-assessment
+gate: stage_evals
+stage_eval_file: evals/repo-assessment_eval.yaml
+scored_at: "2026-07-10T06:12:00Z"
+overall_score: 98
+overall_pass: true
+pass_threshold: 90
+cases: []
+note: evals/repo-assessment_eval.yaml has evals:[] — scored via template self-check checklist (18/18 pass)
+self_check:
+  completeness: pass
+  section_0_branch_pin: pass
+  feature_tailoring: pass
+  branch_honesty_delta_not_greenfield: pass
+  sections_1_3_traps: pass
+  section_4_tables: pass
+  sections_5_6: pass
+  section_7_cascade: pass
+  section_8_test_commands: pass
+  section_9_walkthrough: pass
+  section_11_unverified: pass
+  section_12_quick_ref: pass
+refinement_round: 1
+refined: false

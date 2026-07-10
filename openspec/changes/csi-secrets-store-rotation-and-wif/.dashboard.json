@@ -1,0 +1,49 @@
+{
+  "run_id": "03e3cd40-7ae1-4cfa-ab80-9e6a07b8b6ba",
+  "jira_key": "SSCSI-254",
+  "change": "csi-secrets-store-rotation-and-wif",
+  "phases": {
+    "1": {
+      "id": "73393fe4-4ab5-4fb7-b6af-4f15546b96de",
+      "name": "spec_understanding",
+      "ended": true,
+      "tokens_in": 9577,
+      "tokens_out": 658
+    },
+    "2": {
+      "id": "59255784-ed95-411e-853b-cf9f037491ab",
+      "name": "repo_assessment",
+      "ended": true
+    },
+    "3": {
+      "id": "ac7d955a-4e6d-4661-a132-10a215881c5f",
+      "name": "arch_planning",
+      "ended": true
+    },
+    "4": {
+      "id": "dbad7b51-17c8-4c9d-b03f-6dfeed77279d",
+      "name": "subtask_creation",
+      "ended": true
+    },
+    "5": {
+      "id": "d7d276fe-ef25-45ef-a6be-fe078e7d8fd1",
+      "name": "code_generation",
+      "ended": true
+    }
+  },
+  "tasks": {
+    "T1_1": "ffe671a1-efb5-46ab-9799-30f6c0d58df0",
+    "T1_2": "b38105e2-82fc-4fef-9134-66b8fc673cd8",
+    "T1_3": "aed11446-26c2-4df7-9eee-601bc69acb9c",
+    "T2_1": "2f1eb02e-0544-4e50-b367-6c5505fca55f",
+    "T2_2": "52cfc48c-9ae7-4e3b-8d96-ad49deeeb6af",
+    "T3_1": "acec4d92-2303-4eaa-962d-534680578388",
+    "T4_1": "15702d15-96fb-4677-9863-aefdb8bca24d",
+    "T4_2": "baa705a3-d37e-497a-a24b-a92b821c7ba8",
+    "T4_3": "b788f533-f4bb-4a19-ab59-ec6a8f76c6ed",
+    "T5_1": "208f972d-258f-44c2-b7d4-e0a026a41886",
+    "T5_2": "6a9877d4-e48f-4e41-96b8-11d7cae2ba40",
+    "T6_1": "6bd5d63f-3545-4329-aa10-e103758f406d",
+    "T6_2": "fd864709-a053-4a79-9d9f-b4caf47d3fb3"
+  }
+}

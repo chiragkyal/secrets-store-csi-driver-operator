@@ -270,6 +270,39 @@ spec:
 			expectedRequiresRepublish: boolPtr(false),
 			expectedTokenRequests:     nil,
 		},
+		{
+			name: "type Managed with audiences renders tokenRequests on CSIDriver manifest",
+			clusterCSIDriver: &opv1.ClusterCSIDriver{
+				ObjectMeta: metav1.ObjectMeta{Name: clusterCSIDriverName},
+				Spec: opv1.ClusterCSIDriverSpec{
+					DriverConfig: opv1.CSIDriverConfigSpec{
+						DriverType: opv1.SecretsStoreDriverType,
+						SecretsStore: opv1.SecretsStoreCSIDriverConfigSpec{
+							TokenRequests: opv1.SecretsStoreTokenRequests{
+								Type: opv1.TokenRequestsManaged,
+								Managed: opv1.ManagedTokenRequests{
+									Audiences: &[]opv1.SecretsStoreTokenRequest{
+										{Audience: stringPtr("sts.amazonaws.com"), ExpirationSeconds: 3600},
+										{Audience: stringPtr("api://AzureADTokenExchange")},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			existingCSIDriver: &storagev1.CSIDriver{
+				ObjectMeta: metav1.ObjectMeta{Name: csiDriverName},
+				Spec: storagev1.CSIDriverSpec{
+					TokenRequests: []storagev1.TokenRequest{{Audience: "legacy-audience-should-be-replaced"}},
+				},
+			},
+			expectedRequiresRepublish: boolPtr(true),
+			expectedTokenRequests: []storagev1.TokenRequest{
+				{Audience: "sts.amazonaws.com", ExpirationSeconds: int64Ptr(3600)},
+				{Audience: "api://AzureADTokenExchange"},
+			},
+		},
 	}
 
 	for _, tc := range cases {

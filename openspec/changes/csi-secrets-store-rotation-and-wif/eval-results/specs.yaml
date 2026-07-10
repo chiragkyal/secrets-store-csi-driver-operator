@@ -1,0 +1,11 @@
+artifact_id: specs
+artifact_path: openspec/changes/csi-secrets-store-rotation-and-wif/specs.md
+stage: specs
+gate: skip
+stage_eval_file: null
+scored_at: "2026-07-10T06:05:00Z"
+overall_score: null
+overall_pass: null
+refinement_round: 1
+refined: false
+note: No stage eval cases; user approval gate only

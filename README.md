@@ -109,6 +109,12 @@ spec:
   already configured on the `CSIDriver` object (e.g. one set manually before
   this configuration surface existed), without disruption.
 
+### Disabling rotation or WIF
+
+- To disable secret rotation, set `secretRotation.type: None`.
+- To clear operator-managed WIF audiences, set `tokenRequests.type: Managed`
+  with `managed.audiences: []`.
+
 ### Verifying the configuration
 
 Inspect the driver DaemonSet's rotation args:

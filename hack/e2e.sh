@@ -206,10 +206,11 @@ test_pod_with_secret() {
 #          restarted for either check above to hold (FR-009).
 #
 # This exact matrix is already covered at the unit level by
-# TestDefaultPathMatchesPreFeatureBaseline (pkg/operator/rotation_test.go,
-# added in T4_3) and the tokenRequests preservation-matrix tests in
-# pkg/operator/csidriver_asset_test.go (added in T3_3) -- this runbook is the
-# real-cluster confirmation of that same guarantee, not a substitute for it.
+# TestDefaultPathMatchesPreFeatureBaseline (pkg/operator/rotation_test.go)
+# and the tokenRequests preservation-matrix tests in
+# pkg/operator/csidriver_asset_test.go -- this runbook is the real-cluster
+# confirmation of that same guarantee, not a substitute for it. See also
+# openspec/changes/csi-secrets-store-rotation-and-wif/implementation/upgrade-preservation-runbook.md (T4_3).
 
 # --- Secret rotation configuration tests (US1/US3, SC-001/SC-002) ---
 #
@@ -273,6 +274,62 @@ test_wait_ds_arg() {
 	return 1
 }
 
+# test_wait_csidriver_requires_republish polls until CSIDriver.spec.requiresRepublish
+# matches the expected boolean string ("true" or "false").
+test_wait_csidriver_requires_republish() {
+	local EXPECTED=$1
+	local ELAPSED=0
+	local INTERVAL=5
+	local ACTUAL=""
+	echo "Waiting (up to ${ROTATION_WAIT_TIMEOUT}s) for CSIDriver ${PROVISIONER_NAME} requiresRepublish to be: ${EXPECTED}"
+	while [ ${ELAPSED} -lt ${ROTATION_WAIT_TIMEOUT} ]; do
+		ACTUAL=$(oc get csidriver ${PROVISIONER_NAME} -o jsonpath='{.spec.requiresRepublish}')
+		if [ "${ACTUAL}" = "${EXPECTED}" ]; then
+			echo "Confirmed CSIDriver requiresRepublish: ${ACTUAL}"
+			return 0
+		fi
+		sleep ${INTERVAL}
+		ELAPSED=$((ELAPSED + INTERVAL))
+	done
+	echo "Timed out waiting for requiresRepublish=${EXPECTED}; last observed: ${ACTUAL}"
+	return 1
+}
+
+# test_rotation_default_baseline covers ep.md default-path scenario (E2): when
+# driverConfig.secretsStore is unset, the operator advertises rotation enabled
+# at the pre-feature baseline interval and CSIDriver.requiresRepublish=true.
+test_rotation_default_baseline() {
+	echo "Running test_rotation_default_baseline"
+	test_driver_config_save || return 1
+
+	if [ -n "${ORIGINAL_DRIVER_CONFIG}" ] && [ "${ORIGINAL_DRIVER_CONFIG}" != "null" ]; then
+		echo "Skipping default-path assertions: ClusterCSIDriver already has driverConfig set"
+		test_driver_config_restore || return 1
+		echo "test_rotation_default_baseline PASSED (skipped — pre-configured cluster)"
+		return 0
+	fi
+
+	test_wait_ds_arg "--enable-secret-rotation=true" || {
+		test_driver_config_restore
+		return 1
+	}
+	local DS_ARGS=""
+	DS_ARGS=$(test_get_ds_container_args)
+	if ! echo "${DS_ARGS}" | grep -Eq -- '--rotation-poll-interval=2m(--|$|0s)'; then
+		echo "expected default poll interval 2m, got: ${DS_ARGS}"
+		test_driver_config_restore
+		return 1
+	fi
+	test_wait_csidriver_requires_republish "true" || {
+		test_driver_config_restore
+		return 1
+	}
+
+	test_driver_config_restore || return 1
+	echo "test_rotation_default_baseline PASSED"
+	return 0
+}
+
 # test_rotation_toggle covers US1/SC-001: disabling rotation on a live driver
 # stops the operator from advertising rotation as enabled, and re-enabling it
 # resumes advertising rotation as enabled again -- without restarting any
@@ -290,6 +347,10 @@ test_rotation_toggle() {
 		test_driver_config_restore
 		return 1
 	}
+	test_wait_csidriver_requires_republish "false" || {
+		test_driver_config_restore
+		return 1
+	}
 	echo "Confirmed driver DaemonSet reconciled with rotation disabled"
 
 	echo "Re-enabling secret rotation via ClusterCSIDriver ${PROVISIONER_NAME}"
@@ -298,6 +359,10 @@ test_rotation_toggle() {
 		return 1
 	}
 	test_wait_ds_arg "--enable-secret-rotation=true" || {
+		test_driver_config_restore
+		return 1
+	}
+	test_wait_csidriver_requires_republish "true" || {
 		test_driver_config_restore
 		return 1
 	}
@@ -327,6 +392,17 @@ test_rotation_custom_interval() {
 		return 1
 	}
 	echo "Confirmed driver DaemonSet reconciled with custom rotation interval ${CUSTOM_INTERVAL_SECONDS}s"
+
+	echo "Removing custom minimumRefreshAge (US3: fallback to 120s default interval)"
+	oc patch clustercsidriver ${PROVISIONER_NAME} --type=merge -p '{"spec":{"driverConfig":{"driverType":"SecretsStore","secretsStore":{"secretRotation":{"type":"Custom"}}}}}' || {
+		test_driver_config_restore
+		return 1
+	}
+	test_wait_ds_arg "--rotation-poll-interval=2m" || {
+		test_driver_config_restore
+		return 1
+	}
+	echo "Confirmed custom interval removed; driver fell back to default 2m poll interval"
 
 	test_driver_config_restore || return 1
 	echo "test_rotation_custom_interval PASSED"
@@ -364,6 +440,62 @@ test_wait_csidriver_audiences() {
 	done
 	echo "Timed out waiting for tokenRequests audiences [$1]; last observed: [${ACTUAL}]"
 	return 1
+}
+
+# test_csidriver_token_requests_save captures CSIDriver.spec.tokenRequests for
+# restoration after tests that mutate the CSIDriver object directly.
+test_csidriver_token_requests_save() {
+	echo "Saving original CSIDriver ${PROVISIONER_NAME} tokenRequests"
+	ORIGINAL_CSIDRIVER_TOKEN_REQUESTS=$(oc get csidriver ${PROVISIONER_NAME} -o jsonpath='{.spec.tokenRequests}')
+	return $?
+}
+
+# test_csidriver_token_requests_restore resets CSIDriver.spec.tokenRequests to
+# the value captured by test_csidriver_token_requests_save.
+test_csidriver_token_requests_restore() {
+	echo "Restoring original CSIDriver ${PROVISIONER_NAME} tokenRequests"
+	if [ -z "${ORIGINAL_CSIDRIVER_TOKEN_REQUESTS}" ] || [ "${ORIGINAL_CSIDRIVER_TOKEN_REQUESTS}" = "null" ]; then
+		oc patch csidriver ${PROVISIONER_NAME} --type=json -p '[{"op":"remove","path":"/spec/tokenRequests"}]' 2>/dev/null || \
+			oc patch csidriver ${PROVISIONER_NAME} --type=merge -p '{"spec":{"tokenRequests":null}}'
+	else
+		oc patch csidriver ${PROVISIONER_NAME} --type=json -p "[{\"op\":\"replace\",\"path\":\"/spec/tokenRequests\",\"value\":${ORIGINAL_CSIDRIVER_TOKEN_REQUESTS}}]"
+	fi
+	return $?
+}
+
+# test_wif_unmanaged_preservation covers ep.md tokenRequests migration (E4):
+# pre-existing manually patched CSIDriver tokenRequests are preserved when
+# ClusterCSIDriver sets tokenRequests.type to Unmanaged (FR-005).
+test_wif_unmanaged_preservation() {
+	echo "Running test_wif_unmanaged_preservation"
+	local MANUAL_AUDIENCE="e2e-unmanaged-preserve-audience"
+	test_driver_config_save || return 1
+	test_csidriver_token_requests_save || return 1
+
+	echo "Simulating pre-existing manually patched CSIDriver tokenRequests"
+	oc patch csidriver ${PROVISIONER_NAME} --type=merge -p "{\"spec\":{\"tokenRequests\":[{\"audience\":\"${MANUAL_AUDIENCE}\"}]}}" || {
+		test_csidriver_token_requests_restore
+		test_driver_config_restore
+		return 1
+	}
+
+	echo "Setting tokenRequests.type Unmanaged on ClusterCSIDriver ${PROVISIONER_NAME}"
+	oc patch clustercsidriver ${PROVISIONER_NAME} --type=merge -p '{"spec":{"driverConfig":{"driverType":"SecretsStore","secretsStore":{"tokenRequests":{"type":"Unmanaged"}}}}}' || {
+		test_csidriver_token_requests_restore
+		test_driver_config_restore
+		return 1
+	}
+
+	test_wait_csidriver_audiences "${MANUAL_AUDIENCE}" || {
+		test_csidriver_token_requests_restore
+		test_driver_config_restore
+		return 1
+	}
+
+	test_csidriver_token_requests_restore || return 1
+	test_driver_config_restore || return 1
+	echo "test_wif_unmanaged_preservation PASSED"
+	return 0
 }
 
 # test_wif_clear_audiences explicitly clears all operator-managed token
@@ -445,6 +577,15 @@ test_wif_multi_audience() {
 		test_driver_config_restore
 		return 1
 	}
+	local EXPIRY=""
+	EXPIRY=$(oc get csidriver ${PROVISIONER_NAME} -o jsonpath='{range .spec.tokenRequests[*]}{.audience}:{.expirationSeconds}{"\n"}{end}' | awk -F: '$1=="sts.amazonaws.com"{print $2; exit}')
+	if [ "${EXPIRY}" != "3600" ]; then
+		echo "expected expirationSeconds 3600 for sts.amazonaws.com, got: ${EXPIRY}"
+		test_wif_clear_audiences
+		test_driver_config_restore
+		return 1
+	fi
+	echo "Confirmed expirationSeconds propagated for sts.amazonaws.com audience"
 
 	echo "Confirming a workload can still mount a secret via the driver with multiple tokenRequests audiences configured"
 	test_wif_mount_check test-pod-wif-multi || {
@@ -480,6 +621,14 @@ if [ $? -ne 0 ]; then
 	exit 1
 fi
 
+test_rotation_default_baseline
+if [ $? -ne 0 ]; then
+	echo "test_rotation_default_baseline FAILED"
+	test_pods_dump
+	test_teardown
+	exit 1
+fi
+
 test_rotation_toggle
 if [ $? -ne 0 ]; then
 	echo "test_rotation_toggle FAILED"
@@ -491,6 +640,14 @@ fi
 test_rotation_custom_interval
 if [ $? -ne 0 ]; then
 	echo "test_rotation_custom_interval FAILED"
+	test_pods_dump
+	test_teardown
+	exit 1
+fi
+
+test_wif_unmanaged_preservation
+if [ $? -ne 0 ]; then
+	echo "test_wif_unmanaged_preservation FAILED"
 	test_pods_dump
 	test_teardown
 	exit 1
