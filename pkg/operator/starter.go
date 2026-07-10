@@ -3,9 +3,13 @@ package operator
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
+	storagev1 "k8s.io/api/storage/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic"
@@ -24,6 +28,7 @@ import (
 	goc "github.com/openshift/library-go/pkg/operator/genericoperatorclient"
 	"github.com/openshift/library-go/pkg/operator/management"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
+	"github.com/openshift/library-go/pkg/operator/resource/resourceread"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	"github.com/openshift/secrets-store-csi-driver-operator/assets"
 )
@@ -70,6 +75,8 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		return err
 	}
 
+	staticAssetFunc := dynamicCSIDriverAssetFunc(operatorNamespace, kubeClient, dynamicClient)
+
 	csiControllerSet := csicontrollerset.NewCSIControllerSet(
 		operatorClient,
 		controllerConfig.EventRecorder,
@@ -81,7 +88,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		kubeClient,
 		dynamicClient,
 		kubeInformersForNamespaces,
-		replaceNamespaceFunc(operatorNamespace),
+		staticAssetFunc,
 		[]string{
 			"node_sa.yaml",
 			"csidriver.yaml",
@@ -136,6 +143,86 @@ func replaceNamespaceFunc(namespace string) resourceapply.AssetFunc {
 		}
 		return bytes.ReplaceAll(content, []byte(namespaceKey), []byte(namespace)), nil
 	}
+}
+
+func dynamicCSIDriverAssetFunc(
+	namespace string,
+	kubeClient kubeclient.Interface,
+	dynamicClient dynamic.Interface,
+) resourceapply.AssetFunc {
+	namespaceAssetFunc := replaceNamespaceFunc(namespace)
+
+	return func(name string) ([]byte, error) {
+		content, err := namespaceAssetFunc(name)
+		if err != nil {
+			return nil, err
+		}
+		if name != "csidriver.yaml" {
+			return content, nil
+		}
+
+		return renderCSIDriverAsset(content, kubeClient, dynamicClient)
+	}
+}
+
+func renderCSIDriverAsset(
+	asset []byte,
+	kubeClient kubeclient.Interface,
+	dynamicClient dynamic.Interface,
+) ([]byte, error) {
+	clusterDriver, err := currentClusterCSIDriver(dynamicClient)
+	if err != nil {
+		return nil, err
+	}
+
+	required := resourceread.ReadCSIDriverV1OrDie(asset)
+	existingTokenRequests, err := currentCSIDriverTokenRequests(kubeClient, required.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	effectiveConfig, err := effectiveSecretsStoreDriverConfig(clusterDriver, existingTokenRequests)
+	if err != nil {
+		return nil, err
+	}
+
+	required.Spec.RequiresRepublish = boolPtr(effectiveConfig.requiresRepublish)
+	required.Spec.TokenRequests = effectiveConfig.tokenRequests
+
+	return json.Marshal(required)
+}
+
+func currentClusterCSIDriver(dynamicClient dynamic.Interface) (*opv1.ClusterCSIDriver, error) {
+	clusterDriver, err := dynamicClient.
+		Resource(opv1.SchemeGroupVersion.WithResource("clustercsidrivers")).
+		Get(context.TODO(), providerName, metav1.GetOptions{})
+	if apierrors.IsNotFound(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to get ClusterCSIDriver %q: %w", providerName, err)
+	}
+
+	return clusterCSIDriverFromUnstructured(clusterDriver)
+}
+
+func currentCSIDriverTokenRequests(
+	kubeClient kubeclient.Interface,
+	name string,
+) ([]storagev1.TokenRequest, error) {
+	csiDriver, err := kubeClient.StorageV1().CSIDrivers().Get(context.TODO(), name, metav1.GetOptions{})
+	if apierrors.IsNotFound(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to get CSIDriver %q: %w", name, err)
+	}
+
+	return cloneTokenRequests(csiDriver.Spec.TokenRequests), nil
+}
+
+func boolPtr(value bool) *bool {
+	return &value
 }
 
 // getOperatorSyncState returns the management state of the operator to determine
