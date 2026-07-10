@@ -1,0 +1,9 @@
+artifact_id: tasks
+artifact_path: openspec/changes/sscsi-254/tasks.md
+stage: tasks
+stage_eval_file: evals/tasks_eval.yaml
+scored_at: "2026-07-10T15:25:00+05:30"
+overall_score: 100
+overall_pass: true
+cases: []
+note: "tasks_eval.yaml has empty evals list; gate passes vacuously (0/0 cases)."

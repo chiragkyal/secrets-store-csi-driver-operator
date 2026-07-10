@@ -1,0 +1,485 @@
+{
+  "exported_at": "2026-07-10T13:04:20.757882+00:00",
+  "operator_name": "secrets-store-csi-driver-operator",
+  "run": {
+    "id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+    "change_name": "SSCSI-254 \u2014 sscsi-254",
+    "jira_key": "SSCSI-254",
+    "branch": "feature/sscsi-254",
+    "status": "completed",
+    "started_at": "2026-07-10T09:29:53.701908+00:00",
+    "completed_at": "2026-07-10T13:04:17.500870+00:00",
+    "total_tokens_in": 229037,
+    "total_tokens_out": 36249
+  },
+  "phases": [
+    {
+      "id": "8a8bce96-cbff-4a0d-bbfc-e9e19d2506ad",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "phase_number": 1,
+      "phase_name": "spec_understanding",
+      "model_id": "",
+      "status": "passed",
+      "started_at": "2026-07-10T09:30:46.307706+00:00",
+      "completed_at": "2026-07-10T09:40:37.616670+00:00",
+      "tokens_in": 19680,
+      "tokens_out": 4161,
+      "quality_score": 0,
+      "quality_label": "APPROVED",
+      "iteration_count": 1,
+      "duration_s": 591.3
+    },
+    {
+      "id": "5e0e4c60-07e9-4813-ad4a-6160136fd35a",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "phase_number": 2,
+      "phase_name": "repo_assessment",
+      "model_id": "",
+      "status": "passed",
+      "started_at": "2026-07-10T09:42:06.145619+00:00",
+      "completed_at": "2026-07-10T09:48:31.301164+00:00",
+      "tokens_in": 13068,
+      "tokens_out": 6637,
+      "quality_score": 100.0,
+      "quality_label": "PASS",
+      "iteration_count": 1,
+      "duration_s": 385.2
+    },
+    {
+      "id": "606cb38e-ccb6-460e-8f75-e1f4d793803a",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "phase_number": 3,
+      "phase_name": "arch_planning",
+      "model_id": "",
+      "status": "passed",
+      "started_at": "2026-07-10T09:49:04.880926+00:00",
+      "completed_at": "2026-07-10T09:53:05.188443+00:00",
+      "tokens_in": 19705,
+      "tokens_out": 4644,
+      "quality_score": 100.0,
+      "quality_label": "PASS",
+      "iteration_count": 1,
+      "duration_s": 240.3
+    },
+    {
+      "id": "cce59aa6-a8f7-4577-b2bc-ca56663e81b2",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "phase_number": 4,
+      "phase_name": "subtask_creation",
+      "model_id": "",
+      "status": "passed",
+      "started_at": "2026-07-10T09:54:04.885022+00:00",
+      "completed_at": "2026-07-10T09:57:18.283511+00:00",
+      "tokens_in": 17712,
+      "tokens_out": 4927,
+      "quality_score": 100.0,
+      "quality_label": "complete",
+      "iteration_count": 1,
+      "duration_s": 193.4
+    },
+    {
+      "id": "9f164118-555e-4d3f-b046-5eba014c3020",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "phase_number": 5,
+      "phase_name": "code_generation",
+      "model_id": "",
+      "status": "passed",
+      "started_at": "2026-07-10T13:03:56.538146+00:00",
+      "completed_at": "2026-07-10T13:04:17.500679+00:00",
+      "tokens_in": 158872,
+      "tokens_out": 15880,
+      "quality_score": 0,
+      "quality_label": "complete",
+      "iteration_count": 1,
+      "duration_s": 21.0
+    }
+  ],
+  "tasks": [
+    {
+      "id": "28346e00-12b0-4f67-8c82-07be71266043",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "phase_id": "9f164118-555e-4d3f-b046-5eba014c3020",
+      "task_id": "T1_1",
+      "task_title": "Vendor openshift/api with SecretsStore types",
+      "agent_id": "API_Agent",
+      "status": "passed",
+      "started_at": "2026-07-10T13:04:01.943679+00:00",
+      "completed_at": "2026-07-10T13:04:02.170081+00:00",
+      "tokens_in": 1500,
+      "tokens_out": 120,
+      "self_correction_loops": 0
+    },
+    {
+      "id": "782b7e9a-950f-4e84-bd16-4a5c51088a32",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "phase_id": "9f164118-555e-4d3f-b046-5eba014c3020",
+      "task_id": "T2_1",
+      "task_title": "Implement rotation config extraction + DaemonSet hook",
+      "agent_id": "OperatorController_Agent",
+      "status": "passed",
+      "started_at": "2026-07-10T13:04:03.688395+00:00",
+      "completed_at": "2026-07-10T13:04:03.911117+00:00",
+      "tokens_in": 1800,
+      "tokens_out": 145,
+      "self_correction_loops": 0
+    },
+    {
+      "id": "7e35d596-18a9-4d2a-849d-7e30bb1c14af",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "phase_id": "9f164118-555e-4d3f-b046-5eba014c3020",
+      "task_id": "T3_1",
+      "task_title": "Implement dynamic CSIDriver AssetFunc + tokenRequests",
+      "agent_id": "OperatorController_Agent",
+      "status": "passed",
+      "started_at": "2026-07-10T13:04:05.521315+00:00",
+      "completed_at": "2026-07-10T13:04:05.951581+00:00",
+      "tokens_in": 2100,
+      "tokens_out": 180,
+      "self_correction_loops": 0
+    },
+    {
+      "id": "f7d80641-0251-4255-9a24-15364d3718e0",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "phase_id": "9f164118-555e-4d3f-b046-5eba014c3020",
+      "task_id": "T2_2",
+      "task_title": "Unit tests for rotation config + DaemonSet hook",
+      "agent_id": "Testing_Agent",
+      "status": "passed",
+      "started_at": "2026-07-10T13:04:08.261991+00:00",
+      "completed_at": "2026-07-10T13:04:08.491510+00:00",
+      "tokens_in": 2300,
+      "tokens_out": 215,
+      "self_correction_loops": 0
+    },
+    {
+      "id": "863967f6-d3d7-442d-9fae-2b989a7dc4ca",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "phase_id": "9f164118-555e-4d3f-b046-5eba014c3020",
+      "task_id": "T3_2",
+      "task_title": "Unit tests for CSIDriver AssetFunc + tokenRequests",
+      "agent_id": "Testing_Agent",
+      "status": "passed",
+      "started_at": "2026-07-10T13:04:08.266116+00:00",
+      "completed_at": "2026-07-10T13:04:08.518569+00:00",
+      "tokens_in": 2500,
+      "tokens_out": 250,
+      "self_correction_loops": 0
+    },
+    {
+      "id": "d33ceb3e-d0bc-408a-a57e-71668f6d16f9",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "phase_id": "9f164118-555e-4d3f-b046-5eba014c3020",
+      "task_id": "T4_1",
+      "task_title": "Wire controllers + hooks in starter.go",
+      "agent_id": "OperatorController_Agent",
+      "status": "passed",
+      "started_at": "2026-07-10T13:04:09.481143+00:00",
+      "completed_at": "2026-07-10T13:04:09.724028+00:00",
+      "tokens_in": 2700,
+      "tokens_out": 300,
+      "self_correction_loops": 0
+    },
+    {
+      "id": "14d86638-047d-4e68-a34c-b016b9cdef60",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "phase_id": "9f164118-555e-4d3f-b046-5eba014c3020",
+      "task_id": "T5_1",
+      "task_title": "E2E test development for rotation + WIF",
+      "agent_id": "Testing_Agent",
+      "status": "passed",
+      "started_at": "2026-07-10T13:04:10.799813+00:00",
+      "completed_at": "2026-07-10T13:04:11.025948+00:00",
+      "tokens_in": 3000,
+      "tokens_out": 350,
+      "self_correction_loops": 0
+    },
+    {
+      "id": "11908266-ba47-4bcb-a265-67f88db97014",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "phase_id": "9f164118-555e-4d3f-b046-5eba014c3020",
+      "task_id": "T6_1",
+      "task_title": "OLM CSV alignment + verification",
+      "agent_id": "OLMRelease_Agent",
+      "status": "passed",
+      "started_at": "2026-07-10T13:04:12.060830+00:00",
+      "completed_at": "2026-07-10T13:04:12.296327+00:00",
+      "tokens_in": 3959,
+      "tokens_out": 425,
+      "self_correction_loops": 0
+    }
+  ],
+  "events": [
+    {
+      "id": "fca4cc44-9130-48e0-8bff-2f2e3b146517",
+      "ts": "2026-07-10T09:31:36.002841+00:00",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Artifact 'validation' created \u2014 awaiting eval gate",
+      "metadata_json": null
+    },
+    {
+      "id": "1a0eb348-1c99-4730-af32-b9db77ef638b",
+      "ts": "2026-07-10T09:35:32.406412+00:00",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Artifact 'validation' ready for approval (eval score: 93.0%) \u2014 waiting for human decision",
+      "metadata_json": null
+    },
+    {
+      "id": "41015114-01e4-47c7-b54d-21a778868676",
+      "ts": "2026-07-10T09:36:12.778069+00:00",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Human approved artifact 'validation'",
+      "metadata_json": null
+    },
+    {
+      "id": "6b2f2026-e451-452a-b785-7902ee75e87b",
+      "ts": "2026-07-10T09:36:12.778213+00:00",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Artifact 'validation' completed with status: passed",
+      "metadata_json": null
+    },
+    {
+      "id": "6decaa1a-0fa0-4c85-b1c9-a0f85a416b46",
+      "ts": "2026-07-10T09:39:24.399585+00:00",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Artifact 'specs' created \u2014 awaiting eval gate",
+      "metadata_json": null
+    },
+    {
+      "id": "2d33121e-ae68-4c6b-be23-e1a2c8131c3e",
+      "ts": "2026-07-10T09:39:59.494220+00:00",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Artifact 'specs' ready for approval \u2014 waiting for human decision",
+      "metadata_json": null
+    },
+    {
+      "id": "3d385cbd-7663-464b-b0a3-aab271e115e2",
+      "ts": "2026-07-10T09:40:37.616352+00:00",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Human approved artifact 'specs'",
+      "metadata_json": null
+    },
+    {
+      "id": "b3f0e467-415d-4664-a024-63eee399d056",
+      "ts": "2026-07-10T09:40:37.616550+00:00",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Artifact 'specs' completed with status: passed",
+      "metadata_json": null
+    },
+    {
+      "id": "89127eb1-c4c4-4898-b61e-3e8075285c9b",
+      "ts": "2026-07-10T09:45:48.717473+00:00",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Artifact 'repo-assessment' created \u2014 awaiting eval gate",
+      "metadata_json": null
+    },
+    {
+      "id": "f8af6f25-c9f2-4ff3-8c46-a4f230856dc2",
+      "ts": "2026-07-10T09:46:28.261187+00:00",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Artifact 'repo-assessment' ready for approval (eval score: 100.0%) \u2014 waiting for human decision",
+      "metadata_json": null
+    },
+    {
+      "id": "7c10df4d-62dc-42c8-9aef-08ed7d15b692",
+      "ts": "2026-07-10T09:48:31.300942+00:00",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Human approved artifact 'repo-assessment'",
+      "metadata_json": null
+    },
+    {
+      "id": "1913068e-8063-4626-9915-6bace297c441",
+      "ts": "2026-07-10T09:48:31.301081+00:00",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Artifact 'repo-assessment' completed with status: passed",
+      "metadata_json": null
+    },
+    {
+      "id": "1f20d347-4dd7-4d3e-9d38-e038e5bafc47",
+      "ts": "2026-07-10T09:51:20.009854+00:00",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Artifact 'plan' created \u2014 awaiting eval gate",
+      "metadata_json": null
+    },
+    {
+      "id": "342e7b44-b685-4076-8af3-d7e640ac7b09",
+      "ts": "2026-07-10T09:52:00.944909+00:00",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Artifact 'plan' ready for approval (eval score: 100.0%) \u2014 waiting for human decision",
+      "metadata_json": null
+    },
+    {
+      "id": "a4d57ac2-aae5-41d6-a82d-0287bc4058c2",
+      "ts": "2026-07-10T09:53:05.188184+00:00",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Human approved artifact 'plan'",
+      "metadata_json": null
+    },
+    {
+      "id": "8ef3189f-419f-4218-a0be-63bc0c756c32",
+      "ts": "2026-07-10T09:53:05.188341+00:00",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Artifact 'plan' completed with status: passed",
+      "metadata_json": null
+    },
+    {
+      "id": "1de2bca9-3924-4d22-a4ba-0ee36c2424a2",
+      "ts": "2026-07-10T09:55:57.883659+00:00",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Artifact 'tasks' created \u2014 awaiting eval gate",
+      "metadata_json": null
+    },
+    {
+      "id": "270069c6-444b-458a-bdbc-0156dc724be2",
+      "ts": "2026-07-10T09:56:52.137255+00:00",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Artifact 'tasks' ready for approval (eval score: 100.0%) \u2014 waiting for human decision",
+      "metadata_json": null
+    },
+    {
+      "id": "bde3ffbd-40e7-4bc2-9c27-7219ac431043",
+      "ts": "2026-07-10T09:57:18.283242+00:00",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Human approved artifact 'tasks'",
+      "metadata_json": null
+    },
+    {
+      "id": "7b172f8b-bdca-469e-b790-e0c666ebe6a7",
+      "ts": "2026-07-10T09:57:18.283432+00:00",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Artifact 'tasks' completed with status: passed",
+      "metadata_json": null
+    },
+    {
+      "id": "6051f5c3-e08b-4599-8f1a-8e08f62ce44a",
+      "ts": "2026-07-10T11:09:10.799068+00:00",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Artifact 'implementation' created \u2014 awaiting eval gate",
+      "metadata_json": null
+    },
+    {
+      "id": "ff5a88cf-35b0-47c0-bb68-27809635391c",
+      "ts": "2026-07-10T11:09:34.606518+00:00",
+      "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Artifact 'implementation' ready for approval (eval score: 100.0%) \u2014 waiting for human decision",
+      "metadata_json": null
+    }
+  ],
+  "global_health": {
+    "total_tokens_consumed": 112378,
+    "estimated_cost_usd": 1.2308,
+    "cumulative_wall_time_s": 12863.8,
+    "compliance_index": 100.0,
+    "gate_passing_rate": 100.0,
+    "human_rejection_rate": 0.0,
+    "total_refinement_iterations": 0,
+    "agent_success_rate": 100.0,
+    "tasks_passed": 8,
+    "tasks_total": 8
+  },
+  "artifact_edits": {
+    "artifacts": [
+      {
+        "artifact_id": "validation",
+        "phase_name": "spec_understanding",
+        "eval_refinements": 0,
+        "feedback_rounds": 0,
+        "total_edits": 0
+      },
+      {
+        "artifact_id": "specs",
+        "phase_name": "spec_understanding",
+        "eval_refinements": 0,
+        "feedback_rounds": 0,
+        "total_edits": 0
+      },
+      {
+        "artifact_id": "repo-assessment",
+        "phase_name": "repo_assessment",
+        "eval_refinements": 0,
+        "feedback_rounds": 0,
+        "total_edits": 0
+      },
+      {
+        "artifact_id": "plan",
+        "phase_name": "arch_planning",
+        "eval_refinements": 0,
+        "feedback_rounds": 0,
+        "total_edits": 0
+      },
+      {
+        "artifact_id": "tasks",
+        "phase_name": "subtask_creation",
+        "eval_refinements": 0,
+        "feedback_rounds": 0,
+        "total_edits": 0
+      }
+    ],
+    "total_edits": 0
+  }
+}

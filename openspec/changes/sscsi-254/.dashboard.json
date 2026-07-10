@@ -1,0 +1,44 @@
+{
+  "run_id": "270ab45e-65a7-4b8d-b0c3-24d898c55c03",
+  "jira_key": "SSCSI-254",
+  "change": "sscsi-254",
+  "phases": {
+    "1": {
+      "id": "8a8bce96-cbff-4a0d-bbfc-e9e19d2506ad",
+      "name": "spec_understanding",
+      "ended": true,
+      "tokens_in": 9529,
+      "tokens_out": 622
+    },
+    "2": {
+      "id": "5e0e4c60-07e9-4813-ad4a-6160136fd35a",
+      "name": "repo_assessment",
+      "ended": true
+    },
+    "3": {
+      "id": "606cb38e-ccb6-460e-8f75-e1f4d793803a",
+      "name": "arch_planning",
+      "ended": true
+    },
+    "4": {
+      "id": "cce59aa6-a8f7-4577-b2bc-ca56663e81b2",
+      "name": "subtask_creation",
+      "ended": true
+    },
+    "5": {
+      "id": "9f164118-555e-4d3f-b046-5eba014c3020",
+      "name": "code_generation",
+      "ended": true
+    }
+  },
+  "tasks": {
+    "T1_1": "28346e00-12b0-4f67-8c82-07be71266043",
+    "T2_1": "782b7e9a-950f-4e84-bd16-4a5c51088a32",
+    "T3_1": "7e35d596-18a9-4d2a-849d-7e30bb1c14af",
+    "T2_2": "f7d80641-0251-4255-9a24-15364d3718e0",
+    "T3_2": "863967f6-d3d7-442d-9fae-2b989a7dc4ca",
+    "T4_1": "d33ceb3e-d0bc-408a-a57e-71668f6d16f9",
+    "T5_1": "14d86638-047d-4e68-a34c-b016b9cdef60",
+    "T6_1": "11908266-ba47-4bcb-a265-67f88db97014"
+  }
+}

@@ -1,0 +1,18 @@
+artifact_id: validation
+artifact_path: openspec/changes/sscsi-254/validation.json
+stage: validation
+stage_eval_file: null
+gate: rubric_only
+scored_at: "2026-07-10T15:01:00+05:30"
+overall_score: 93
+overall_pass: true
+rubric_scoring:
+  completeness_score: 93
+  quality_score: 92
+  pass_threshold: 80
+  status: PASS
+  missing_elements_count: 1
+  quality_issues_count: 3
+  blockers_count: 0
+  non_blockers_count: 3
+refinement_applied: false

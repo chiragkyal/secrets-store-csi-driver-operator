@@ -1,0 +1,10 @@
+artifact_id: specs
+artifact_path: openspec/changes/sscsi-254/specs.md
+stage: specs
+stage_eval_file: null
+gate: skip
+scored_at: "2026-07-10T15:08:00+05:30"
+overall_score: null
+overall_pass: null
+note: "Gate type is skip — no eval scoring. User approval only."
+refinement_applied: false

@@ -1,0 +1,11 @@
+artifact_id: repo-assessment
+artifact_path: openspec/changes/sscsi-254/repo-assessment.md
+stage: repo-assessment
+stage_eval_file: evals/repo-assessment_eval.yaml
+gate: stage_evals
+scored_at: "2026-07-10T15:15:00+05:30"
+overall_score: 100
+overall_pass: true
+note: "evals list is empty in repo-assessment_eval.yaml — all cases pass vacuously."
+cases: []
+refinement_applied: false
