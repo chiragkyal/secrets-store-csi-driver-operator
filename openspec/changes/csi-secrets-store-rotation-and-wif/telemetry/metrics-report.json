@@ -1,0 +1,34 @@
+{
+  "exported_at": "2026-07-10T06:18:58.730390+00:00",
+  "operator_name": "secrets-store-csi-driver-operator",
+  "run": {
+    "id": "6337a450-d561-4a5b-8ca0-f05129fc89ca",
+    "change_name": "SSCSI-254 \u2014 csi-secrets-store-rotation-and-wif",
+    "jira_key": "SSCSI-254",
+    "branch": "feature/csi-secrets-store-rotation-and-wif",
+    "status": "running",
+    "started_at": "2026-07-10T06:18:58.723673+00:00",
+    "completed_at": null,
+    "total_tokens_in": 0,
+    "total_tokens_out": 0
+  },
+  "phases": [],
+  "tasks": [],
+  "events": [],
+  "global_health": {
+    "total_tokens_consumed": 0,
+    "estimated_cost_usd": 0.0,
+    "cumulative_wall_time_s": 0.0,
+    "compliance_index": 100.0,
+    "gate_passing_rate": 100.0,
+    "human_rejection_rate": 0.0,
+    "total_refinement_iterations": 0,
+    "agent_success_rate": 100.0,
+    "tasks_passed": 0,
+    "tasks_total": 0
+  },
+  "artifact_edits": {
+    "artifacts": [],
+    "total_edits": 0
+  }
+}
