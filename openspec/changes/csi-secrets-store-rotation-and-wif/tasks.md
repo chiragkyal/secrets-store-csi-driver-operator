@@ -61,7 +61,7 @@ graph TD
 
 ## 2. Linear Execution Order (Chronological)
 1. [x] T1_1 — Confirm upstream API pin and vendor strategy
-2. T1_2 — Align repo-local config entrypoints to new API surface
+2. [x] T1_2 — Align repo-local config entrypoints to new API surface
 3. T2_1 — Implement effective config derivation and preserve-existing behavior
 4. T2_2 — Add unit coverage for config derivation and ownership rules
 5. T3_1 — Add dynamic CSIDriver desired-state rendering

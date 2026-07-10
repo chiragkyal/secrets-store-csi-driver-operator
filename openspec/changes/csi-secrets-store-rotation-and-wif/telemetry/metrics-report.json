@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-07-10T07:32:37.712652+00:00",
+  "exported_at": "2026-07-10T08:09:33.588127+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "6337a450-d561-4a5b-8ca0-f05129fc89ca",
@@ -100,8 +100,22 @@
       "task_id": "T1_2",
       "task_title": "Align repo-local config entrypoints to new API surface",
       "agent_id": "OperatorController",
-      "status": "running",
+      "status": "passed",
       "started_at": "2026-07-10T07:32:37.704995+00:00",
+      "completed_at": "2026-07-10T08:07:01.944213+00:00",
+      "tokens_in": 22463,
+      "tokens_out": 666,
+      "self_correction_loops": 0
+    },
+    {
+      "id": "fe0961af-1dc2-402b-ba66-08929d592560",
+      "run_id": "6337a450-d561-4a5b-8ca0-f05129fc89ca",
+      "phase_id": "b1cab235-c79f-4853-bb7c-4f4e8c4af022",
+      "task_id": "T2_1",
+      "task_title": "Implement effective config derivation and preserve-existing behavior",
+      "agent_id": "OperatorController",
+      "status": "running",
+      "started_at": "2026-07-10T08:09:33.578506+00:00",
       "completed_at": null,
       "tokens_in": 0,
       "tokens_out": 0,
@@ -293,14 +307,14 @@
   "global_health": {
     "total_tokens_consumed": 70157,
     "estimated_cost_usd": 0.428,
-    "cumulative_wall_time_s": 4419.0,
+    "cumulative_wall_time_s": 6634.9,
     "compliance_index": 75.0,
     "gate_passing_rate": 75.0,
     "human_rejection_rate": 0.0,
     "total_refinement_iterations": 0,
-    "agent_success_rate": 50.0,
-    "tasks_passed": 1,
-    "tasks_total": 2
+    "agent_success_rate": 66.7,
+    "tasks_passed": 2,
+    "tasks_total": 3
   },
   "artifact_edits": {
     "artifacts": [
