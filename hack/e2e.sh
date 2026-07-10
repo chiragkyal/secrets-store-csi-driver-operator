@@ -11,6 +11,7 @@ export E2E_PROVIDER_NAMESPACE=${E2E_PROVIDER_NAMESPACE:-openshift-cluster-csi-dr
 export E2E_PROVIDER_APP_LABEL=${E2E_PROVIDER_APP_LABEL:-csi-secrets-store-e2e-provider}
 export E2E_PROVIDER_SELECTOR="app=${E2E_PROVIDER_APP_LABEL}"
 export PROVISIONER_NAME="secrets-store.csi.k8s.io"
+export E2E_NODE_DAEMONSET_NAME=${E2E_NODE_DAEMONSET_NAME:-secrets-store-csi-driver-node}
 
 # The test namespace is created with a "random" postfix
 POSTFIX_CHARS=$(echo $RANDOM | md5sum | head -c5)
@@ -21,6 +22,9 @@ export E2E_TEST_PROVIDER=e2e-provider
 export E2E_TEST_IMAGE=quay.io/openshifttest/busybox:multiarch
 export E2E_TEST_POD_TIMEOUT=120 # seconds
 export E2E_TEST_CONTAINER_NAME=test-container
+export E2E_RECONCILE_TIMEOUT=${E2E_RECONCILE_TIMEOUT:-180} # seconds
+
+E2E_ORIGINAL_CLUSTER_CSI_DRIVER=""
 
 # Check that CSI Driver and E2E Provider pods exist
 test_prechecks() {
@@ -34,6 +38,9 @@ test_prechecks() {
 test_setup() {
 	echo "Creating test namespace"
 	oc new-project ${E2E_TEST_NAMESPACE} || return 1
+
+	E2E_ORIGINAL_CLUSTER_CSI_DRIVER=$(mktemp) || return 1
+	oc get clustercsidriver ${PROVISIONER_NAME} -o yaml > "${E2E_ORIGINAL_CLUSTER_CSI_DRIVER}" || return 1
 
 	# Allow creation of privileged pods for this test. The e2e-provider must be
 	# privileged to bind to a unix domain socket on the host, and the test pod
@@ -64,6 +71,13 @@ EOF
 }
 
 test_teardown() {
+	if [ -n "${E2E_ORIGINAL_CLUSTER_CSI_DRIVER}" ] && [ -f "${E2E_ORIGINAL_CLUSTER_CSI_DRIVER}" ]; then
+		echo "Restoring original ClusterCSIDriver"
+		oc apply -f "${E2E_ORIGINAL_CLUSTER_CSI_DRIVER}" || return 1
+		rm -f "${E2E_ORIGINAL_CLUSTER_CSI_DRIVER}" || return 1
+		E2E_ORIGINAL_CLUSTER_CSI_DRIVER=""
+	fi
+
 	echo "Deleting test namespace"
 	oc delete project ${E2E_TEST_NAMESPACE}
 	return $?
@@ -151,6 +165,121 @@ test_pod_with_secret() {
 	return 0
 }
 
+wait_for_driver_args_contains() {
+	local EXPECTED=$1
+	local DESCRIPTION=$2
+	local ATTEMPTS=$((E2E_RECONCILE_TIMEOUT / 5))
+
+	for _ in $(seq 1 ${ATTEMPTS}); do
+		ARGS=$(oc get ds -n ${E2E_PROVIDER_NAMESPACE} ${E2E_NODE_DAEMONSET_NAME} -o jsonpath='{.spec.template.spec.containers[?(@.name=="csi-driver")].args}') || return 1
+		if [[ "${ARGS}" == *"${EXPECTED}"* ]]; then
+			return 0
+		fi
+		sleep 5
+	done
+
+	echo "Timed out waiting for daemonset args to contain ${EXPECTED} (${DESCRIPTION})"
+	return 1
+}
+
+wait_for_requires_republish() {
+	local EXPECTED=$1
+	local ATTEMPTS=$((E2E_RECONCILE_TIMEOUT / 5))
+
+	for _ in $(seq 1 ${ATTEMPTS}); do
+		ACTUAL=$(oc get csidriver ${PROVISIONER_NAME} -o jsonpath='{.spec.requiresRepublish}') || return 1
+		if [ "${ACTUAL}" = "${EXPECTED}" ]; then
+			return 0
+		fi
+		sleep 5
+	done
+
+	echo "Timed out waiting for requiresRepublish=${EXPECTED}"
+	return 1
+}
+
+wait_for_token_audiences() {
+	local EXPECTED=$1
+	local ATTEMPTS=$((E2E_RECONCILE_TIMEOUT / 5))
+
+	for _ in $(seq 1 ${ATTEMPTS}); do
+		ACTUAL=$(oc get csidriver ${PROVISIONER_NAME} -o jsonpath='{range .spec.tokenRequests[*]}{.audience}{"\n"}{end}') || return 1
+		if [ "${ACTUAL}" = "${EXPECTED}" ]; then
+			return 0
+		fi
+		sleep 5
+	done
+
+	echo "Timed out waiting for token audiences to match expected value"
+	printf 'Expected:\n%s\n' "${EXPECTED}"
+	printf 'Actual:\n%s\n' "${ACTUAL}"
+	return 1
+}
+
+test_default_rotation() {
+	echo "Testing default rotation behavior"
+	oc patch clustercsidriver ${PROVISIONER_NAME} --type=merge -p '{"spec":{"driverConfig":null}}' || return 1
+	wait_for_requires_republish "true" || return 1
+	wait_for_driver_args_contains "--enable-secret-rotation=true" "default rotation enabled" || return 1
+	wait_for_driver_args_contains "--rotation-poll-interval=2m" "default rotation interval" || return 1
+	echo "test_default_rotation PASSED"
+	return 0
+}
+
+test_disabled_rotation() {
+	echo "Testing disabled rotation behavior"
+	oc patch clustercsidriver ${PROVISIONER_NAME} --type=merge -p '{"spec":{"driverConfig":{"driverType":"SecretsStore","secretsStore":{"secretRotation":{"type":"None"}}}}}' || return 1
+	wait_for_requires_republish "false" || return 1
+	wait_for_driver_args_contains "--enable-secret-rotation=false" "rotation disabled" || return 1
+	echo "test_disabled_rotation PASSED"
+	return 0
+}
+
+test_custom_rotation() {
+	echo "Testing custom rotation interval behavior"
+	oc patch clustercsidriver ${PROVISIONER_NAME} --type=merge -p '{"spec":{"driverConfig":{"driverType":"SecretsStore","secretsStore":{"secretRotation":{"type":"Custom","custom":{"rotationPollIntervalSeconds":300}}}}}}' || return 1
+	wait_for_requires_republish "true" || return 1
+	wait_for_driver_args_contains "--enable-secret-rotation=true" "custom rotation enabled" || return 1
+	wait_for_driver_args_contains "--rotation-poll-interval=5m0s" "custom rotation interval" || return 1
+	echo "test_custom_rotation PASSED"
+	return 0
+}
+
+test_managed_token_requests() {
+	echo "Testing managed token requests behavior"
+	oc patch clustercsidriver ${PROVISIONER_NAME} --type=merge -p '{"spec":{"driverConfig":{"driverType":"SecretsStore","secretsStore":{"tokenRequests":{"type":"Managed","managed":{"audiences":[{"audience":"sts.amazonaws.com","expirationSeconds":3600}]}}}}}}' || return 1
+	wait_for_token_audiences $'sts.amazonaws.com\n' || return 1
+	echo "test_managed_token_requests PASSED"
+	return 0
+}
+
+test_cleared_token_requests() {
+	echo "Testing cleared managed token requests behavior"
+	oc patch clustercsidriver ${PROVISIONER_NAME} --type=merge -p '{"spec":{"driverConfig":{"driverType":"SecretsStore","secretsStore":{"tokenRequests":{"type":"Managed","managed":{"audiences":[]}}}}}}' || return 1
+	wait_for_token_audiences "" || return 1
+	echo "test_cleared_token_requests PASSED"
+	return 0
+}
+
+test_multiple_token_requests() {
+	echo "Testing multiple managed token audiences behavior"
+	oc patch clustercsidriver ${PROVISIONER_NAME} --type=merge -p '{"spec":{"driverConfig":{"driverType":"SecretsStore","secretsStore":{"tokenRequests":{"type":"Managed","managed":{"audiences":[{"audience":"sts.amazonaws.com","expirationSeconds":3600},{"audience":"api://AzureADTokenExchange"}]}}}}}}' || return 1
+	wait_for_token_audiences $'sts.amazonaws.com\napi://AzureADTokenExchange\n' || return 1
+	echo "test_multiple_token_requests PASSED"
+	return 0
+}
+
+test_rotation_and_wif_configuration() {
+	test_default_rotation || return 1
+	test_disabled_rotation || return 1
+	test_custom_rotation || return 1
+	test_managed_token_requests || return 1
+	test_cleared_token_requests || return 1
+	test_multiple_token_requests || return 1
+	echo "test_rotation_and_wif_configuration PASSED"
+	return 0
+}
+
 test_prechecks
 if [ $? -ne 0 ]; then
 	echo "test_prechecks FAILED"
@@ -167,6 +296,14 @@ fi
 test_pod_with_secret
 if [ $? -ne 0 ]; then
 	echo "test_pod_with_secret FAILED"
+	test_pods_dump
+	test_teardown
+	exit 1
+fi
+
+test_rotation_and_wif_configuration
+if [ $? -ne 0 ]; then
+	echo "test_rotation_and_wif_configuration FAILED"
 	test_pods_dump
 	test_teardown
 	exit 1

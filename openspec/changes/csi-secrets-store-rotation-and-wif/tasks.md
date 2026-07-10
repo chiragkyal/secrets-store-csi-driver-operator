@@ -66,8 +66,8 @@ graph TD
 4. [x] T2_2 — Add unit coverage for config derivation and ownership rules
 5. [x] T3_1 — Add dynamic CSIDriver desired-state rendering
 6. [x] T3_2 — Wire rotation DaemonSet hook and informer flow
-7. T3_3 — Extend unit coverage for rendering and hook wiring
-8. T4_1 — Review RBAC and packaging surfaces for feature alignment
+7. [x] T3_3 — Extend unit coverage for rendering and hook wiring
+8. [x] T4_1 — Review RBAC and packaging surfaces for feature alignment
 9. T5_1 — Extend e2e coverage for rotation and WIF behavior
 10. T5_2 — Add upgrade-preservation and failure-verification coverage
 11. T6_1 — Complete docs or release-surface follow-through
