@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-07-10T08:09:33.588127+00:00",
+  "exported_at": "2026-07-10T08:28:12.544425+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "6337a450-d561-4a5b-8ca0-f05129fc89ca",
@@ -114,8 +114,22 @@
       "task_id": "T2_1",
       "task_title": "Implement effective config derivation and preserve-existing behavior",
       "agent_id": "OperatorController",
-      "status": "running",
+      "status": "passed",
       "started_at": "2026-07-10T08:09:33.578506+00:00",
+      "completed_at": "2026-07-10T08:12:23.852800+00:00",
+      "tokens_in": 22464,
+      "tokens_out": 527,
+      "self_correction_loops": 0
+    },
+    {
+      "id": "8b626698-612f-4ab8-8df7-8fb14a947a02",
+      "run_id": "6337a450-d561-4a5b-8ca0-f05129fc89ca",
+      "phase_id": "b1cab235-c79f-4853-bb7c-4f4e8c4af022",
+      "task_id": "T2_2",
+      "task_title": "Add unit coverage for config derivation and ownership rules",
+      "agent_id": "Testing",
+      "status": "running",
+      "started_at": "2026-07-10T08:28:12.533992+00:00",
       "completed_at": null,
       "tokens_in": 0,
       "tokens_out": 0,
@@ -307,14 +321,14 @@
   "global_health": {
     "total_tokens_consumed": 70157,
     "estimated_cost_usd": 0.428,
-    "cumulative_wall_time_s": 6634.9,
+    "cumulative_wall_time_s": 7753.8,
     "compliance_index": 75.0,
     "gate_passing_rate": 75.0,
     "human_rejection_rate": 0.0,
     "total_refinement_iterations": 0,
-    "agent_success_rate": 66.7,
-    "tasks_passed": 2,
-    "tasks_total": 3
+    "agent_success_rate": 75.0,
+    "tasks_passed": 3,
+    "tasks_total": 4
   },
   "artifact_edits": {
     "artifacts": [

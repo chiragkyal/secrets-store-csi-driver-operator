@@ -1,23 +1,25 @@
 machine:
   state: AWAITING_APPROVAL
-  current_task_id: T2_1
-  current_task_index: 3
+  current_task_id: T2_2
+  current_task_index: 4
   total_tasks: 12
-  last_transition: "2026-07-10T13:37:00+05:30"
+  last_transition: "2026-07-10T13:46:00+05:30"
 
 completed:
   - task_id: T1_1
     test_result: PASS
   - task_id: T1_2
     test_result: PASS
+  - task_id: T2_1
+    test_result: PASS
 
 current_task_result:
-  task_id: T2_1
+  task_id: T2_2
   files_changed:
-    - pkg/operator/secrets_store_config.go
+    - pkg/operator/secrets_store_config_test.go
   verification_pass: true
   test_command: "make verify && make test-unit"
   test_result: PASS
-  test_output_summary: "Added a standalone effective Secrets Store config helper that derives rotation behavior, token request ownership/preservation behavior, and storage.k8s.io token request mappings from ClusterCSIDriver. Verification passed with make verify and make test-unit; local Makefile emitted the same non-fatal FIPS warnings and xargs sysconf warning seen in prior tasks."
+  test_output_summary: "Added table-driven unit coverage for default/custom/disabled rotation behavior, managed and unmanaged token-request handling, empty audiences, nil-audience error handling, replacement of existing live token requests, and deep-copy preservation behavior. Verification passed with make verify and make test-unit; local Makefile emitted the same non-fatal FIPS warnings and xargs sysconf warning seen in prior tasks."
 
 rejections: []
