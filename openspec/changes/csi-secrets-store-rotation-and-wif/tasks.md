@@ -71,7 +71,7 @@ graph TD
 9. [x] T5_1 — Extend e2e coverage for rotation and WIF behavior
 10. [x] T5_2 — Add upgrade-preservation and failure-verification coverage
 11. [x] T6_1 — Complete docs or release-surface follow-through
-12. T6_2 — Run final verification and readiness sweep
+12. [x] T6_2 — Run final verification and readiness sweep
 
 ## 3. Task Execution Manifest (table)
 | Task ID | Task Title | Assigned Agent | Phase | Depends On | Parallel OK | Complexity | Risk |

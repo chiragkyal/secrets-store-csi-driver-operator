@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-07-10T09:26:16.167579+00:00",
+  "exported_at": "2026-07-10T09:30:39.119967+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "6337a450-d561-4a5b-8ca0-f05129fc89ca",
@@ -240,11 +240,11 @@
       "task_id": "T6_2",
       "task_title": "Run final verification and readiness sweep",
       "agent_id": "Testing",
-      "status": "running",
+      "status": "passed",
       "started_at": "2026-07-10T09:26:16.158356+00:00",
-      "completed_at": null,
-      "tokens_in": 0,
-      "tokens_out": 0,
+      "completed_at": "2026-07-10T09:30:39.111145+00:00",
+      "tokens_in": 22473,
+      "tokens_out": 526,
       "self_correction_loops": 0
     }
   ],
@@ -433,13 +433,13 @@
   "global_health": {
     "total_tokens_consumed": 70157,
     "estimated_cost_usd": 0.428,
-    "cumulative_wall_time_s": 11237.4,
+    "cumulative_wall_time_s": 11500.4,
     "compliance_index": 75.0,
     "gate_passing_rate": 75.0,
     "human_rejection_rate": 0.0,
     "total_refinement_iterations": 0,
-    "agent_success_rate": 91.7,
-    "tasks_passed": 11,
+    "agent_success_rate": 100.0,
+    "tasks_passed": 12,
     "tasks_total": 12
   },
   "artifact_edits": {
