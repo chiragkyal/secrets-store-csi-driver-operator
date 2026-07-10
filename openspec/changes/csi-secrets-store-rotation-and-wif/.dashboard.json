@@ -6,7 +6,9 @@
     "1": {
       "id": "5baca8e8-becc-48b1-a63d-036dbe400fdf",
       "name": "spec_understanding",
-      "ended": false
+      "ended": false,
+      "tokens_in": 10092,
+      "tokens_out": 514
     }
   },
   "tasks": {}

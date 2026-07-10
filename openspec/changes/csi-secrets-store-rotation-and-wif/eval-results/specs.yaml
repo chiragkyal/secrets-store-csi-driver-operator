@@ -1,0 +1,11 @@
+artifact_id: specs
+artifact_path: openspec/changes/csi-secrets-store-rotation-and-wif/specs.md
+stage: specs
+stage_eval_file: null
+gate: skip
+scored_at: 2026-07-10T06:32:00Z
+overall_score: null
+overall_pass: null
+refinement_applied: false
+refinement_round: 1
+note: Stage eval skipped by schema for specs; user approval is the gate for this artifact.
