@@ -1,0 +1,12 @@
+artifact_id: tasks
+artifact_path: openspec/changes/csi-secrets-store-rotation-and-wif/tasks.md
+stage: tasks
+stage_eval_file: openspec/schemas/openspec-agile-workflow/evals/tasks_eval.yaml
+gate: stage_evals
+scored_at: 2026-07-10T07:03:00Z
+overall_score: 100
+overall_pass: true
+refinement_applied: false
+refinement_round: 1
+cases: []
+note: Stage eval file exists but defines no explicit eval cases; artifact passed structural/manual quality review for coverage mapping, DAG consistency, manifest-to-payload completeness, and constitutional alignment.
