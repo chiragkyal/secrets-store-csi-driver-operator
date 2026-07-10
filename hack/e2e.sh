@@ -269,6 +269,25 @@ test_multiple_token_requests() {
 	return 0
 }
 
+test_upgrade_preserves_existing_token_requests() {
+	echo "Testing upgrade-style preservation of existing token requests"
+	oc patch csidriver ${PROVISIONER_NAME} --type=merge -p '{"spec":{"tokenRequests":[{"audience":"api://AzureADTokenExchange","expirationSeconds":3600}]}}' || return 1
+	oc patch clustercsidriver ${PROVISIONER_NAME} --type=merge -p '{"spec":{"driverConfig":null}}' || return 1
+	wait_for_token_audiences $'api://AzureADTokenExchange\n' || return 1
+	echo "test_upgrade_preserves_existing_token_requests PASSED"
+	return 0
+}
+
+test_invalid_configuration_sets_degraded() {
+	echo "Testing invalid configuration rejection"
+	if oc patch clustercsidriver ${PROVISIONER_NAME} --type=merge -p '{"spec":{"driverConfig":{"driverType":"SecretsStore","secretsStore":{"secretRotation":{"type":"Custom","custom":{"rotationPollIntervalSeconds":0}}}}}}'; then
+		echo "Expected invalid ClusterCSIDriver patch to fail validation"
+		return 1
+	fi
+	echo "test_invalid_configuration_sets_degraded PASSED"
+	return 0
+}
+
 test_rotation_and_wif_configuration() {
 	test_default_rotation || return 1
 	test_disabled_rotation || return 1
@@ -276,6 +295,8 @@ test_rotation_and_wif_configuration() {
 	test_managed_token_requests || return 1
 	test_cleared_token_requests || return 1
 	test_multiple_token_requests || return 1
+	test_upgrade_preserves_existing_token_requests || return 1
+	test_invalid_configuration_sets_degraded || return 1
 	echo "test_rotation_and_wif_configuration PASSED"
 	return 0
 }

@@ -1,9 +1,9 @@
 machine:
   state: AWAITING_APPROVAL
-  current_task_id: T5_1
-  current_task_index: 9
+  current_task_id: T5_2
+  current_task_index: 10
   total_tasks: 12
-  last_transition: "2026-07-10T14:22:00+05:30"
+  last_transition: "2026-07-10T14:27:00+05:30"
 
 completed:
   - task_id: T1_1
@@ -22,14 +22,17 @@ completed:
     test_result: PASS
   - task_id: T4_1
     test_result: PASS
+  - task_id: T5_1
+    test_result: PASS
 
 current_task_result:
-  task_id: T5_1
+  task_id: T5_2
   files_changed:
     - hack/e2e.sh
+    - pkg/operator/secrets_store_config_test.go
   verification_pass: true
   test_command: "bash -n hack/e2e.sh && make verify && make test-unit"
   test_result: PASS
-  test_output_summary: "Extended hack/e2e.sh with cluster-backed configuration scenarios for default rotation, disabled rotation, custom intervals, managed token audiences, cleared managed audiences, and multi-audience WIF behavior, including ClusterCSIDriver backup/restore and reconciliation polling helpers. Local verification passed with bash syntax validation plus make verify and make test-unit. Full make test-e2e execution remains deferred because this environment is not attached to a prepared OpenShift cluster."
+  test_output_summary: "Extended hack/e2e.sh with upgrade-style token request preservation and invalid configuration rejection coverage, and added a focused unit assertion for managed token request expiration handling. Local verification passed with bash syntax validation plus make verify and make test-unit; full cluster-backed make test-e2e execution remains deferred because this environment is not attached to a prepared OpenShift cluster."
 
 rejections: []

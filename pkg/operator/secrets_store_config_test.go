@@ -396,6 +396,25 @@ func TestEffectiveSecretsStoreDriverConfig(t *testing.T) {
 	}
 }
 
+func TestManagedTokenRequestsClonesExpirationSeconds(t *testing.T) {
+	audience := "sts.amazonaws.com"
+	requests, err := managedTokenRequests(&[]opv1.SecretsStoreTokenRequest{
+		{
+			Audience:          &audience,
+			ExpirationSeconds: 3600,
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(requests) != 1 {
+		t.Fatalf("expected 1 token request, got %d", len(requests))
+	}
+	if requests[0].ExpirationSeconds == nil || *requests[0].ExpirationSeconds != 3600 {
+		t.Fatalf("expected expirationSeconds to be 3600, got %#v", requests[0].ExpirationSeconds)
+	}
+}
+
 func int64Ptr(v int64) *int64 {
 	return &v
 }

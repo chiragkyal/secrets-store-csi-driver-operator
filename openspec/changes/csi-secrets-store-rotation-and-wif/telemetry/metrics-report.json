@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-07-10T08:53:31.520052+00:00",
+  "exported_at": "2026-07-10T08:57:30.125369+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "6337a450-d561-4a5b-8ca0-f05129fc89ca",
@@ -198,8 +198,22 @@
       "task_id": "T5_1",
       "task_title": "Extend e2e coverage for rotation and WIF behavior",
       "agent_id": "Testing",
-      "status": "running",
+      "status": "passed",
       "started_at": "2026-07-10T08:53:31.512123+00:00",
+      "completed_at": "2026-07-10T08:56:49.516142+00:00",
+      "tokens_in": 22470,
+      "tokens_out": 1173,
+      "self_correction_loops": 0
+    },
+    {
+      "id": "70df155a-e01e-42cf-9352-f8693b0e49f8",
+      "run_id": "6337a450-d561-4a5b-8ca0-f05129fc89ca",
+      "phase_id": "b1cab235-c79f-4853-bb7c-4f4e8c4af022",
+      "task_id": "T5_2",
+      "task_title": "Add upgrade-preservation and failure-verification coverage",
+      "agent_id": "Testing",
+      "status": "running",
+      "started_at": "2026-07-10T08:57:30.117459+00:00",
       "completed_at": null,
       "tokens_in": 0,
       "tokens_out": 0,
@@ -391,14 +405,14 @@
   "global_health": {
     "total_tokens_consumed": 70157,
     "estimated_cost_usd": 0.428,
-    "cumulative_wall_time_s": 9272.8,
+    "cumulative_wall_time_s": 9511.4,
     "compliance_index": 75.0,
     "gate_passing_rate": 75.0,
     "human_rejection_rate": 0.0,
     "total_refinement_iterations": 0,
-    "agent_success_rate": 88.9,
-    "tasks_passed": 8,
-    "tasks_total": 9
+    "agent_success_rate": 90.0,
+    "tasks_passed": 9,
+    "tasks_total": 10
   },
   "artifact_edits": {
     "artifacts": [
