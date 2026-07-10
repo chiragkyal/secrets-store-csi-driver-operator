@@ -6,9 +6,14 @@
     "1": {
       "id": "5baca8e8-becc-48b1-a63d-036dbe400fdf",
       "name": "spec_understanding",
-      "ended": false,
+      "ended": true,
       "tokens_in": 10092,
       "tokens_out": 514
+    },
+    "2": {
+      "id": "f2f303d4-ca2b-428c-bc87-87ba8a26f1d9",
+      "name": "repo_assessment",
+      "ended": false
     }
   },
   "tasks": {}

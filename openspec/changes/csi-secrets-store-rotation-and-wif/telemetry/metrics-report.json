@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-07-10T06:32:35.477607+00:00",
+  "exported_at": "2026-07-10T06:40:45.583371+00:00",
   "operator_name": "secrets-store-csi-driver-operator",
   "run": {
     "id": "6337a450-d561-4a5b-8ca0-f05129fc89ca",
@@ -9,8 +9,8 @@
     "status": "running",
     "started_at": "2026-07-10T06:18:58.723673+00:00",
     "completed_at": null,
-    "total_tokens_in": 10092,
-    "total_tokens_out": 514
+    "total_tokens_in": 20698,
+    "total_tokens_out": 3639
   },
   "phases": [
     {
@@ -19,15 +19,31 @@
       "phase_number": 1,
       "phase_name": "spec_understanding",
       "model_id": "",
-      "status": "running",
+      "status": "passed",
       "started_at": "2026-07-10T06:20:12.354313+00:00",
-      "completed_at": null,
-      "tokens_in": 10092,
-      "tokens_out": 514,
-      "quality_score": 91.0,
-      "quality_label": "pass",
+      "completed_at": "2026-07-10T06:34:39.386736+00:00",
+      "tokens_in": 20698,
+      "tokens_out": 3639,
+      "quality_score": 0,
+      "quality_label": "approved",
       "iteration_count": 1,
-      "duration_s": 60.0
+      "duration_s": 867.0
+    },
+    {
+      "id": "f2f303d4-ca2b-428c-bc87-87ba8a26f1d9",
+      "run_id": "6337a450-d561-4a5b-8ca0-f05129fc89ca",
+      "phase_number": 2,
+      "phase_name": "repo_assessment",
+      "model_id": "",
+      "status": "running",
+      "started_at": "2026-07-10T06:37:45.708140+00:00",
+      "completed_at": null,
+      "tokens_in": 0,
+      "tokens_out": 0,
+      "quality_score": 0,
+      "quality_label": "",
+      "iteration_count": 1,
+      "duration_s": 0.0
     }
   ],
   "tasks": [],
@@ -91,14 +107,54 @@
       "event_type": "state_machine",
       "message": "Artifact 'specs' ready for approval \u2014 waiting for human decision",
       "metadata_json": null
+    },
+    {
+      "id": "828f344f-baaf-4abf-987c-f0bc3f8cb215",
+      "ts": "2026-07-10T06:34:39.386072+00:00",
+      "run_id": "6337a450-d561-4a5b-8ca0-f05129fc89ca",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Human approved artifact 'specs'",
+      "metadata_json": null
+    },
+    {
+      "id": "723e5c2e-e490-4f49-b6e8-696f05b13c3c",
+      "ts": "2026-07-10T06:34:39.386562+00:00",
+      "run_id": "6337a450-d561-4a5b-8ca0-f05129fc89ca",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Artifact 'specs' completed with status: passed",
+      "metadata_json": null
+    },
+    {
+      "id": "e4471709-ca6e-4c01-b6e9-33b809f96d5d",
+      "ts": "2026-07-10T06:40:45.570907+00:00",
+      "run_id": "6337a450-d561-4a5b-8ca0-f05129fc89ca",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Artifact 'repo-assessment' created \u2014 awaiting eval gate",
+      "metadata_json": null
+    },
+    {
+      "id": "2da923e2-1eb0-4c6f-a0e5-bfb55df3d01d",
+      "ts": "2026-07-10T06:40:45.576715+00:00",
+      "run_id": "6337a450-d561-4a5b-8ca0-f05129fc89ca",
+      "task_id": null,
+      "agent_id": "Pipeline",
+      "event_type": "state_machine",
+      "message": "Artifact 'repo-assessment' ready for approval (eval score: 100.0%) \u2014 waiting for human decision",
+      "metadata_json": null
     }
   ],
   "global_health": {
-    "total_tokens_consumed": 10606,
-    "estimated_cost_usd": 0.038,
-    "cumulative_wall_time_s": 816.8,
-    "compliance_index": 0.0,
-    "gate_passing_rate": 0.0,
+    "total_tokens_consumed": 24337,
+    "estimated_cost_usd": 0.1167,
+    "cumulative_wall_time_s": 1306.9,
+    "compliance_index": 50.0,
+    "gate_passing_rate": 50.0,
     "human_rejection_rate": 0.0,
     "total_refinement_iterations": 0,
     "agent_success_rate": 100.0,
@@ -117,6 +173,13 @@
       {
         "artifact_id": "specs",
         "phase_name": "spec_understanding",
+        "eval_refinements": 0,
+        "feedback_rounds": 0,
+        "total_edits": 0
+      },
+      {
+        "artifact_id": "repo-assessment",
+        "phase_name": "repo_assessment",
         "eval_refinements": 0,
         "feedback_rounds": 0,
         "total_edits": 0
