@@ -69,3 +69,108 @@ To build the `must-gather` image locally:
 REPO=quay.io/<user>/secrets-store-csi-mustgather:latest
 docker build -t ${REPO} -f Dockerfile.mustgather .
 ```
+
+# Configuring rotation and workload identity federation
+
+The operator reads the `ClusterCSIDriver` named `secrets-store.csi.k8s.io` and
+can now derive Secrets Store-specific behavior from `spec.driverConfig`.
+
+## Secret rotation
+
+To disable automatic secret rotation:
+
+```yaml
+apiVersion: operator.openshift.io/v1
+kind: ClusterCSIDriver
+metadata:
+  name: secrets-store.csi.k8s.io
+spec:
+  managementState: Managed
+  driverConfig:
+    driverType: SecretsStore
+    secretsStore:
+      secretRotation:
+        type: None
+```
+
+To enable rotation with a custom poll interval of 5 minutes:
+
+```yaml
+apiVersion: operator.openshift.io/v1
+kind: ClusterCSIDriver
+metadata:
+  name: secrets-store.csi.k8s.io
+spec:
+  managementState: Managed
+  driverConfig:
+    driverType: SecretsStore
+    secretsStore:
+      secretRotation:
+        type: Custom
+        custom:
+          rotationPollIntervalSeconds: 300
+```
+
+When `secretRotation` is omitted, the operator keeps the default platform
+behavior of rotation enabled with a 2 minute poll interval.
+
+## Token requests for workload identity federation
+
+To let the operator manage service account token audiences:
+
+```yaml
+apiVersion: operator.openshift.io/v1
+kind: ClusterCSIDriver
+metadata:
+  name: secrets-store.csi.k8s.io
+spec:
+  managementState: Managed
+  driverConfig:
+    driverType: SecretsStore
+    secretsStore:
+      tokenRequests:
+        type: Managed
+        managed:
+          audiences:
+            - audience: sts.amazonaws.com
+              expirationSeconds: 3600
+            - audience: api://AzureADTokenExchange
+```
+
+To clear all operator-managed token audiences, keep `type: Managed` and set an
+explicit empty audience list:
+
+```yaml
+apiVersion: operator.openshift.io/v1
+kind: ClusterCSIDriver
+metadata:
+  name: secrets-store.csi.k8s.io
+spec:
+  managementState: Managed
+  driverConfig:
+    driverType: SecretsStore
+    secretsStore:
+      tokenRequests:
+        type: Managed
+        managed:
+          audiences: []
+```
+
+When `tokenRequests` is omitted or left as `type: Unmanaged`, the operator
+preserves any existing token requests already present on the `CSIDriver`
+resource. Once `type: Managed` is set, the operator-managed ownership model is
+one-way and should not be treated as reversible.
+
+## Verifying the effective configuration
+
+Inspect the rendered `CSIDriver`:
+
+```shell
+oc get csidriver secrets-store.csi.k8s.io -o yaml
+```
+
+Inspect the `csi-driver` container arguments on the node DaemonSet:
+
+```shell
+oc get ds -n openshift-cluster-csi-drivers secrets-store-csi-driver-node -o jsonpath='{.spec.template.spec.containers[?(@.name=="csi-driver")].args}'
+```

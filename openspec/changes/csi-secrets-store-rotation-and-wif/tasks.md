@@ -69,7 +69,7 @@ graph TD
 7. [x] T3_3 — Extend unit coverage for rendering and hook wiring
 8. [x] T4_1 — Review RBAC and packaging surfaces for feature alignment
 9. [x] T5_1 — Extend e2e coverage for rotation and WIF behavior
-10. T5_2 — Add upgrade-preservation and failure-verification coverage
+10. [x] T5_2 — Add upgrade-preservation and failure-verification coverage
 11. T6_1 — Complete docs or release-surface follow-through
 12. T6_2 — Run final verification and readiness sweep
 
