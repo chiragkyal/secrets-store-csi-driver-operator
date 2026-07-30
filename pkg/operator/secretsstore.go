@@ -2,6 +2,8 @@ package operator
 
 import (
 	"fmt"
+	"reflect"
+	"sync"
 	"time"
 
 	opv1 "github.com/openshift/api/operator/v1"
@@ -81,14 +83,41 @@ func (l *typedClusterCSIDriverLister) Get(name string) (*opv1.ClusterCSIDriver, 
 func getClusterCSIDriverConfig(clusterCSIDriverLister clusterCSIDriverGetter, name string) (opv1.CSIDriverConfigSpec, error) {
 	driver, err := clusterCSIDriverLister.Get(name)
 	if apierrors.IsNotFound(err) {
-		klog.V(4).Infof("ClusterCSIDriver %q not found, assuming no secretsStore configuration", name)
+		logDriverConfigIfChanged(name, opv1.CSIDriverConfigSpec{})
 		return opv1.CSIDriverConfigSpec{}, nil
 	}
 	if err != nil {
 		return opv1.CSIDriverConfigSpec{}, fmt.Errorf("failed to get ClusterCSIDriver %q: %w", name, err)
 	}
 
+	logDriverConfigIfChanged(name, driver.Spec.DriverConfig)
+
 	return driver.Spec.DriverConfig, nil
+}
+
+// driverConfigChangeTracker remembers the last driverConfig observed per
+// ClusterCSIDriver name so logDriverConfigIfChanged can log at Info level
+// only when the effective configuration actually changes, instead of on
+// every sync triggered by an unrelated resync or a status-only update.
+var driverConfigChangeTracker = struct {
+	mu   sync.Mutex
+	seen map[string]opv1.CSIDriverConfigSpec
+}{seen: map[string]opv1.CSIDriverConfigSpec{}}
+
+func logDriverConfigIfChanged(name string, driverConfig opv1.CSIDriverConfigSpec) {
+	driverConfigChangeTracker.mu.Lock()
+	defer driverConfigChangeTracker.mu.Unlock()
+
+	previous, seenBefore := driverConfigChangeTracker.seen[name]
+	if seenBefore && reflect.DeepEqual(previous, driverConfig) {
+		return
+	}
+	driverConfigChangeTracker.seen[name] = driverConfig
+	if !seenBefore {
+		klog.Infof("ClusterCSIDriver %q driverConfig observed: %+v", name, driverConfig)
+		return
+	}
+	klog.Infof("ClusterCSIDriver %q driverConfig changed: %+v -> %+v", name, previous, driverConfig)
 }
 
 // getSecretRotationConfig computes the effective secret-rotation enable flag
