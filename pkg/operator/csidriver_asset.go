@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	operatorv1listers "github.com/openshift/client-go/operator/listers/operator/v1"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceread"
 	storagev1 "k8s.io/api/storage/v1"
@@ -22,7 +21,7 @@ const csidriverAssetName = "csidriver.yaml"
 // ClusterCSIDriver, instead of the fully-static base manifest.
 func withSecretsStoreCSIDriverAsset(
 	base resourceapply.AssetFunc,
-	clusterCSIDriverLister operatorv1listers.ClusterCSIDriverLister,
+	clusterCSIDriverLister clusterCSIDriverGetter,
 	csiDriverLister storagev1listers.CSIDriverLister,
 	clusterCSIDriverName string,
 ) resourceapply.AssetFunc {
@@ -47,7 +46,7 @@ func withSecretsStoreCSIDriverAsset(
 // for the StaticResourceController to apply.
 func renderSecretsStoreCSIDriver(
 	manifest []byte,
-	clusterCSIDriverLister operatorv1listers.ClusterCSIDriverLister,
+	clusterCSIDriverLister clusterCSIDriverGetter,
 	csiDriverLister storagev1listers.CSIDriverLister,
 	clusterCSIDriverName string,
 ) ([]byte, error) {

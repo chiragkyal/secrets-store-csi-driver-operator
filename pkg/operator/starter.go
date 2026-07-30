@@ -18,8 +18,6 @@ import (
 	configclient "github.com/openshift/client-go/config/clientset/versioned"
 	configinformers "github.com/openshift/client-go/config/informers/externalversions"
 	applyoperatorv1 "github.com/openshift/client-go/operator/applyconfigurations/operator/v1"
-	operatorv1client "github.com/openshift/client-go/operator/clientset/versioned"
-	operatorv1informers "github.com/openshift/client-go/operator/informers/externalversions"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"github.com/openshift/library-go/pkg/operator/csi/csicontrollerset"
 	"github.com/openshift/library-go/pkg/operator/csi/csidrivernodeservicecontroller"
@@ -72,10 +70,15 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		return err
 	}
 
-	// Typed ClusterCSIDriver client and informer to read driverConfig.secretsStore configuration.
-	operatorClientset := operatorv1client.NewForConfigOrDie(rest.AddUserAgent(controllerConfig.KubeConfig, operatorName))
-	operatorInformers := operatorv1informers.NewSharedInformerFactory(operatorClientset, resync)
-	clusterCSIDriverInformer := operatorInformers.Operator().V1().ClusterCSIDrivers()
+	// clusterCSIDriverLister reads driverConfig.secretsStore configuration off
+	// the same ClusterCSIDriver singleton the GenericOperatorClient above
+	// already watches. dynamicInformers.ForResource(gvr) returns that exact
+	// same shared informer/cache (SharedInformerFactory keys informers by
+	// GVR), so wrapping its Lister() gets typed *opv1.ClusterCSIDriver
+	// access -- the same call-site ergonomics a dedicated operatorv1informers
+	// watch would give -- without opening a second, independent watch on the
+	// identical object.
+	clusterCSIDriverLister := newTypedClusterCSIDriverLister(dynamicInformers.ForResource(gvr).Lister())
 
 	// csiDriverInformer is the storage.k8s.io/v1 CSIDriver informer
 	csiDriverInformer := kubeInformersForNamespaces.InformersFor("").Storage().V1().CSIDrivers()
@@ -93,7 +96,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		kubeInformersForNamespaces,
 		withSecretsStoreCSIDriverAsset(
 			replaceNamespaceFunc(operatorNamespace),
-			clusterCSIDriverInformer.Lister(),
+			clusterCSIDriverLister,
 			csiDriverInformer.Lister(),
 			providerName,
 		),
@@ -129,7 +132,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 			configMapInformer,
 		),
 		withSecretRotationDaemonSetHook(
-			clusterCSIDriverInformer.Lister(),
+			clusterCSIDriverLister,
 			providerName,
 		),
 	)
@@ -138,7 +141,6 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 	go kubeInformersForNamespaces.Start(ctx.Done())
 	go dynamicInformers.Start(ctx.Done())
 	go configInformers.Start(ctx.Done())
-	go operatorInformers.Start(ctx.Done())
 
 	klog.Info("Starting controllerset")
 	go csiControllerSet.Run(ctx, 1)

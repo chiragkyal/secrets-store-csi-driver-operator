@@ -5,9 +5,10 @@ import (
 	"time"
 
 	opv1 "github.com/openshift/api/operator/v1"
-	operatorv1listers "github.com/openshift/client-go/operator/listers/operator/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
 )
@@ -21,8 +22,63 @@ const (
 	defaultRotationInterval = 2 * time.Minute
 )
 
+// clusterCSIDriverGetter is the minimal read access to a ClusterCSIDriver by
+// name that getClusterCSIDriverConfig needs. It is satisfied both by a
+// dedicated typed operatorv1listers.ClusterCSIDriverLister and by
+// *typedClusterCSIDriverLister below.
+type clusterCSIDriverGetter interface {
+	Get(name string) (*opv1.ClusterCSIDriver, error)
+}
+
+// dynamicClusterCSIDriverLister is the minimal read access
+// *typedClusterCSIDriverLister needs from the cache.GenericLister backing a
+// dynamic informer.
+type dynamicClusterCSIDriverLister interface {
+	Get(name string) (runtime.Object, error)
+}
+
+// typedClusterCSIDriverLister adapts the cache.GenericLister backing the
+// shared dynamic ClusterCSIDriver informer -- the same informer/cache the
+// GenericOperatorClient already watches -- into a typed Get, so callers
+// work with *opv1.ClusterCSIDriver directly, exactly as they would with a
+// dedicated operatorv1listers.ClusterCSIDriverLister, without this operator
+// starting a second, independent watch on the same singleton object.
+type typedClusterCSIDriverLister struct {
+	dynamicLister dynamicClusterCSIDriverLister
+}
+
+// newTypedClusterCSIDriverLister wraps dynamicLister -- the Lister of the
+// dynamic informer returned by dynamicInformers.ForResource(gvr), which
+// GenericOperatorClient's own watch on ClusterCSIDriver already backs -- to
+// return typed *opv1.ClusterCSIDriver objects.
+func newTypedClusterCSIDriverLister(dynamicLister dynamicClusterCSIDriverLister) *typedClusterCSIDriverLister {
+	return &typedClusterCSIDriverLister{dynamicLister: dynamicLister}
+}
+
+// Get retrieves the named ClusterCSIDriver and converts it from the
+// *unstructured.Unstructured the dynamic lister's cache stores it as to a
+// typed *opv1.ClusterCSIDriver, mirroring extractOperatorSpec/
+// extractOperatorStatus in starter.go, which perform the same conversion
+// for the same underlying object. A NotFound error from the dynamic lister
+// is returned unchanged so callers can keep using apierrors.IsNotFound.
+func (l *typedClusterCSIDriverLister) Get(name string) (*opv1.ClusterCSIDriver, error) {
+	obj, err := l.dynamicLister.Get(name)
+	if err != nil {
+		return nil, err
+	}
+	unstr, ok := obj.(*unstructured.Unstructured)
+	if !ok {
+		return nil, fmt.Errorf("unexpected type %T, expected *unstructured.Unstructured", obj)
+	}
+	driver := &opv1.ClusterCSIDriver{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(unstr.Object, driver); err != nil {
+		return nil, fmt.Errorf("unable to convert to ClusterCSIDriver: %w", err)
+	}
+	return driver, nil
+}
+
 // getClusterCSIDriverConfig returns the driverConfig of the ClusterCSIDriver named name.
-func getClusterCSIDriverConfig(clusterCSIDriverLister operatorv1listers.ClusterCSIDriverLister, name string) (opv1.CSIDriverConfigSpec, error) {
+func getClusterCSIDriverConfig(clusterCSIDriverLister clusterCSIDriverGetter, name string) (opv1.CSIDriverConfigSpec, error) {
 	driver, err := clusterCSIDriverLister.Get(name)
 	if apierrors.IsNotFound(err) {
 		klog.V(4).Infof("ClusterCSIDriver %q not found, assuming no secretsStore configuration", name)

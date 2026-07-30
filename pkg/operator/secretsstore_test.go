@@ -7,29 +7,19 @@ import (
 	"time"
 
 	opv1 "github.com/openshift/api/operator/v1"
-	operatorv1listers "github.com/openshift/client-go/operator/listers/operator/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 )
 
-// fakeClusterCSIDriverLister is a minimal fake for operatorv1listers.ClusterCSIDriverLister.
+// fakeClusterCSIDriverLister is a minimal fake for clusterCSIDriverGetter.
 type fakeClusterCSIDriverLister struct {
 	driver *opv1.ClusterCSIDriver
 	err    error
-}
-
-func (f *fakeClusterCSIDriverLister) List(selector labels.Selector) ([]*opv1.ClusterCSIDriver, error) {
-	if f.err != nil {
-		return nil, f.err
-	}
-	if f.driver == nil {
-		return nil, nil
-	}
-	return []*opv1.ClusterCSIDriver{f.driver}, nil
 }
 
 func (f *fakeClusterCSIDriverLister) Get(name string) (*opv1.ClusterCSIDriver, error) {
@@ -43,9 +33,92 @@ func (f *fakeClusterCSIDriverLister) Get(name string) (*opv1.ClusterCSIDriver, e
 }
 
 // newFakeClusterCSIDriverLister returns a fakeClusterCSIDriverLister
-func newFakeClusterCSIDriverLister(t *testing.T, driver *opv1.ClusterCSIDriver) operatorv1listers.ClusterCSIDriverLister {
+func newFakeClusterCSIDriverLister(t *testing.T, driver *opv1.ClusterCSIDriver) clusterCSIDriverGetter {
 	t.Helper()
 	return &fakeClusterCSIDriverLister{driver: driver}
+}
+
+// fakeDynamicClusterCSIDriverLister is a minimal fake for
+// dynamicClusterCSIDriverLister, the interface satisfied by the
+// cache.GenericLister backing the real dynamic ClusterCSIDriver informer.
+// Like that real lister, Get returns the driver converted to
+// *unstructured.Unstructured, so typedClusterCSIDriverLister.Get's
+// unstructured-to-typed conversion is exercised the same way it would be in
+// production.
+type fakeDynamicClusterCSIDriverLister struct {
+	driver *opv1.ClusterCSIDriver
+	err    error
+}
+
+func (f *fakeDynamicClusterCSIDriverLister) Get(name string) (runtime.Object, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	if f.driver == nil {
+		return nil, apierrors.NewNotFound(schema.GroupResource{Resource: "clustercsidrivers"}, name)
+	}
+	obj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(f.driver)
+	if err != nil {
+		return nil, err
+	}
+	return &unstructured.Unstructured{Object: obj}, nil
+}
+
+func TestTypedClusterCSIDriverLister(t *testing.T) {
+	const driverName = "secrets-store.csi.k8s.io"
+
+	driver := &opv1.ClusterCSIDriver{
+		ObjectMeta: metav1.ObjectMeta{Name: driverName},
+		Spec: opv1.ClusterCSIDriverSpec{
+			DriverConfig: opv1.CSIDriverConfigSpec{
+				DriverType: opv1.SecretsStoreDriverType,
+			},
+		},
+	}
+
+	cases := []struct {
+		name       string
+		driver     *opv1.ClusterCSIDriver
+		listerErr  error
+		wantErr    bool
+		wantDriver *opv1.ClusterCSIDriver
+	}{
+		{
+			name:      "dynamic lister error is propagated unchanged",
+			listerErr: apierrors.NewNotFound(schema.GroupResource{Resource: "clustercsidrivers"}, driverName),
+			wantErr:   true,
+		},
+		{
+			name:       "converts the unstructured object to a typed ClusterCSIDriver",
+			driver:     driver,
+			wantDriver: driver,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			lister := newTypedClusterCSIDriverLister(&fakeDynamicClusterCSIDriverLister{driver: tc.driver, err: tc.listerErr})
+			got, err := lister.Get(driverName)
+
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("expected an error, got nil")
+				}
+				// NotFound must survive the conversion unchanged so
+				// getClusterCSIDriverConfig's apierrors.IsNotFound check keeps working.
+				if !apierrors.IsNotFound(err) {
+					t.Errorf("expected a NotFound error, got %v", err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if !reflect.DeepEqual(got, tc.wantDriver) {
+				t.Errorf("expected driver %+v, got %+v", tc.wantDriver, got)
+			}
+		})
+	}
 }
 
 func TestGetClusterCSIDriverConfig(t *testing.T) {

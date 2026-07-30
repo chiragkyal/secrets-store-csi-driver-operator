@@ -7,7 +7,6 @@ import (
 	"time"
 
 	opv1 "github.com/openshift/api/operator/v1"
-	operatorv1listers "github.com/openshift/client-go/operator/listers/operator/v1"
 	"github.com/openshift/library-go/pkg/operator/csi/csidrivernodeservicecontroller"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -26,7 +25,7 @@ const (
 // withSecretRotationDaemonSetHook returns a DaemonSetHookFunc that sets the
 // csi-driver container's enableRotationArgPrefix and
 // rotationPollIntervalArgPrefix args from the ClusterCSIDriver.
-func withSecretRotationDaemonSetHook(clusterCSIDriverLister operatorv1listers.ClusterCSIDriverLister, driverName string) csidrivernodeservicecontroller.DaemonSetHookFunc {
+func withSecretRotationDaemonSetHook(clusterCSIDriverLister clusterCSIDriverGetter, driverName string) csidrivernodeservicecontroller.DaemonSetHookFunc {
 	return func(_ *opv1.OperatorSpec, daemonSet *appsv1.DaemonSet) error {
 		driverConfig, err := getClusterCSIDriverConfig(clusterCSIDriverLister, driverName)
 		if err != nil {
