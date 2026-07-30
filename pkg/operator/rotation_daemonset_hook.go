@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	opv1 "github.com/openshift/api/operator/v1"
-	operatorv1listers "github.com/openshift/client-go/operator/listers/operator/v1"
 	"github.com/openshift/library-go/pkg/operator/csi/csidrivernodeservicecontroller"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -26,14 +26,14 @@ const (
 // withSecretRotationDaemonSetHook returns a DaemonSetHookFunc that sets the
 // csi-driver container's enableRotationArgPrefix and
 // rotationPollIntervalArgPrefix args from the ClusterCSIDriver.
-func withSecretRotationDaemonSetHook(clusterCSIDriverLister operatorv1listers.ClusterCSIDriverLister, driverName string) csidrivernodeservicecontroller.DaemonSetHookFunc {
+func withSecretRotationDaemonSetHook(clusterCSIDriverLister clusterCSIDriverGetter, driverName string) csidrivernodeservicecontroller.DaemonSetHookFunc {
 	return func(_ *opv1.OperatorSpec, daemonSet *appsv1.DaemonSet) error {
 		driverConfig, err := getClusterCSIDriverConfig(clusterCSIDriverLister, driverName)
 		if err != nil {
 			return err
 		}
 		enabled, interval := getSecretRotationConfig(driverConfig)
-		klog.V(4).Infof("resolved secret rotation config for DaemonSet %s/%s: enabled=%t pollInterval=%s", daemonSet.Namespace, daemonSet.Name, enabled, formatRotationInterval(interval))
+		logRotationConfigIfChanged(daemonSet.Namespace, daemonSet.Name, rotationConfig{enabled: enabled, interval: interval})
 
 		container, err := findContainer(daemonSet, csiDriverContainerName)
 		if err != nil {
@@ -45,6 +45,40 @@ func withSecretRotationDaemonSetHook(clusterCSIDriverLister operatorv1listers.Cl
 
 		return nil
 	}
+}
+
+// rotationConfig is the effective secret-rotation state applied to a
+// DaemonSet's csi-driver container.
+type rotationConfig struct {
+	enabled  bool
+	interval time.Duration
+}
+
+// rotationConfigChangeTracker remembers the last rotationConfig applied per
+// DaemonSet so logRotationConfigIfChanged can log at Info level only when
+// the effective configuration actually changes.
+var rotationConfigChangeTracker = struct {
+	mu   sync.Mutex
+	seen map[string]rotationConfig
+}{seen: map[string]rotationConfig{}}
+
+func logRotationConfigIfChanged(namespace, name string, cfg rotationConfig) {
+	key := namespace + "/" + name
+
+	rotationConfigChangeTracker.mu.Lock()
+	defer rotationConfigChangeTracker.mu.Unlock()
+
+	previous, seenBefore := rotationConfigChangeTracker.seen[key]
+	if seenBefore && previous == cfg {
+		return
+	}
+	rotationConfigChangeTracker.seen[key] = cfg
+	if !seenBefore {
+		klog.Infof("DaemonSet %s secret rotation config observed: enabled=%t pollInterval=%s", key, cfg.enabled, formatRotationInterval(cfg.interval))
+		return
+	}
+	klog.Infof("DaemonSet %s secret rotation config changed: enabled=%t pollInterval=%s -> enabled=%t pollInterval=%s",
+		key, previous.enabled, formatRotationInterval(previous.interval), cfg.enabled, formatRotationInterval(cfg.interval))
 }
 
 // findContainer returns a pointer to the named container within the
