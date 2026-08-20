@@ -32,6 +32,7 @@ spec:
             privileged: true
           image: ${DRIVER_IMAGE}
           imagePullPolicy: IfNotPresent
+          terminationMessagePolicy: FallbackToLogsOnError
           args:
             - "--endpoint=$(CSI_ENDPOINT)"
             - "--logtostderr"
@@ -85,6 +86,7 @@ spec:
             privileged: true
           image: ${NODE_DRIVER_REGISTRAR_IMAGE}
           imagePullPolicy: IfNotPresent
+          terminationMessagePolicy: FallbackToLogsOnError
           args:
             - --v=${LOG_LEVEL}
             - --csi-address=/csi/csi.sock
@@ -118,6 +120,7 @@ spec:
         - name: csi-liveness-probe
           image: ${LIVENESS_PROBE_IMAGE}
           imagePullPolicy: IfNotPresent
+          terminationMessagePolicy: FallbackToLogsOnError
           args:
           - --csi-address=/csi/csi.sock
           - --probe-timeout=3s
