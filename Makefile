@@ -101,3 +101,14 @@ docker-push-coverage: ## Push coverage Docker image.
 .PHONY: e2e-coverage-collect
 e2e-coverage-collect: ## Collect e2e coverage data and optionally upload to Codecov.
 	ARTIFACT_DIR=$${ARTIFACT_DIR:-.} hack/e2e-coverage.sh collect
+
+# Run the real-Azure Workload Identity Federation e2e suite. Requires a live
+# Azure Workload-Identity-enabled cluster with the operator/driver deployed,
+# the helm/oc CLIs in $PATH, and Azure service principal credentials at
+# $CLUSTER_PROFILE_DIR/osServicePrincipal.json (used to authenticate the
+# Azure SDK for Go directly -- no az CLI required). Creates and destroys
+# real Azure resources (Key Vault, managed identity, federated credential).
+test-e2e-azure-wif:
+	go test ./test/e2e/azure/... -v -timeout 90m
+
+.PHONY: test-e2e-azure-wif

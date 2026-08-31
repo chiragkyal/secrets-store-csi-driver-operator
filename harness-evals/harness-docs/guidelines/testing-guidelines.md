@@ -10,7 +10,7 @@
 
 - Place unit tests in `_test.go` files alongside the code they test in the same package.
 - The main test file is `pkg/operator/starter_test.go` — match this pattern for new packages.
-- E2E tests are invoked via `hack/e2e.sh`.
+- E2E tests are invoked via `hack/e2e.sh` and the Ginkgo suites under `test/e2e/` and `test/e2e/azure/` (see "Ginkgo E2E Suites" below).
 
 ## Fakes and Mocks
 
@@ -33,18 +33,29 @@
 ## Makefile Test Targets
 
 - `make test-unit` — runs unit tests via `go test`.
-- `make test-e2e` — runs end-to-end tests via `hack/e2e.sh`.
+- `make test-e2e` — runs `hack/e2e.sh`, then the cloud-agnostic Ginkgo suite in `test/e2e`.
+- `make test-e2e-azure-wif` — runs the real-Azure Workload Identity Federation Ginkgo suite in `test/e2e/azure`.
 - `make verify` — runs code verification (formatting, vetting, Go version checks).
 - `make test` — runs `test-unit` (the default test target).
 - Run `make verify` before submitting changes to catch formatting and vet issues.
 
 ## E2E Testing
 
-- E2E tests require a running OpenShift cluster and are executed via `hack/e2e.sh`.
-- The e2e script handles test setup, execution, and teardown including artifact collection.
-- The e2e script creates an ephemeral namespace (`secrets-store-test-ns-<random>`) and cleans it up via `test_teardown`.
-- E2E tests validate: CSIDriver resource existence, provider pod readiness, SecretProviderClass creation, and secret volume mounting.
+- E2E tests require a running OpenShift cluster with the operator and driver already deployed, and are executed via `hack/e2e.sh` plus the Ginkgo suites below.
+- `hack/e2e.sh` handles its own test setup, execution, and teardown including artifact collection. It creates an ephemeral namespace (`secrets-store-test-ns-<random>`) and cleans it up via `test_teardown`. It validates: CSIDriver resource existence, provider pod readiness, SecretProviderClass creation, and secret volume mounting.
 - E2E tests are run in CI via Prow jobs — they are not expected to run locally in most development workflows.
+
+### Ginkgo E2E Suites
+
+Two Ginkgo v2 + Gomega suites cover the configurable secret rotation and workload identity federation (WIF) feature (`driverConfig.secretsStore`):
+
+- **`test/e2e` (`make test-e2e`)** — cloud-agnostic. Asserts only on the `storage.k8s.io/v1` `CSIDriver` object and the driver's node DaemonSet, covering the EP's rotation and tokenRequests scenarios (defaults, `Custom`/`None` rotation, `Managed`/`Unmanaged`/omitted tokenRequests, multi-audience, upgrade preservation).
+- **`test/e2e/azure` (`make test-e2e-azure-wif`)** — real Azure. Creates a real Key Vault, secret, user-assigned managed identity, and federated identity credential, installs the real Azure provider via Helm, and verifies the operator's `driverConfig.secretsStore.tokenRequests` configuration (not a manual `oc patch csidriver` workaround) produces working WIF end-to-end, including real secret rotation against Key Vault. Requires the `helm` and `oc` CLIs in `$PATH`, network access to the Azure Resource Manager and Key Vault endpoints, and Azure service principal credentials at `$CLUSTER_PROFILE_DIR/osServicePrincipal.json` (the standard OpenShift CI convention). All Azure resource CRUD (Key Vault, managed identity, federated credential) goes through the Azure SDK for Go (`github.com/Azure/azure-sdk-for-go/sdk/...`) rather than shelling out to the `az` CLI; `helm` (provider install) and `oc` (OpenShift/Kubernetes object) operations still shell out via `os/exec`, since neither is Azure resource CRUD.
+
+**`tokenRequests.type: Managed` is a one-way, irreversible transition**, enforced by a CEL rule on `ClusterCSIDriver` (see `vendor/github.com/openshift/api/operator/v1/types_csi_cluster_driver.go`) — once set, it can never be reverted to `Unmanaged`, even by clearing `driverConfig` entirely.
+
+- In `test/e2e`, the specs that transition `tokenRequests.type` to `Managed` are isolated in an `Ordered` container and gated behind `RUN_IRREVERSIBLE_E2E=true` (skipped by default), since this suite may run against a persistent developer or CI cluster via plain `make test-e2e`. Set `RUN_IRREVERSIBLE_E2E=true` only if you're certain the cluster's `ClusterCSIDriver` singleton being permanently switched to `Managed` tokenRequests is acceptable.
+- `test/e2e/azure` always transitions `tokenRequests.type` to `Managed` (that is the feature under test) and does not gate it, since its target CI job provisions an ephemeral, per-run cluster that is destroyed afterward.
 
 ## Code Verification
 
