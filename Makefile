@@ -73,9 +73,19 @@ GO_TEST_PACKAGES :=./pkg/... ./cmd/...
 # persistent local/dev cluster).
 RUN_IRREVERSIBLE_E2E ?= true
 
+# RUN_AZURE_E2E=true runs the real-Azure WIF Ginkgo suite in test/e2e/azure
+# after the cloud-agnostic test/e2e suite. Set by the operator-e2e-azure CI
+# job only; generic jobs (operator-e2e-fips, tls-scanner, etc.) leave this unset.
+RUN_AZURE_E2E ?=
+
+GINKGO_ARGS = -ginkgo.vv -ginkgo.poll-progress-after=30s -ginkgo.poll-progress-interval=30s
+
 test-e2e:
 	hack/e2e.sh
-	RUN_IRREVERSIBLE_E2E=$(RUN_IRREVERSIBLE_E2E) go test ./test/e2e -v -timeout 60m -args -ginkgo.vv -ginkgo.poll-progress-after=30s -ginkgo.poll-progress-interval=30s
+	RUN_IRREVERSIBLE_E2E=$(RUN_IRREVERSIBLE_E2E) go test ./test/e2e -v -timeout 60m -args $(GINKGO_ARGS)
+ifeq ($(RUN_AZURE_E2E),true)
+	RUN_AZURE_E2E=true go test ./test/e2e/azure/... -v -timeout 90m -args $(GINKGO_ARGS)
+endif
 
 .PHONY: test-e2e
 
@@ -101,3 +111,9 @@ docker-push-coverage: ## Push coverage Docker image.
 .PHONY: e2e-coverage-collect
 e2e-coverage-collect: ## Collect e2e coverage data and optionally upload to Codecov.
 	ARTIFACT_DIR=$${ARTIFACT_DIR:-.} hack/e2e-coverage.sh collect
+
+# Alias for make test-e2e RUN_AZURE_E2E=true (hack/e2e.sh + test/e2e + test/e2e/azure).
+test-e2e-azure-wif:
+	$(MAKE) test-e2e RUN_AZURE_E2E=true
+
+.PHONY: test-e2e-azure-wif
